@@ -1,0 +1,148 @@
+%% BG Automation — Logical Schema Diagram (full columns, SQLite types)
+%% Source of truth: db/sqlite/schema.sql. Render: docs/BG_Database_Diagrams.html
+%% PK = primary key, FK = foreign key, UK = unique. Dates stored as TEXT 'YYYY-MM-DD'.
+erDiagram
+    COMPANY ||--o{ PROJECT : company_id
+    PROJECT ||--o{ TOLL_PLAZA : project_id
+    LOA_RECORDS ||--o{ BG_RECORDS : loa_id
+    COMPANY ||--o{ BG_RECORDS : company_id
+    PROJECT ||--o{ BG_RECORDS : project_id
+    TOLL_PLAZA ||--o{ BG_RECORDS : toll_plaza_id
+    BANK ||--o{ BG_RECORDS : bank_id
+    CONTRACTOR ||--o{ BG_RECORDS : contractor_id
+    BG_TYPE ||--o{ BG_RECORDS : bg_type
+    NATURE_OF_SERVICE ||--o{ BG_RECORDS : nature_id
+    BG_STATUS ||--o{ BG_RECORDS : status
+    USERS ||--o{ BG_RECORDS : created_by
+    BG_RECORDS ||--o{ BG_RECORDS : supersedes_bg_id
+    BG_RECORDS ||--o{ OCR_RESULTS : bg_id
+    BG_RECORDS ||--o{ REMINDERS : bg_id
+    BG_RECORDS ||--o{ AUDIT_LOGS : bg_id
+    USERS ||--o{ LOA_RECORDS : created_by
+    USERS ||--o{ OCR_RESULTS : created_by
+    USERS ||--o{ AUDIT_LOGS : user_id
+    USERS ||--o{ USER_ROLES : user_id
+    ROLES ||--o{ USER_ROLES : role_id
+
+    COMPANY {
+        INTEGER id PK
+        TEXT name UK "e.g. NSPPL"
+    }
+    PROJECT {
+        INTEGER id PK
+        INTEGER company_id FK
+        TEXT code UK "e.g. SB, MH"
+        TEXT name
+    }
+    TOLL_PLAZA {
+        INTEGER id PK
+        INTEGER project_id FK
+        TEXT name "UNIQUE per project"
+    }
+    BANK {
+        INTEGER id PK
+        TEXT name UK "7 banks"
+    }
+    CONTRACTOR {
+        INTEGER id PK
+        TEXT name UK "31 contractors"
+    }
+    BG_TYPE {
+        TEXT code PK "PBG, ABG"
+    }
+    NATURE_OF_SERVICE {
+        INTEGER id PK
+        TEXT name UK "25 natures"
+    }
+    BG_STATUS {
+        TEXT code PK "Draft..Closed"
+    }
+    ROLES {
+        INTEGER id PK
+        TEXT name UK "admin,uploader,viewer"
+    }
+    USERS {
+        TEXT id PK "uuid hex"
+        TEXT username UK "NOCASE"
+        TEXT email UK "NOCASE, nullable"
+        TEXT full_name
+        TEXT password_hash
+        INTEGER is_active "0/1"
+        TEXT last_login
+        TEXT created_at
+        TEXT updated_at
+    }
+    USER_ROLES {
+        TEXT user_id PK, FK
+        INTEGER role_id PK, FK
+    }
+    LOA_RECORDS {
+        TEXT id PK "uuid hex"
+        TEXT loa_po_number UK "1 LOA : M BGs"
+        TEXT description
+        TEXT created_by FK
+        TEXT created_at
+        TEXT updated_at
+    }
+    BG_RECORDS {
+        TEXT id PK "uuid hex"
+        TEXT bg_no UK "dedupe key UC003"
+        INTEGER company_id FK
+        INTEGER project_id FK
+        INTEGER toll_plaza_id FK
+        TEXT bg_type FK
+        INTEGER nature_id FK
+        INTEGER contractor_id FK
+        INTEGER bank_id FK
+        TEXT loa_id FK
+        NUMERIC bg_amount "CHECK > 0"
+        TEXT from_date "YYYY-MM-DD"
+        TEXT to_date "YYYY-MM-DD, T-7 anchor"
+        TEXT claim_period ">= to_date"
+        TEXT extended_date "date or NULL"
+        TEXT status FK "default Draft"
+        TEXT remarks
+        TEXT source_pdf
+        TEXT created_by FK
+        TEXT created_at
+        TEXT updated_at
+        TEXT reminder_sent_at
+        TEXT supersedes_bg_id FK "ST007 chain"
+    }
+    OCR_RESULTS {
+        TEXT id PK "uuid hex"
+        TEXT bg_id FK "nullable pre-confirm"
+        TEXT source_pdf
+        TEXT di_model
+        TEXT raw_json "DI JSON, json_valid"
+        TEXT extracted_fields "JSON, json_valid"
+        NUMERIC avg_confidence "0..1"
+        TEXT status "queued/success/needs_review/failed"
+        TEXT error
+        TEXT created_by FK
+        TEXT created_at
+    }
+    REMINDERS {
+        TEXT id PK "uuid hex"
+        TEXT bg_id FK "ON DELETE CASCADE"
+        TEXT scheduled_for "to_date - 7"
+        TEXT sent_at
+        TEXT recipients "JSON array string"
+        TEXT subject
+        TEXT body
+        TEXT provider_msg_id
+        TEXT status "pending/sent/failed/skipped"
+        TEXT error
+        TEXT created_at
+    }
+    AUDIT_LOGS {
+        INTEGER id PK "autoincrement"
+        TEXT ts
+        TEXT user_id FK
+        TEXT action "upload/extract/confirm/..."
+        TEXT bg_id FK
+        TEXT bg_no
+        TEXT old_data "JSON or NULL"
+        TEXT new_data "JSON or NULL"
+        TEXT ip
+    }

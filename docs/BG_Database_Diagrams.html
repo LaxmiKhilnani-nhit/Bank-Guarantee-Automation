@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<!-- BG Automation — ER + Schema diagrams viewer.
+     Sources of truth: BG_ER_Diagram.mmd / BG_Schema_Diagram.mmd (same folder).
+     Needs internet once for the Mermaid CDN; diagrams also render natively
+     from the .mmd sources in most Markdown viewers. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BG Automation — ER &amp; Schema Diagrams</title>
+<style>
+  body { font-family: Segoe UI, Arial, sans-serif; margin: 2rem; color: #1a1a1a; }
+  h1 { font-size: 1.6rem; } h2 { font-size: 1.25rem; margin-top: 2.5rem;
+       border-bottom: 2px solid #0b5cad; padding-bottom: .3rem; }
+  p.note { color: #444; max-width: 70rem; }
+  pre.mermaid { background: #fff; border: 1px solid #ddd; padding: 1rem;
+                overflow-x: auto; }
+  @media print { body { margin: .5rem; } }
+</style>
+</head>
+<body>
+<h1>BG Automation — Database Diagrams (SQLite)</h1>
+<p class="note">Conceptual ER (key attributes, crow's foot) followed by the full
+logical schema. Table design matches <code>db/sqlite/schema.sql</code>;
+seed values match <code>db/sqlite/seed.sql</code>. One BG row per guarantee,
+dedupe on <code>bg_no</code>; extensions chain via
+<code>supersedes_bg_id</code> under the same <code>loa_id</code> (1 LOA : M BGs).</p>
+
+<h2>1. ER Diagram (conceptual)</h2>
+<pre class="mermaid">
+erDiagram
+    COMPANY ||--o{ PROJECT : company_id
+    PROJECT ||--o{ TOLL_PLAZA : project_id
+    LOA_RECORDS ||--o{ BG_RECORDS : loa_id
+    COMPANY ||--o{ BG_RECORDS : company_id
+    PROJECT ||--o{ BG_RECORDS : project_id
+    TOLL_PLAZA ||--o{ BG_RECORDS : toll_plaza_id
+    BANK ||--o{ BG_RECORDS : bank_id
+    CONTRACTOR ||--o{ BG_RECORDS : contractor_id
+    BG_TYPE ||--o{ BG_RECORDS : bg_type
+    NATURE_OF_SERVICE ||--o{ BG_RECORDS : nature_id
+    BG_STATUS ||--o{ BG_RECORDS : status
+    USERS ||--o{ BG_RECORDS : created_by
+    BG_RECORDS ||--o{ BG_RECORDS : supersedes_bg_id
+    BG_RECORDS ||--o{ OCR_RESULTS : bg_id
+    BG_RECORDS ||--o{ REMINDERS : bg_id
+    BG_RECORDS ||--o{ AUDIT_LOGS : bg_id
+    USERS ||--o{ LOA_RECORDS : created_by
+    USERS ||--o{ OCR_RESULTS : created_by
+    USERS ||--o{ AUDIT_LOGS : user_id
+    USERS ||--o{ USER_ROLES : user_id
+    ROLES ||--o{ USER_ROLES : role_id
+    COMPANY {
+        INTEGER id PK
+        TEXT name UK
+    }
+    PROJECT {
+        INTEGER id PK
+        INTEGER company_id FK
+        TEXT code UK
+    }
+    TOLL_PLAZA {
+        INTEGER id PK
+        INTEGER project_id FK
+        TEXT name
+    }
+    BANK {
+        INTEGER id PK
+        TEXT name UK
+    }
+    CONTRACTOR {
+        INTEGER id PK
+        TEXT name UK
+    }
+    BG_TYPE {
+        TEXT code PK
+    }
+    NATURE_OF_SERVICE {
+        INTEGER id PK
+        TEXT name UK
+    }
+    BG_STATUS {
+        TEXT code PK
+    }
+    ROLES {
+        INTEGER id PK
+        TEXT name UK
+    }
+    USERS {
+        TEXT id PK
+        TEXT username UK
+        TEXT password_hash
+    }
+    USER_ROLES {
+        TEXT user_id PK, FK
+        INTEGER role_id PK, FK
+    }
+    LOA_RECORDS {
+        TEXT id PK
+        TEXT loa_po_number UK
+        TEXT created_by FK
+    }
+    BG_RECORDS {
+        TEXT id PK
+        TEXT bg_no UK
+        TEXT loa_id FK
+        NUMERIC bg_amount
+        TEXT from_date
+        TEXT to_date
+        TEXT status FK
+        TEXT source_pdf
+        TEXT supersedes_bg_id FK
+    }
+    OCR_RESULTS {
+        TEXT id PK
+        TEXT bg_id FK
+        TEXT source_pdf
+        TEXT status
+    }
+    REMINDERS {
+        TEXT id PK
+        TEXT bg_id FK
+        TEXT scheduled_for
+        TEXT status
+    }
+    AUDIT_LOGS {
+        INTEGER id PK
+        TEXT user_id FK
+        TEXT action
+        TEXT bg_id FK
+    }
+</pre>
+
+<h2>2. Schema Diagram (full columns)</h2>
+<pre class="mermaid">
+erDiagram
+    COMPANY ||--o{ PROJECT : company_id
+    PROJECT ||--o{ TOLL_PLAZA : project_id
+    LOA_RECORDS ||--o{ BG_RECORDS : loa_id
+    COMPANY ||--o{ BG_RECORDS : company_id
+    PROJECT ||--o{ BG_RECORDS : project_id
+    TOLL_PLAZA ||--o{ BG_RECORDS : toll_plaza_id
+    BANK ||--o{ BG_RECORDS : bank_id
+    CONTRACTOR ||--o{ BG_RECORDS : contractor_id
+    BG_TYPE ||--o{ BG_RECORDS : bg_type
+    NATURE_OF_SERVICE ||--o{ BG_RECORDS : nature_id
+    BG_STATUS ||--o{ BG_RECORDS : status
+    USERS ||--o{ BG_RECORDS : created_by
+    BG_RECORDS ||--o{ BG_RECORDS : supersedes_bg_id
+    BG_RECORDS ||--o{ OCR_RESULTS : bg_id
+    BG_RECORDS ||--o{ REMINDERS : bg_id
+    BG_RECORDS ||--o{ AUDIT_LOGS : bg_id
+    USERS ||--o{ LOA_RECORDS : created_by
+    USERS ||--o{ OCR_RESULTS : created_by
+    USERS ||--o{ AUDIT_LOGS : user_id
+    USERS ||--o{ USER_ROLES : user_id
+    ROLES ||--o{ USER_ROLES : role_id
+    COMPANY {
+        INTEGER id PK
+        TEXT name UK
+    }
+    PROJECT {
+        INTEGER id PK
+        INTEGER company_id FK
+        TEXT code UK
+        TEXT name
+    }
+    TOLL_PLAZA {
+        INTEGER id PK
+        INTEGER project_id FK
+        TEXT name
+    }
+    BANK {
+        INTEGER id PK
+        TEXT name UK
+    }
+    CONTRACTOR {
+        INTEGER id PK
+        TEXT name UK
+    }
+    BG_TYPE {
+        TEXT code PK
+    }
+    NATURE_OF_SERVICE {
+        INTEGER id PK
+        TEXT name UK
+    }
+    BG_STATUS {
+        TEXT code PK
+    }
+    ROLES {
+        INTEGER id PK
+        TEXT name UK
+    }
+    USERS {
+        TEXT id PK
+        TEXT username UK
+        TEXT email UK
+        TEXT full_name
+        TEXT password_hash
+        INTEGER is_active
+        TEXT last_login
+        TEXT created_at
+        TEXT updated_at
+    }
+    USER_ROLES {
+        TEXT user_id PK, FK
+        INTEGER role_id PK, FK
+    }
+    LOA_RECORDS {
+        TEXT id PK
+        TEXT loa_po_number UK
+        TEXT description
+        TEXT created_by FK
+        TEXT created_at
+        TEXT updated_at
+    }
+    BG_RECORDS {
+        TEXT id PK
+        TEXT bg_no UK
+        INTEGER company_id FK
+        INTEGER project_id FK
+        INTEGER toll_plaza_id FK
+        TEXT bg_type FK
+        INTEGER nature_id FK
+        INTEGER contractor_id FK
+        INTEGER bank_id FK
+        TEXT loa_id FK
+        NUMERIC bg_amount
+        TEXT from_date
+        TEXT to_date
+        TEXT claim_period
+        TEXT extended_date
+        TEXT status FK
+        TEXT remarks
+        TEXT source_pdf
+        TEXT created_by FK
+        TEXT created_at
+        TEXT updated_at
+        TEXT reminder_sent_at
+        TEXT supersedes_bg_id FK
+    }
+    OCR_RESULTS {
+        TEXT id PK
+        TEXT bg_id FK
+        TEXT source_pdf
+        TEXT di_model
+        TEXT raw_json
+        TEXT extracted_fields
+        NUMERIC avg_confidence
+        TEXT status
+        TEXT error
+        TEXT created_by FK
+        TEXT created_at
+    }
+    REMINDERS {
+        TEXT id PK
+        TEXT bg_id FK
+        TEXT scheduled_for
+        TEXT sent_at
+        TEXT recipients
+        TEXT subject
+        TEXT body
+        TEXT provider_msg_id
+        TEXT status
+        TEXT error
+        TEXT created_at
+    }
+    AUDIT_LOGS {
+        INTEGER id PK
+        TEXT ts
+        TEXT user_id FK
+        TEXT action
+        TEXT bg_id FK
+        TEXT bg_no
+        TEXT old_data
+        TEXT new_data
+        TEXT ip
+    }
+</pre>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, er: { fontSize: 13 } });</script>
+</body>
+</html>

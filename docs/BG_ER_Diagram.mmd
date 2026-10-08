@@ -1,0 +1,105 @@
+%% BG Automation — Conceptual ER Diagram (crow's foot)
+%% Source of truth: db/sqlite/schema.sql. Render: docs/BG_Database_Diagrams.html
+%% Key attributes only; see BG_Schema_Diagram.mmd for full columns.
+erDiagram
+    COMPANY ||--o{ PROJECT : company_id
+    PROJECT ||--o{ TOLL_PLAZA : project_id
+    LOA_RECORDS ||--o{ BG_RECORDS : loa_id
+    COMPANY ||--o{ BG_RECORDS : company_id
+    PROJECT ||--o{ BG_RECORDS : project_id
+    TOLL_PLAZA ||--o{ BG_RECORDS : toll_plaza_id
+    BANK ||--o{ BG_RECORDS : bank_id
+    CONTRACTOR ||--o{ BG_RECORDS : contractor_id
+    BG_TYPE ||--o{ BG_RECORDS : bg_type
+    NATURE_OF_SERVICE ||--o{ BG_RECORDS : nature_id
+    BG_STATUS ||--o{ BG_RECORDS : status
+    USERS ||--o{ BG_RECORDS : created_by
+    BG_RECORDS ||--o{ BG_RECORDS : supersedes_bg_id
+    BG_RECORDS ||--o{ OCR_RESULTS : bg_id
+    BG_RECORDS ||--o{ REMINDERS : bg_id
+    BG_RECORDS ||--o{ AUDIT_LOGS : bg_id
+    USERS ||--o{ LOA_RECORDS : created_by
+    USERS ||--o{ OCR_RESULTS : created_by
+    USERS ||--o{ AUDIT_LOGS : user_id
+    USERS ||--o{ USER_ROLES : user_id
+    ROLES ||--o{ USER_ROLES : role_id
+
+    COMPANY {
+        INTEGER id PK
+        TEXT name UK
+    }
+    PROJECT {
+        INTEGER id PK
+        INTEGER company_id FK
+        TEXT code UK
+    }
+    TOLL_PLAZA {
+        INTEGER id PK
+        INTEGER project_id FK
+        TEXT name
+    }
+    BANK {
+        INTEGER id PK
+        TEXT name UK
+    }
+    CONTRACTOR {
+        INTEGER id PK
+        TEXT name UK
+    }
+    BG_TYPE {
+        TEXT code PK
+    }
+    NATURE_OF_SERVICE {
+        INTEGER id PK
+        TEXT name UK
+    }
+    BG_STATUS {
+        TEXT code PK
+    }
+    ROLES {
+        INTEGER id PK
+        TEXT name UK
+    }
+    USERS {
+        TEXT id PK
+        TEXT username UK
+        TEXT password_hash
+    }
+    USER_ROLES {
+        TEXT user_id PK, FK
+        INTEGER role_id PK, FK
+    }
+    LOA_RECORDS {
+        TEXT id PK
+        TEXT loa_po_number UK
+        TEXT created_by FK
+    }
+    BG_RECORDS {
+        TEXT id PK
+        TEXT bg_no UK
+        TEXT loa_id FK
+        NUMERIC bg_amount
+        TEXT from_date
+        TEXT to_date
+        TEXT status FK
+        TEXT source_pdf
+        TEXT supersedes_bg_id FK
+    }
+    OCR_RESULTS {
+        TEXT id PK
+        TEXT bg_id FK
+        TEXT source_pdf
+        TEXT status
+    }
+    REMINDERS {
+        TEXT id PK
+        TEXT bg_id FK
+        TEXT scheduled_for
+        TEXT status
+    }
+    AUDIT_LOGS {
+        INTEGER id PK
+        TEXT user_id FK
+        TEXT action
+        TEXT bg_id FK
+    }
