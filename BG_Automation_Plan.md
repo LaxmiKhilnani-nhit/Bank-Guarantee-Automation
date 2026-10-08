@@ -1,95 +1,145 @@
+---
+id: PLAN-MASTER
+title: BG Automation — Build Plan
+status: active
+owner: Laxmi
+last_updated: 2026-10-08
+version: 3
+inputs: ["BG Tracker.xlsx", "BG_UseCase_Story_Tracking.xlsx", "Sample_Bank_Guarantees/", "BG_OCR_Options_Comparison.md"]
+outputs: ["plan/00-log.md", "plan/01-architecture.md", "plan/02-data-model.md", "plan/03-auth.md", "plan/04-ocr-extraction.md", "plan/05-flows.md", "plan/06-email-scheduler-hosting.md"]
+---
+
 # BG Automation — Build Plan
 
-**Date:** 2026-10-07
-**Workflow:** Upload BG PDF on dashboard → Enterprise OCR + field extraction → Human review → Append to Excel tracker → T-7 expiry email via SMTP
-**Constraints:** Enterprise-only (no OSS OCR/LLM), SMTP-only (no Graph for now), local login (no Entra SSO for now), India-only data, Windows cloud VM available, Docker possible
+## Purpose
 
-## 1. Source Inputs Found in Workspace
+This is the master summary for BG Automation. It states what we are building,
+why, and in what order. Detail lives in the `plan/` folder. This file should
+stay short; if a section grows, move it to `plan/` and link it.
 
-- `BG Details-Updated.xlsx` — sheet `BG from Vendor`, tracker format of record
-- `BG_UseCase_Story_Tracking(User Stories).csv` — UC001-UC005, ST001-ST008
-- `Sample_Bank_Guarantees/` — `BG 264GT02252580004.pdf`, `BG Document.pdf` for training/test
-- `BG_OCR_Options_Comparison.md` — Azure DI Central India recommended
+**Workflow:** upload a BG PDF on the dashboard → extract fields with
+enterprise OCR → human review → append to the Excel tracker → send a T-7
+expiry mail via SMTP.
 
-## 2. Requirements Locked
+**Constraints:** enterprise tools only (no open-source OCR or LLM), SMTP only
+(no Graph yet), local login (no Entra SSO yet), India-only data, Windows
+cloud VM available, Docker optional.
+
+## 1. Inputs in this workspace
+
+- `BG Tracker.xlsx` — Sheet1, 20 columns. The format of record (locked 2026-10-08).
+- `BG_UseCase_Story_Tracking.xlsx` — UC001–UC007, ST001–ST013.
+- `Sample_Bank_Guarantees/` — two sample PDFs for training and testing.
+- `BG_OCR_Options_Comparison.md` — recommends Azure DI in Central India.
+
+## 2. Locked requirements
 
 | # | Item | Decision |
 |---|------|----------|
-| R1 | Volume | 20-25 PDFs/mo, 6-10 pages each, ~200 pages/mo, scanned printed English |
-| R2 | Fields | See §3. Includes LOA/PO Number per ST004 |
-| R3 | Excel | Local `BG Details-Updated.xlsx` format append, dedupe on BG No. Live SharePoint deferred until Graph approved |
-| R4 | Email | SMTP-only via `smtp.office365.com:587` service mailbox. T-7 calendar days on `To` date to Finance + User Team. Extend/close decision loop per ST006-ST007 |
-| R5 | Auth | Local DB users + roles (admin/uploader/viewer). Uploader can approve own for now, audit log for future maker-checker |
-| R6 | OCR | Azure Document Intelligence in Central India. Layout baseline → Custom extraction if needed. No Tesseract/Paddle/Ollama |
-| R7 | Failure handling | Failed OCR / missing mandatory fields → manual review queue, leave blank per ST008, never auto-write bad rows |
-| R8 | Hosting | Existing Windows cloud VM first. Code env-driven for later App Service move |
+| R1 | Volume | 20–25 PDFs/month, 6–10 pages each, about 200 pages/month, scanned printed English |
+| R2 | Fields | 20-column tracker (see §3). Includes LOA/PO Number (ST004) plus Company Name and Toll Plaza Name |
+| R3 | Excel | Append to local `BG Tracker.xlsx` (Sheet1), dedupe on BG No. SharePoint live sync waits for Graph approval |
+| R4 | Email | SMTP via `smtp.office365.com:587`. T-7 calendar days on the `To` date to Finance + User Team. Extend-or-close loop per ST006–ST007 |
+| R5 | Auth | Local users, 3 roles, maker-checker: admin confirms, uploader drafts, viewer reads (see §7 and `plan/03-auth.md`) |
+| R6 | OCR | Azure Document Intelligence in Central India. Layout first, custom model if needed. No Tesseract, Paddle, or Ollama |
+| R7 | Failures | Failed OCR or missing fields go to a manual queue and stay blank (ST008). Bad rows never reach Excel |
+| R8 | Hosting | Existing Windows VM first. Environment-driven config for a later App Service move |
 
-Open to confirm before build: SMTP mailbox + Finance DL + User Team DL, `To` as T-7 anchor (not Claim Period), sender name/template.
+Still needed before build: SMTP mailbox, Finance and User Team DLs, `To` as
+T-7 anchor (not Claim Period), sender name and template sign-off.
 
-## 3. Data Model — Tracker Columns
+## 3. Data model (summary)
 
-From `BG Details-Updated.xlsx`:
+Tracker columns in order:
 
-`Sr (auto) | Project Name | Types of BG | Nature of Service | Name of Contractor | BG No (unique) | BG Amount | From (issue/effective) | To (expiry/valid-till, T-7 anchor) | Claim Period | Extended | Bank Name | Status | Remarks | LOA/PO Number | source_pdf | created_by | created_at | reminder_sent_at`
+`Company Name | Project Name | Toll Plaza Name | Types of BG | Nature of Service | Name of Contractor | BG No (unique) | BG Amount | From | To (T-7 anchor) | Claim Period | Extended | Bank Name | Status | Remarks | LOA/PO Number | source_pdf | created_by | created_at | reminder_sent_at`
 
-Extraction priority: `BG No, Bank Name, Amount, From, To, Claim Period, LOA Number, Applicant/Contractor, Beneficiary` → rest via review form defaults + dropdowns (Project, Types, Nature, Status, Extended).
+Extract first: BG No, Bank Name, Amount, From, To, Claim Period, LOA Number,
+Contractor, Beneficiary. The rest come from review-form dropdowns.
+Full spec: `plan/02-data-model.md`.
 
-## 4. Architecture
+## 4. Architecture (summary)
 
-```
-React (Vite) dashboard ──HTTPS──> FastAPI :8000 ──> Azure DI Central India (SDK/REST)
-                          │                ├─> SQLite (jobs/users/audit) + BG_Master.xlsx (same columns as tracker)
-                          │                └─> SMTP mailer + daily scheduler (09:00)
-VM: IIS reverse proxy + Windows Service (API) + Task Scheduler (daily T-7 check)
-```
+- Frontend: React (Vite) dashboard.
+- Backend: FastAPI on port 8000 → Azure DI (Central India), SQLite
+  (jobs, users, audit) + `BG Tracker.xlsx`, SMTP mailer + daily 09:00 job.
+- VM: IIS reverse proxy + Windows Service (API) + Task Scheduler (T-7 check).
 
-Pages: Login, Upload (drag-drop multi-PDF, queue), Review (OCR text + editable form + Confirm), Register (table, filters Due-7d/Overdue, search BG No/Contractor, Excel download), Reminders log, Users/Admin (MVP minimal).
+Pages (role-gated): Login; Upload (admin + uploader); Review (uploader edits
+own, admin confirms); Register (all, with Due-7d/Overdue filters, search, and
+export); Reminders log; Users/Admin (admin only).
 
-No Graph, no SharePoint, no Entra in Phase 1. Interfaces abstracted (`MailSender`, `TrackerStore`, `Extractor`) for later Graph swap.
+Phase 1 has no Graph, SharePoint, or Entra. Interfaces (`MailSender`,
+`TrackerStore`, `Extractor`, `AuthProvider`) keep those swaps easy.
+Diagrams: `plan/01-architecture.md`. Flows: `plan/05-flows.md`.
 
-## 5. Enterprise OCR Strategy
+## 5. OCR strategy (summary)
 
-1. Provision DI S0 in Central India + budget alert. F0 500 free pages/mo covers pilot.
-2. Baseline with `prebuilt-layout` on samples: extract text/tables, regex for dates `DD-MM-YYYY`, amounts `INR/Rs`, BG No patterns `XXXX...ILG/GT...`.
-3. If project/location/LOA accuracy <95%, train `custom extraction` on 15-25 labelled BGs across banks.
-4. Store raw DI JSON per PDF in Blob/folder for audit + retrain.
+1. Provision DI S0 in Central India with a budget alert (F0 free tier covers pilot).
+2. Start with `prebuilt-layout` plus field rules (dates, amounts, BG No patterns).
+3. Train a custom extraction model on 15–25 labelled BGs if accuracy is below 95%.
+4. Archive raw DI JSON per PDF for audit and retraining.
 
-Cost at 200 pgs/mo: Layout $2/mo, Custom $6/mo. See comparison doc.
+Cost at 200 pages/month: Layout ~$2, Custom ~$6.
+Detail: `plan/04-ocr-extraction.md`.
 
-## 6. Email + Scheduler (SMTP-only)
+## 6. Email and scheduler (summary)
 
-- Config: host, port 587, STARTTLS, service user + app password in env/Key Vault, from display `BG Automation`.
-- Daily job: `SELECT * WHERE To - 7 days == today AND reminder_sent_at IS NULL AND Status != Closed`.
-- Template: `Subject: BG {BG No} expiring {To} — {Project}/{Contractor} — extend or close?` Body: amount, bank, claim period, LOA, link to register.
-- On send: set `reminder_sent_at`, append to `reminder_log`. Retry 3x, dead-letter to review queue.
-- Extension flow: new BG with same LOA → new row, old row `Extended=Yes, Status=Closed/Extended`.
+- SMTP port 587, STARTTLS, service mailbox from env/Key Vault, sender `BG Automation`.
+- Daily: rows where `To − 7 days = today`, `reminder_sent_at` empty, `Status ≠ Closed`.
+- Subject: `BG {BG No} expiring {To} — {Project}/{Contractor} — extend or close?`
+- On send: set `reminder_sent_at`, write `reminder_log`. Retry 3 times, then dead-letter.
+- Extension: new BG under the same LOA is a new row; old row becomes `Extended = Yes`, `Status = Closed`.
 
-## 7. Auth + Audit
+Detail: `plan/06-email-scheduler-hosting.md`.
 
-- `bcrypt` passwords, session JWT httpOnly, roles: admin manages users, uploader uploads+confirms, viewer read+export.
-- `audit_log (ts, user, action, bg_no, old_json, new_json)`.
-- Later: swap to Entra ID without changing business logic.
+## 7. Auth and audit (summary)
 
-## 8. Phases (maps to UC/ST)
+| Action | Admin | Uploader | Viewer |
+|--------|-------|----------|--------|
+| Upload | Yes | Yes (own) | No |
+| Edit own draft | Yes | Yes | No |
+| Confirm to Excel | **Yes (only)** | No (submits) | No |
+| Register + export | Yes | Own queue | Yes (all + export) |
+| Users + resend | Yes | No | No |
+| Create, edit, activate/deactivate, reset users | Yes (admin only) | No | No |
+| Delete user | Yes (deactivate by default; hard delete only if user never acted) | No | No |
+| Delete pending job | Yes (any unconfirmed job) | Yes (own unconfirmed jobs) | No |
+| Delete confirmed Excel row | Never hard-deleted (void via `Status = Closed` + audit) | No | No |
 
-- **Sprint 1 (UC001-UC004):** VM + DI provision, `POST /extract`, upload + review + Excel append + LOA extraction, local auth.
-- **Sprint 2 (UC005):** SMTP T-7 job, Finance + User Team templates, extend/close update, failed-OCR queue, register filters + export.
-- **Hardening:** backups (xlsx + db + PDFs daily), logs rotation, runbook, UAT 1 month parallel with manual entry, accuracy report.
+`bcrypt` passwords, 30-minute JWT in `httpOnly + Secure + SameSite=Lax`
+cookie, 5-fail lockout, full `audit_log` on every change.
+Detail: `plan/03-auth.md`. Stories: ST009 + ST011–ST013.
 
-## 9. Test Plan
+## 8. Phases
 
-- 20+ samples incl. `Sample_Bank_Guarantees/`, measure per-field precision on BG No/Amount/To/Claim/LOA.
-- Scheduler dry-run with fake `To = today+7`.
-- SMTP sandbox to test DL before prod.
+- **Sprint 1 (UC001–UC004, UC006):** VM + DI setup, upload + review + Excel
+  append (20-col format), LOA extraction, 3-role login.
+- **Sprint 2 (UC005, UC007):** SMTP T-7 job, templates, extend/close handling,
+  failed-OCR queue, register filters + export, VM scheduler.
+- **Hardening:** daily backups (xlsx + DB + PDFs), log rotation, runbook,
+  1-month parallel UAT with accuracy report.
+
+## 9. Test plan
+
+- 20+ samples including `Sample_Bank_Guarantees/`; per-field precision on
+  BG No, Amount, To, Claim, LOA.
+- Role tests: uploader Confirm → 403, viewer upload → 403, uploader sees own queue only.
+- Scheduler dry run (`To = today + 7`); SMTP sandbox before production DLs.
 
 ## 10. Risks
 
-- Scan skew/stamps → DI confidence low → human review mandatory, don't lower threshold.
-- SMTP AUTH deprecation → keep Graph migration path open, request app-reg early.
-- Local xlsx locks → single-writer API + SQLite truth, Excel as export.
+- Skewed scans and stamps → mandatory human review; never lower the confidence threshold.
+- SMTP AUTH deprecation → request Entra app registration early; keep Graph path open.
+- Excel locks and direct edits → single-writer API, service-account ownership.
 
-## Next Approvals Needed
+## Approvals needed
 
-1. SMTP mailbox + DLs + template sign-off
-2. Azure DI S0 Central India RG + cost alert owner
-3. Confirm `To` = T-7 anchor
+1. SMTP mailbox + DLs + template sign-off.
+2. Azure DI S0 resource group in Central India + cost-alert owner.
+3. Confirm `To` = T-7 anchor.
+
+## References
+
+- Detail docs: `plan/README.md` (index), `plan/00-log.md` (history).
+- Stories: `BG_UseCase_Story_Tracking.xlsx` (ST011–ST013 assigned to Laxmi).
