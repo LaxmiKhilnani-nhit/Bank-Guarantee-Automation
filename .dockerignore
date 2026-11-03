@@ -1,0 +1,21 @@
+# Build context hygiene: only what the image needs is sent to the daemon.
+.git
+.gitignore
+.venv
+__pycache__
+**/__pycache__
+*.py[cod]
+*.log
+
+# Local output and data (real BG documents live here)
+out
+data
+
+# Secrets and editor/agent files
+.env
+.env.*
+opencode*
+plan
+
+# Test fixtures are uploaded through the UI, not baked into the image
+Sample_Bank_Guarantees

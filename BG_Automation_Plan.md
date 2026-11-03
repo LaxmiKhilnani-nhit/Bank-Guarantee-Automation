@@ -27,7 +27,7 @@ cloud VM available, Docker optional.
 
 ## 1. Inputs in this workspace
 
-- `BG Tracker.xlsx` — Sheet1, 20 columns. The format of record (locked 2026-10-08).
+- `BG Tracker.xlsx` — Sheet1, extended to 21 columns with separate LOA and PO fields.
 - `BG_UseCase_Story_Tracking.xlsx` — UC001–UC007, ST001–ST013.
 - `Sample_Bank_Guarantees/` — two sample PDFs for training and testing.
 - `BG_OCR_Options_Comparison.md` — recommends Azure DI in Central India.
@@ -37,11 +37,11 @@ cloud VM available, Docker optional.
 | # | Item | Decision |
 |---|------|----------|
 | R1 | Volume | 20–25 PDFs/month, 6–10 pages each, about 200 pages/month, scanned printed English |
-| R2 | Fields | 20-column tracker (see §3). Includes LOA/PO Number (ST004) plus Company Name and Toll Plaza Name |
+| R2 | Fields | 21-column tracker (see §3). LOA Number and PO Number are separate fields |
 | R3 | Excel | Append to local `BG Tracker.xlsx` (Sheet1), dedupe on BG No. SharePoint live sync waits for Graph approval |
 | R4 | Email | SMTP via `smtp.office365.com:587`. T-7 calendar days on the `To` date to Finance + User Team. Extend-or-close loop per ST006–ST007 |
-| R5 | Auth | Local users, 3 roles, maker-checker: admin confirms, uploader drafts, viewer reads (see §7 and `plan/03-auth.md`) |
-| R6 | OCR | Azure Document Intelligence in Central India. Layout first, custom model if needed. No Tesseract, Paddle, or Ollama |
+| R5 | Auth | Local users, 3 roles. Uploaders save their own reviewed rows; admins manage users; viewers read (see `plan/03-auth.md`) |
+| R6 | OCR | Indra local OCR by default; Tesseract fallback/comparison; Azure DI is optional for testing and sends selected PDFs to Central India |
 | R7 | Failures | Failed OCR or missing fields go to a manual queue and stay blank (ST008). Bad rows never reach Excel |
 | R8 | Hosting | Existing Windows VM first. Environment-driven config for a later App Service move |
 
@@ -52,7 +52,7 @@ T-7 anchor (not Claim Period), sender name and template sign-off.
 
 Tracker columns in order:
 
-`Company Name | Project Name | Toll Plaza Name | Types of BG | Nature of Service | Name of Contractor | BG No (unique) | BG Amount | From | To (T-7 anchor) | Claim Period | Extended | Bank Name | Status | Remarks | LOA/PO Number | source_pdf | created_by | created_at | reminder_sent_at`
+`Company Name | Project Name | Toll Plaza Name | Types of BG | Nature of Service | Name of Contractor | BG No (unique) | BG Amount | From | To (T-7 anchor) | Claim Period | Extended | Bank Name | Status | Remarks | LOA Number | PO Number | source_pdf | created_by | created_at | reminder_sent_at`
 
 Extract first: BG No, Bank Name, Amount, From, To, Claim Period, LOA Number,
 Contractor, Beneficiary. The rest come from review-form dropdowns.
@@ -61,13 +61,13 @@ Full spec: `plan/02-data-model.md`.
 ## 4. Architecture (summary)
 
 - Frontend: React (Vite) dashboard.
-- Backend: FastAPI on port 8000 → Azure DI (Central India), SQLite
-  (jobs, users, audit) + `BG Tracker.xlsx`, SMTP mailer + daily 09:00 job.
+- Backend: FastAPI on port 8000 → local OCR, SQLite
+  (runs, users, audit) + `BG Tracker.xlsx`, SMTP mailer + daily 09:00 job.
 - VM: IIS reverse proxy + Windows Service (API) + Task Scheduler (T-7 check).
 
-Pages (role-gated): Login; Upload (admin + uploader); Review (uploader edits
-own, admin confirms); Register (all, with Due-7d/Overdue filters, search, and
-export); Reminders log; Users/Admin (admin only).
+Pages (role-gated): Login; Upload and Review (uploader edits and saves own
+rows); Register (admin/viewer); Workbook (all roles, read-only); Reminders;
+Users/Admin (admin only).
 
 Phase 1 has no Graph, SharePoint, or Entra. Interfaces (`MailSender`,
 `TrackerStore`, `Extractor`, `AuthProvider`) keep those swaps easy.
@@ -75,12 +75,9 @@ Diagrams: `plan/01-architecture.md`. Flows: `plan/05-flows.md`.
 
 ## 5. OCR strategy (summary)
 
-1. Provision DI S0 in Central India with a budget alert (F0 free tier covers pilot).
-2. Start with `prebuilt-layout` plus field rules (dates, amounts, BG No patterns).
-3. Train a custom extraction model on 15–25 labelled BGs if accuracy is below 95%.
-4. Archive raw DI JSON per PDF for audit and retraining.
-
-Cost at 200 pages/month: Layout ~$2, Custom ~$6.
+1. Run Indra OCR and Tesseract locally; cache model files under `data/huggingface`.
+2. Compare results on representative BG samples and keep uncertain values editable for review.
+3. Store OCR text and extraction reports locally for audit.
 Detail: `plan/04-ocr-extraction.md`.
 
 ## 6. Email and scheduler (summary)
@@ -99,7 +96,8 @@ Detail: `plan/06-email-scheduler-hosting.md`.
 |--------|-------|----------|--------|
 | Upload | Yes | Yes (own) | No |
 | Edit own draft | Yes | Yes | No |
-| Confirm to Excel | **Yes (only)** | No (submits) | No |
+| Save reviewed rows | Yes | Yes (own runs) | No |
+| View workbook in frontend | Yes | Yes | Yes |
 | Register + export | Yes | Own queue | Yes (all + export) |
 | Users + resend | Yes | No | No |
 | Create, edit, activate/deactivate, reset users | Yes (admin only) | No | No |
@@ -113,8 +111,8 @@ Detail: `plan/03-auth.md`. Stories: ST009 + ST011–ST013.
 
 ## 8. Phases
 
-- **Sprint 1 (UC001–UC004, UC006):** VM + DI setup, upload + review + Excel
-  append (20-col format), LOA extraction, 3-role login.
+- **Sprint 1 (UC001–UC004, UC006):** Local OCR setup, upload + review + Excel
+  save (21-column format), LOA/PO extraction, 3-role login.
 - **Sprint 2 (UC005, UC007):** SMTP T-7 job, templates, extend/close handling,
   failed-OCR queue, register filters + export, VM scheduler.
 - **Hardening:** daily backups (xlsx + DB + PDFs), log rotation, runbook,
@@ -124,7 +122,7 @@ Detail: `plan/03-auth.md`. Stories: ST009 + ST011–ST013.
 
 - 20+ samples including `Sample_Bank_Guarantees/`; per-field precision on
   BG No, Amount, To, Claim, LOA.
-- Role tests: uploader Confirm → 403, viewer upload → 403, uploader sees own queue only.
+- Role checks: uploader saves own run, viewer upload → 403, uploader sees own queue only.
 - Scheduler dry run (`To = today + 7`); SMTP sandbox before production DLs.
 
 ## 10. Risks

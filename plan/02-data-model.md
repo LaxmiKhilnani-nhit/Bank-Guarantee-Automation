@@ -2,7 +2,6 @@
 id: PLAN-02
 title: Data Model
 status: active
-owner: Laxmi
 last_updated: 2026-10-08
 version: 3
 inputs: ["BG Tracker.xlsx (Sheet1)"]
@@ -44,11 +43,12 @@ This sheet is the format of record. Column order must not change.
 | 13 | Bank Name | Text | Yes | OCR + normalised (SBI, HDFC, ICICI, Axis, PNB…) |
 | 14 | Status | Dropdown | Yes | Active, Expired, Closed, Extended |
 | 15 | Remarks | Text | No | Free text |
-| 16 | LOA/PO Number | Text | No | OCR + regex (ST004); blank if unsure |
-| 17 | source_pdf | Text (system) | Yes | Original filename or stored path |
-| 18 | created_by | Text (system) | Yes | Username of the confirming admin |
-| 19 | created_at | Date-time (system) | Yes | Confirm timestamp |
-| 20 | reminder_sent_at | Date-time (system) | No | Set when the T-7 mail is sent; empty until then |
+| 16 | LOA Number | Text | No | OCR + regex; blank if unsure |
+| 17 | PO Number | Text | No | OCR + regex or manual entry; blank if unsure |
+| 18 | source_pdf | Text (system) | Yes | Original filename or stored path |
+| 19 | created_by | Text (system) | Yes | Username of the uploader who saved |
+| 20 | created_at | Date-time (system) | Yes | Save timestamp |
+| 21 | reminder_sent_at | Date-time (system) | No | Set when the T-7 mail is sent; empty until then |
 
 Rule: if OCR confidence is low, leave the field blank. Never guess (ST008).
 
@@ -74,7 +74,7 @@ CREATE TABLE jobs (
   owner TEXT NOT NULL,
   source_pdf TEXT NOT NULL,
   status TEXT CHECK (status IN
-    ('queued','extracting','pending_review','pending_admin','confirmed','failed')) NOT NULL,
+    ('queued','extracting','pending_review','confirmed','failed')) NOT NULL,
   extract_json TEXT,
   fields_json TEXT,
   error TEXT,
@@ -114,11 +114,6 @@ CREATE TABLE reminder_log (
    is set to `Extended = Yes`, `Status = Closed`.
 5. **Single writer.** Only the API appends to Excel, one row at a time behind
    a lock. The queue in SQLite is the source of truth until Confirm.
-6. **Delete safety.** Pending jobs may be deleted (admin: any; uploader: own
-   only). Confirmed Excel rows are never hard-deleted — admin voids with
-   `Status = Closed` plus a reason in `Remarks` and an audit entry. Users are
-   deactivated by default; hard delete only when the user has no history.
-   `reminder_log` is append-only.
 
 ## 6. Acceptance criteria
 

@@ -114,6 +114,7 @@ CREATE TABLE IF NOT EXISTS bg_records (
   contractor_id    INTEGER REFERENCES contractor(id) ON DELETE RESTRICT,
   bank_id          SMALLINT REFERENCES bank(id) ON DELETE RESTRICT,
   loa_id           UUID REFERENCES loa_records(id) ON DELETE RESTRICT,
+  po_number        TEXT,
   bg_amount        NUMERIC(15,2) NOT NULL CHECK (bg_amount > 0),
   from_date        DATE NOT NULL,
   to_date          DATE NOT NULL,
@@ -183,7 +184,7 @@ CREATE TABLE IF NOT EXISTS reminders (
   UNIQUE (bg_id, scheduled_for)
 );
 
--- ============ audit log (ST009, R5 maker-checker trail) ============
+-- ============ audit log (ST009, user action history) ============
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -240,7 +241,8 @@ SELECT
   n.name  AS "Nature of Service",
   ct.name AS "Name of Contractor",
   bk.name AS "Bank Name",
-  l.loa_po_number AS "LOA/PO Number",
+  l.loa_po_number AS "LOA Number",
+  b.po_number AS "PO Number",
   u.username AS created_by_name
 FROM bg_records b
 LEFT JOIN company c       ON c.id = b.company_id

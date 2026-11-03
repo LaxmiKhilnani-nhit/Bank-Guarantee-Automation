@@ -2,7 +2,6 @@
 id: PLAN-04
 title: OCR and Field Extraction
 status: active
-owner: Laxmi
 last_updated: 2026-10-08
 version: 3
 inputs: ["Sample_Bank_Guarantees/", "BG_OCR_Options_Comparison.md"]
@@ -12,6 +11,15 @@ related: ["PLAN-02", "PLAN-05"]
 
 # 04 — OCR and Field Extraction
 
+> **Implementation status (2026-11-02).** OCR runs locally with Indra as the
+> default and Tesseract available for fallback and comparison. Azure Document
+> Intelligence is now an optional test engine and runs only when selected;
+> those selected PDFs are sent to the configured Central India endpoint.
+> Indra's `auto` mode uses suitable PDF text and OCRs scanned pages; `ocr`
+> mode reads each page as an image. See `backend/README.md` for setup and
+> credential handling. The field rules and blank-beats-wrong principle still
+> apply.
+
 ## 1. Purpose
 
 This document explains how a scanned BG PDF becomes structured data. Read it
@@ -19,18 +27,21 @@ before building the extraction service or tuning accuracy.
 
 ## 2. Strategy
 
-We use Azure Document Intelligence (DI) in Central India. This keeps data in
-India and avoids open-source OCR, per enterprise policy.
+The application supports three OCR paths: local Indra, local Tesseract, and
+optional Azure Document Intelligence (DI) in Central India. Indra remains the
+default. Azure is currently intended for explicit testing and comparison; the
+user selects it before upload, which sends that PDF to the configured service.
 
-1. **Provision.** Create a DI S0 resource in Central India with a budget
-   alert. The F0 free tier (500 pages/month) covers the pilot.
-2. **Baseline.** Use the `prebuilt-layout` model to get text, tables, and
-   confidence scores. Apply the field rules below.
-3. **Upgrade if needed.** If accuracy on Project, LOA, or Claim fields is
+1. **Configure for testing.** Set the endpoint and key in the ignored local
+   `.env` file. The app uses `prebuilt-layout` to get lines and word confidence.
+2. **Compare.** Use sample PDFs with the local Indra and Tesseract results;
+   review page coverage, field disagreements, and confidence together.
+3. **Approve future use.** Confirm Azure resource pricing, retention, and
+   deployment policy before routine processing. If accuracy on Project, LOA, or Claim fields is
    below 95% across 20+ samples, train a custom extraction model on 15–25
    labelled BGs from different banks.
-4. **Archive.** Save the raw DI JSON for every PDF
-   (`di-json/{job_id}.json`) for audit and retraining.
+4. **Archive.** Keep the OCR text, per-engine comparison, and extraction report
+   in the local run archive for review.
 
 Expected volume: 20–25 PDFs/month, 6–10 pages each, about 200 pages/month.
 Scanned printed English. Estimated cost: Layout ~$2/month, Custom ~$6/month.
@@ -45,7 +56,8 @@ Scanned printed English. Estimated cost: Layout ~$2/month, Custom ~$6/month.
 | From | Near "effective", "issue" | Date `DD-MM-YYYY` closest to the label | Block Confirm if missing |
 | To | Near "expiry", "valid till" | Date `DD-MM-YYYY`; this is the T-7 anchor | Block Confirm if missing |
 | Claim Period | Near "claim" | Date or text as printed | May stay blank (ST008) |
-| LOA/PO Number | Near "LOA", "PO", "WO" | Label regex, 4–40 chars | May stay blank |
+| LOA Number | Near "LOA" or "Letter of Acceptance" | Label regex | May stay blank |
+| PO Number | Near "Purchase Order", "P.O.", or "Work Order" | Label regex or manual entry | May stay blank |
 | Contractor | "Applicant" or "on behalf" block | Take the block as-is | Editable text |
 | Beneficiary | "In favour of" block | Info only; not a tracker column | Info only |
 | Company, Project, Toll Plaza, Types, Nature, Status, Extended | — | Dropdowns, never OCR-trusted | Reviewer must pick |

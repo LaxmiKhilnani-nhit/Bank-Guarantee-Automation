@@ -2,7 +2,6 @@
 id: PLAN-05
 title: Process Flows
 status: active
-owner: Laxmi
 last_updated: 2026-10-08
 version: 3
 inputs: ["PLAN-02", "PLAN-03", "PLAN-04"]
@@ -17,42 +16,38 @@ related: ["PLAN-01", "PLAN-06"]
 This document shows step by step what happens in each scenario. If you are
 unsure how roles, OCR, Excel, and mail fit together, start here.
 
-## 2. Flow A — Upload to Confirm (maker-checker)
+## 2. Flow A — Upload, review, and save
 
-The uploader proposes. The admin approves. Nothing reaches Excel without an
-admin Confirm.
+The uploader reviews their own extracted values and saves the run directly.
 
 ```mermaid
 sequenceDiagram
   participant U as Uploader
-  participant A as Admin
   participant API as FastAPI
-  participant DI as Azure DI
+  participant OCR as Indra/Tesseract (local)
   participant X as BG Tracker.xlsx
   U->>API: Upload PDF and request extraction
-  API->>DI: Analyse with prebuilt-layout
-  DI-->>API: Text, tables, confidence
-  API->>API: Apply field rules, save job as pending_review (owner = U)
-  U->>API: Fix fields, pick dropdowns, Submit for approval
-  API->>API: Job becomes pending_admin
-  A->>API: Open review queue, check fields, Confirm
+  API->>OCR: Read all pages locally
+  OCR-->>API: Text, lines, boxes, confidence
+  API->>API: Extract fields, save draft (owner = U)
+  U->>API: Review and edit fields, then Save
   API->>API: Validate mandatory fields, dedupe BG No
   alt BG No already exists
-    API-->>A: Error 409 with link to existing row
+    API-->>U: Error 409 with link to existing row
   else valid
-    API->>X: Append row (created_by = A)
+    API->>X: Append row (created_by = U)
     API->>API: Write audit entry
   end
 ```
 
-Accept: uploader cannot Confirm (403); duplicate BG No never creates a second row.
+Accept: uploader saves own run directly; duplicate BG No never creates a second row.
 
 ## 3. Flow B — Extend or Close (same LOA)
 
 ```mermaid
 flowchart TD
   R["T-7 mail asks: extend or close?"] --> D{"User Team decision"}
-  D -->|"Extend"| N["New BG arrives under same LOA - upload and Confirm as a new row"]
+  D -->|"Extend"| N["New BG arrives under same LOA - upload and save as a new row"]
   N --> O["Old row set to Extended = Yes, Status = Closed"]
   D -->|"Close"| C["Admin sets Status = Closed when the BG expires"]
 ```
@@ -78,7 +73,7 @@ Accept: no BG gets two T-7 mails; every send is logged with recipients and subje
 flowchart TD
   X["DI error, unreadable scan, or missing mandatory fields"] --> F["Job marked failed, error logged"]
   F --> M["Job appears in manual review queue"]
-  M -->|"fixable"| R["Uploader or admin types the fields by hand, then submits"]
+  M -->|"fixable"| R["Uploader or admin enters the fields and saves"]
   M -->|"not fixable"| B["Leave blank - never write a bad row to Excel"]
 ```
 

@@ -1,0 +1,1944 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BG Automation · local register</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --panel:#ffffff; --panel-2:#fbfcfd; --text:#111827; --muted:#6b7280;
+    --line:#e4e7ec; --line-strong:#d0d5dd; --brand:#0f766e; --brand-ink:#0b5f59;
+    --danger:#b42318; --danger-bg:#fef3f2; --warn:#b54708; --warn-bg:#fffaeb;
+    --ok:#067647; --ok-bg:#ecfdf3; --chip:#f2f4f7; --radius:14px;
+    --shadow:0 1px 2px rgba(16,24,40,.05), 0 10px 28px -16px rgba(16,24,40,.18);
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0a0e14; --panel:#111823; --panel-2:#0e141d; --text:#e6eaf0; --muted:#98a2b3;
+      --line:#1e2836; --line-strong:#2a3646; --brand:#2dd4bf; --brand-ink:#5eead4;
+      --danger:#fda29b; --danger-bg:#2a1215; --warn:#fec84b; --warn-bg:#2a1f0a;
+      --ok:#75e0a7; --ok-bg:#0d2417; --chip:#182130;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 30px -18px rgba(0,0,0,.7);
+    }
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--text); min-height:100vh;
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--brand); text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:var(--mono); font-size:.86em; background:var(--chip); padding:.1em .35em; border-radius:5px}
+
+  .topbar{
+    position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:12px 22px; background:color-mix(in srgb, var(--panel) 88%, transparent);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex; align-items:center; gap:11px; min-width:0}
+  .mark{
+    width:36px; height:36px; flex:none; border-radius:10px; display:grid; place-items:center;
+    background:var(--brand); color:#fff; font-weight:700; letter-spacing:.5px; font-size:13px;
+  }
+  h1{font-size:15px; margin:0; letter-spacing:-.01em}
+  h2{font-size:14px; margin:0; letter-spacing:-.01em}
+  .sub{margin:1px 0 0; font-size:12px; color:var(--muted)}
+  .nav{display:flex; gap:2px; flex-wrap:wrap}
+  .nav button{
+    border:0; background:transparent; color:var(--muted); font:600 13px/1 inherit;
+    padding:8px 10px; border-radius:8px; cursor:pointer;
+  }
+  .nav button:hover{background:var(--chip); color:var(--text)}
+  .nav button.active{background:var(--chip); color:var(--text)}
+  .health{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); margin-left:auto}
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--muted)}
+  .dot.ok{background:var(--ok)} .dot.bad{background:var(--danger)}
+  .userbox{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted)}
+  .userbox b{color:var(--text); font-weight:600}
+  .role{font-size:10.5px; font-weight:650; text-transform:uppercase; letter-spacing:.04em;
+    background:var(--chip); color:var(--muted); border:1px solid var(--line); padding:2px 7px; border-radius:999px}
+
+  main{max-width:1240px; margin:0 auto; padding:22px 22px 60px}
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:18px; margin-bottom:18px;
+  }
+
+  .drop{
+    border:1.5px dashed var(--line-strong); border-radius:12px; padding:32px 20px; text-align:center;
+    transition:border-color .15s, background .15s; background:var(--panel-2);
+  }
+  .drop.hot{border-color:var(--brand); background:color-mix(in srgb, var(--brand) 7%, var(--panel-2))}
+  .drop p{margin:6px 0 0}
+  .drop .big{font-size:15.5px; font-weight:600}
+  .drop svg{color:var(--muted)}
+  .link{background:none; border:0; color:var(--brand); font:inherit; cursor:pointer; padding:0; text-decoration:underline}
+  .muted{color:var(--muted); font-size:12.5px}
+
+  .queue{list-style:none; margin:14px 0 0; padding:0; display:grid; gap:8px}
+  .queue li{display:flex; align-items:center; gap:10px; font-size:13.5px; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:var(--panel-2)}
+  .queue .name{font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .queue .state{margin-left:auto; color:var(--muted); font-size:12.5px; white-space:nowrap}
+  .spinner{width:14px; height:14px; border:2px solid var(--line-strong); border-top-color:var(--brand); border-radius:50%; animation:spin .8s linear infinite; flex:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:10px; padding:9px 14px;
+    font:600 13.5px/1 inherit; border:1px solid transparent; cursor:pointer; transition:.15s;
+  }
+  .btn.primary{background:var(--brand); color:#04211e}
+  .btn.primary:hover{background:var(--brand-ink); color:#fff}
+  .btn.primary:disabled{opacity:.5; cursor:not-allowed}
+  .btn.ghost{background:transparent; color:var(--text); border-color:var(--line-strong)}
+  .btn.ghost:hover{background:var(--chip)}
+  .btn.danger{background:transparent; border-color:var(--danger); color:var(--danger)}
+  .btn.small{padding:5px 9px; font-size:12px; border-radius:8px}
+
+  .file{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:16px; overflow:hidden;
+  }
+  .file.flash{animation:flash 1.8s ease-out}
+  @keyframes flash{
+    0%{border-color:var(--brand); box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 30%, transparent)}
+    100%{border-color:var(--line); box-shadow:var(--shadow)}
+  }
+  .file-head{display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--line); background:var(--panel-2)}
+  .file-head .title{font-weight:650; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .file-head .meta{color:var(--muted); font-size:12.5px}
+  .file-head .tools{margin-left:auto; display:flex; gap:8px; align-items:center}
+  .file-body{padding:16px 18px 6px}
+  .compare{border-bottom:1px solid var(--line); background:color-mix(in srgb, var(--panel-2) 60%, var(--panel))}
+  .compare summary{cursor:pointer; padding:9px 18px; font-size:12.5px; color:var(--muted); list-style:none}
+  .compare summary::-webkit-details-marker{display:none}
+  .compare summary b{color:var(--text)}
+  .compare .body{padding:0 18px 14px; overflow:auto; max-height:320px}
+  .compare table{width:100%; border-collapse:collapse; font-size:12px; margin:6px 0 12px}
+  .compare th,.compare td{text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); vertical-align:top}
+  .compare th{color:var(--muted); font-weight:650; position:sticky; top:0; background:var(--panel)}
+  .compare td{max-width:240px; overflow-wrap:anywhere}
+  .compare h4{margin:10px 0 2px; font-size:11.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted)}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px 18px}
+  .field{display:flex; flex-direction:column; gap:5px; min-width:0}
+  .field label{font-size:12px; font-weight:600; color:var(--muted); letter-spacing:.01em; display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+  .field input, .field select, .field textarea{
+    width:100%; padding:8px 10px; border:1px solid var(--line-strong); border-radius:9px;
+    background:var(--panel); color:var(--text); font:inherit; font-size:13.5px; min-height:38px;
+  }
+  .field textarea{min-height:64px; resize:vertical}
+  .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid color-mix(in srgb, var(--brand) 45%, transparent); outline-offset:1px; border-color:var(--brand)}
+  .field input[type=number]{font-variant-numeric:tabular-nums}
+  .field .hintline{font-size:11.5px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap}
+  .field.invalid input, .field.invalid select{border-color:var(--danger); background:var(--danger-bg)}
+
+  .badge{font-size:10.5px; font-weight:650; padding:1.5px 6px; border-radius:999px; border:1px solid transparent; letter-spacing:.02em; white-space:nowrap}
+  .badge.flag{background:var(--danger-bg); color:var(--danger); border-color:color-mix(in srgb, var(--danger) 30%, transparent)}
+  .badge.note{background:var(--chip); color:var(--muted); border-color:var(--line)}
+  .badge.ok{background:var(--ok-bg); color:var(--ok); border-color:color-mix(in srgb, var(--ok) 30%, transparent)}
+  .badge.warn{background:var(--warn-bg); color:var(--warn); border-color:color-mix(in srgb, var(--warn) 30%, transparent)}
+
+  .footrow{
+    display:flex; flex-wrap:wrap; gap:6px 18px; padding:12px 18px 14px; margin-top:10px;
+    border-top:1px dashed var(--line); font-size:11.5px; color:var(--muted);
+  }
+  .footrow b{font-weight:600; color:var(--text)}
+
+  .confirm-row{display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:10px}
+  .confirm-row .grow{flex:1; min-width:220px}
+  .summary{font-size:12.5px; color:var(--muted)}
+  .summary b{color:var(--text)}
+
+  .notice{border-radius:12px; padding:12px 14px; font-size:13px; border:1px solid; margin-bottom:14px}
+  .notice.info{background:var(--chip); border-color:var(--line); color:var(--text)}
+  .notice.error{background:var(--danger-bg); border-color:color-mix(in srgb, var(--danger) 35%, transparent); color:var(--danger)}
+  .notice.ok{background:var(--ok-bg); border-color:color-mix(in srgb, var(--ok) 35%, transparent); color:var(--ok)}
+  .notice.warn{background:var(--warn-bg); border-color:color-mix(in srgb, var(--warn) 35%, transparent); color:var(--warn)}
+  .notice ul{margin:8px 0 0 18px; padding:0}
+  .notice li{margin:3px 0}
+
+  .result-actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px}
+  .kbd{font-family:var(--mono); font-size:11.5px; color:var(--muted)}
+
+  /* tables, toolbars and views */
+  .toolbar{display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-bottom:14px}
+  .toolbar .grow{flex:1; min-width:180px}
+  .toolbar input[type=text], .toolbar input:not([type]), .toolbar input[type=search], .toolbar select{
+    padding:8px 10px; border:1px solid var(--line-strong); border-radius:9px; background:var(--panel);
+    color:var(--text); font:inherit; font-size:13px; min-height:38px;
+  }
+  .check{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); white-space:nowrap}
+  .check input{accent-color:var(--brand)}
+  .tablewrap{overflow-x:auto}
+  table{width:100%; border-collapse:collapse; font-size:12.8px}
+  th{text-align:left; color:var(--muted); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em;
+    padding:8px; border-bottom:1px solid var(--line); white-space:nowrap}
+  td{padding:9px 8px; border-bottom:1px solid var(--line); vertical-align:top}
+  tbody tr:hover{background:var(--panel-2)}
+  .num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+  .mono{font-family:var(--mono); font-size:12px}
+  .pill{display:inline-block; font-size:10.5px; font-weight:650; padding:2px 8px; border-radius:999px; border:1px solid var(--line); background:var(--chip); color:var(--muted); white-space:nowrap}
+  .pill.ok{background:var(--ok-bg); color:var(--ok); border-color:color-mix(in srgb, var(--ok) 30%, transparent)}
+  .pill.warn{background:var(--warn-bg); color:var(--warn); border-color:color-mix(in srgb, var(--warn) 30%, transparent)}
+  .pill.bad{background:var(--danger-bg); color:var(--danger); border-color:color-mix(in srgb, var(--danger) 30%, transparent)}
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:18px}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:13px 15px; box-shadow:var(--shadow)}
+  .stat b{font-size:20px; display:block; line-height:1.2}
+  .stat span{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+  .empty{padding:32px 16px; text-align:center; color:var(--muted); font-size:13px}
+  .pager{display:flex; gap:10px; align-items:center; margin-top:12px; font-size:12.5px}
+  .rowactions{display:flex; gap:6px; flex-wrap:wrap}
+
+  .modal{position:fixed; inset:0; background:rgba(8,12,18,.55); display:grid; place-items:center; z-index:50; padding:20px}
+  .modal-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow);
+    width:min(760px,100%); max-height:90vh; overflow:auto; padding:20px}
+  .modal-head{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px}
+  .modal-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:18px}
+  .grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px}
+  .formfield{display:flex; flex-direction:column; gap:5px; min-width:0}
+  .formfield label{font-size:11.5px; color:var(--muted); font-weight:600}
+  .formfield input,.formfield select,.formfield textarea{
+    width:100%; padding:8px 10px; border:1px solid var(--line-strong); border-radius:9px;
+    background:var(--panel); color:var(--text); font:inherit; font-size:13.5px; min-height:38px;
+  }
+  .formfield textarea{min-height:64px; resize:vertical}
+  .hint{font-size:11px; color:var(--muted)}
+  .flash{position:fixed; top:66px; left:50%; transform:translateX(-50%); z-index:60;
+    width:min(760px,calc(100% - 32px))}
+  .flash .notice{margin:0; box-shadow:var(--shadow)}
+
+  @media (max-width:720px){
+    main{padding:16px 14px 60px}
+    .topbar{padding:10px 14px}
+    .health{display:none}
+    .nav{order:3; width:100%}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">BG</div>
+    <div>
+      <h1>Bank Guarantee automation</h1>
+      <p class="sub">Local OCR · register · T-7 reminders</p>
+    </div>
+  </div>
+  <nav class="nav" id="nav" aria-label="Sections">
+    <button type="button" data-view="review">Review</button>
+    <button type="button" data-view="runs">Runs</button>
+    <button type="button" data-view="workbook">Workbook</button>
+    <button type="button" data-view="register">Register</button>
+    <button type="button" data-view="reminders">Reminders</button>
+    <button type="button" data-view="users">Users</button>
+    <button type="button" data-view="audit">Audit</button>
+  </nav>
+  <div class="health" id="health"><span class="dot"></span><span id="healthText">checking…</span></div>
+  <div class="userbox">
+    <b id="userLabel">…</b><span class="role" id="userRole"></span>
+    <button class="btn ghost small" id="changePwBtn" type="button">Password</button>
+    <button class="btn ghost small" id="logoutBtn" type="button">Sign out</button>
+  </div>
+</header>
+
+<div class="flash" id="flash" aria-live="polite"></div>
+
+<main>
+  <!-- REVIEW -->
+  <section class="view" id="view-review">
+    <div class="card">
+      <div class="drop" id="drop" role="button" tabindex="0" aria-label="Upload bank guarantee PDFs">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>
+        </svg>
+        <p class="big">Drop scanned BG PDFs here</p>
+        <p class="muted">or <button class="link" id="browse" type="button">browse files</button> · PDF only, up to 25 MB each</p>
+        <p class="muted" style="font-size:12px">Indra and Tesseract run locally. Azure OCR sends the selected PDF to your configured Azure endpoint.</p>
+        <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap">
+        <label for="ocrEngine" style="font-size:13px; font-weight:600">OCR engine</label>
+        <select id="ocrEngine" style="max-width:320px">
+          <option value="indra">Indra — local, every page</option>
+          <option value="tesseract">Tesseract — fast, every page</option>
+          <option value="azure">Azure Document Intelligence — remote</option>
+          <option value="both">Indra + Tesseract — compare fields</option>
+          <option value="all">All engines — Azure receives the PDF</option>
+        </select>
+        <span class="muted" id="ocrEngineHint" style="font-size:12px"></span>
+      </div>
+      <ul class="queue" id="queue" aria-live="polite"></ul>
+      <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap">
+        <button class="btn ghost" id="newBatch" type="button" hidden>Start a new batch</button>
+        <button class="btn ghost" id="resetWorkbook" data-admin-only type="button">Reset review workbook</button>
+      </div>
+    </div>
+
+    <div id="results"></div>
+
+    <section class="card" id="confirmCard" hidden>
+      <div class="summary" id="flagSummary"></div>
+      <div class="confirm-row">
+        <div class="summary grow" id="confirmHint">Save writes these rows to the register and workbook.</div>
+        <button class="btn primary" id="confirmBtn" type="button">Save rows</button>
+      </div>
+    </section>
+
+    <section class="card" id="resultCard" hidden></section>
+  </section>
+
+  <!-- WORKBOOK -->
+  <section class="view" id="view-workbook" hidden>
+    <div class="card">
+      <div class="toolbar">
+        <h2>Review workbook</h2>
+        <select id="workbookSheet" aria-label="Workbook sheet"></select>
+        <span class="muted grow" id="workbookHint" aria-live="polite"></span>
+        <button class="btn ghost small" id="refreshWorkbook" type="button">Refresh</button>
+        <a class="btn ghost small" id="downloadWorkbook" href="/api/workbook/download" download hidden>Download Excel</a>
+      </div>
+      <div id="workbookBody"><div class="empty">Loading workbook…</div></div>
+      <div class="pager">
+        <button class="btn ghost small" id="workbookPrev" type="button">Previous</button>
+        <span class="muted" id="workbookPage"></span>
+        <button class="btn ghost small" id="workbookNext" type="button">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RUNS -->
+  <section class="view" id="view-runs" hidden>
+    <div class="card">
+      <div class="toolbar">
+        <h2>Review runs</h2>
+        <span class="muted grow" id="runsHint"></span>
+        <button class="btn ghost small" id="refreshRuns" type="button">Refresh</button>
+      </div>
+      <div id="runsBody"><div class="empty">Loading…</div></div>
+    </div>
+  </section>
+
+  <!-- REGISTER -->
+  <section class="view" id="view-register" hidden>
+    <div class="stats" id="regStats"></div>
+    <div class="card">
+      <div class="toolbar">
+        <input id="regQ" class="grow" type="search" placeholder="Search BG No, contractor, project, LOA…" aria-label="Search register">
+        <select id="regStatus" aria-label="Status filter"><option value="">All statuses</option></select>
+        <select id="regProject" aria-label="Project filter"><option value="">All projects</option></select>
+        <label class="check"><input type="checkbox" id="regOverdue"> Overdue</label>
+        <label class="check"><input type="checkbox" id="regWindow"> Due ≤ 30 days</label>
+        <button class="btn ghost small" id="regSearch" type="button">Search</button>
+        <a class="btn ghost small" id="regExport" href="/api/register/export" download>Export</a>
+      </div>
+      <div id="regBody"><div class="empty">Loading…</div></div>
+      <div class="pager">
+        <button class="btn ghost small" id="regPrev" type="button">Previous</button>
+        <span class="muted" id="regPage"></span>
+        <button class="btn ghost small" id="regNext" type="button">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- REMINDERS -->
+  <section class="view" id="view-reminders" hidden>
+    <div id="reminderBanner"></div>
+    <div class="card">
+      <div class="toolbar">
+        <h2>T-7 reminders</h2>
+        <span class="muted grow" id="reminderHint"></span>
+        <button class="btn ghost small" id="runReminders" data-admin-only type="button">Run T-7 now</button>
+        <button class="btn ghost small" id="refreshReminders" type="button">Refresh</button>
+      </div>
+      <div id="reminderBody"><div class="empty">Loading…</div></div>
+    </div>
+  </section>
+
+  <!-- USERS -->
+  <section class="view" id="view-users" hidden>
+    <div class="card">
+      <div class="toolbar">
+        <h2>Users</h2>
+        <span class="muted grow">Admin only · passwords use scrypt, sessions are server-side.</span>
+        <button class="btn ghost small" id="refreshUsers" type="button">Refresh</button>
+      </div>
+      <form id="userForm" class="grid2" style="align-items:end; border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:16px; background:var(--panel-2)">
+        <div class="formfield"><label for="newUsername">Username</label><input id="newUsername" name="username" required autocomplete="off"></div>
+        <div class="formfield"><label for="newPassword">Temporary password</label><input id="newPassword" name="password" type="password" required autocomplete="new-password">
+          <span class="hint">8+ chars, upper, lower, digit, symbol.</span>
+        </div>
+        <div class="formfield"><label>&nbsp;</label><button class="btn primary" type="submit">Create viewer</button></div>
+      </form>
+      <div id="usersBody"><div class="empty">Loading…</div></div>
+    </div>
+  </section>
+
+  <!-- AUDIT -->
+  <section class="view" id="view-audit" hidden>
+    <div class="card">
+      <div class="toolbar">
+        <h2>Audit log</h2>
+        <select id="auditAction" aria-label="Action filter">
+          <option value="">All actions</option>
+          <option>login</option><option>login_failed</option><option>locked</option><option>logout</option>
+          <option>upload</option><option>extract</option><option>confirm</option>
+          <option>export</option><option>review_save</option><option>extend</option><option>close</option>
+          <option>reminder_sent</option><option>reminder_resend</option><option>remind</option>
+          <option>user_create</option><option>user_update</option><option>role_change</option>
+          <option>password_change</option><option>workbook_reset</option>
+        </select>
+        <span class="muted grow"></span>
+        <button class="btn ghost small" id="refreshAudit" type="button">Refresh</button>
+      </div>
+      <div id="auditBody"><div class="empty">Loading…</div></div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h2 id="modalTitle">Dialog</h2>
+      <button class="btn ghost small" id="modalClose" type="button">Close</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<datalist id="contractors"></datalist>
+<datalist id="banks"></datalist>
+
+<script>
+"use strict";
+
+const FIELDS = [
+  { key: "Company Name",        type: "select",   from: "companies" },
+  { key: "Project Name",        type: "select",   from: "projects" },
+  { key: "Toll Plaza Name",     type: "select",   from: "tollPlazas", depends: "Project Name" },
+  { key: "Name of Contractor",  type: "datalist", from: "contractors" },
+  { key: "Types of BG",         type: "select",   from: "bgTypes" },
+  { key: "Nature of Service",   type: "select",   from: "natures" },
+  { key: "BG No",               type: "text",     mono: true },
+  { key: "BG Amount",           type: "number" },
+  { key: "Bank Name",           type: "datalist", from: "banks" },
+  { key: "From",                type: "date" },
+  { key: "To",                  type: "date" },
+  { key: "Claim Period",        type: "date" },
+  { key: "Status",              type: "select",   from: "statuses" },
+  { key: "Extended",            type: "select",   from: "extended" },
+  { key: "Remarks",             type: "textarea" },
+  { key: "LOA Number",          type: "textarea" },
+  { key: "PO Number",           type: "textarea" },
+];
+// Keep in step with bgauto.web.runs.REQUIRED_COLUMNS. Missing values are never
+// bypassable, even when saving rows with open flags.
+const REQUIRED = ["BG No", "Company Name", "Project Name", "Name of Contractor",
+  "Types of BG", "Nature of Service", "BG Amount", "From", "To", "Bank Name"];
+
+const VIEW_ROLES = {
+  review: ["admin", "uploader"],
+  runs: ["admin", "uploader"],
+  workbook: ["admin", "uploader", "viewer"],
+  register: ["admin", "viewer"],
+  reminders: ["admin", "viewer"],
+  users: ["admin"],
+  audit: ["admin"],
+};
+
+const state = {
+  user: null,
+  masters: {},
+  view: "",
+  runId: null,
+  entries: [],
+  confirmed: false,
+  runStatus: "",
+  busy: false,
+  lookup: false,
+  ocrEngine: "indra",
+  ocrEngines: {},
+  regOffset: 0,
+  regLimit: 100,
+  workbookOffset: 0,
+  workbookLimit: 100,
+};
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+));
+const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 });
+const amountInr = (value) => (String(value ?? "").trim() !== "" && !Number.isNaN(Number(value)) ? inr.format(Number(value)) : "");
+const fmtDate = (value) => {
+  const text = String(value ?? "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return "";
+  const [y, m, d] = text.split("-");
+  return `${d}-${m}-${y}`;
+};
+const fmtDateTime = (value) => {
+  if (!value) return "";
+  return String(value).replace("T", " ").slice(0, 16);
+};
+const role = () => (state.user ? state.user.role : "");
+const isAdmin = () => role() === "admin";
+const canUpload = () => role() === "admin" || role() === "uploader";
+const canExport = () => role() === "admin" || role() === "viewer";
+
+/* ---------- api ---------- */
+
+async function api(path, options = {}) {
+  const opts = { credentials: "same-origin", ...options };
+  if (opts.body && typeof opts.body !== "string" && !(opts.body instanceof FormData)) {
+    opts.headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
+    opts.body = JSON.stringify(opts.body);
+  }
+  const response = await fetch(path, opts);
+  if (response.status === 401) {
+    location.replace("/login");
+    throw new Error("Signed out");
+  }
+  const type = response.headers.get("content-type") || "";
+  const payload = type.includes("json") ? await response.json().catch(() => ({})) : null;
+  if (!response.ok) {
+    const error = new Error((payload && payload.detail) || `Request failed (${response.status})`);
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
+  }
+  return payload;
+}
+
+/* ---------- chrome ---------- */
+
+function showFlash(kind, html) {
+  const box = $("#flash");
+  box.innerHTML = `<div class="notice ${kind}">${html}</div>`;
+  window.setTimeout(() => { box.innerHTML = ""; }, 7000);
+}
+
+function allowedViews() {
+  return Object.entries(VIEW_ROLES)
+    .filter(([, roles]) => roles.includes(role()))
+    .map(([name]) => name);
+}
+
+function showView(name) {
+  if (!allowedViews().includes(name)) name = canUpload() ? "review" : "register";
+  state.view = name;
+  $$(".view").forEach((section) => { section.hidden = section.id !== `view-${name}`; });
+  $$("#nav button").forEach((button) => button.classList.toggle("active", button.dataset.view === name));
+  if (location.hash !== `#${name}`) history.replaceState(null, "", `#${name}`);
+  if (name === "runs") loadRuns();
+  if (name === "workbook") loadWorkbook();
+  if (name === "register") loadRegister(true);
+  if (name === "reminders") loadReminders();
+  if (name === "users") loadUsers();
+  if (name === "audit") loadAudit();
+}
+
+function applyRole() {
+  $$("#nav button").forEach((button) => {
+    button.hidden = !(VIEW_ROLES[button.dataset.view] || []).includes(role());
+  });
+  $$("[data-admin-only]").forEach((element) => { element.hidden = !isAdmin(); });
+  $("#regExport").hidden = !canExport();
+  $("#userLabel").textContent = state.user.username;
+  $("#userRole").textContent = state.user.role;
+}
+
+function updateEngineHint() {
+  const select = $("#ocrEngine");
+  const hint = $("#ocrEngineHint");
+  if (!select || !hint) return;
+  const indraReady = Boolean(state.ocrEngines.indra);
+  const azureReady = Boolean(state.ocrEngines.azure);
+  for (const option of select.options) {
+    option.disabled = (option.value === "indra" && !indraReady)
+      || (option.value === "azure" && !azureReady)
+      || (option.value === "all" && !azureReady);
+  }
+  if (state.ocrEngine === "both") {
+    hint.textContent = indraReady
+      ? "Both engines process every page locally; extracted fields and page text are compared."
+      : "Indra is not installed; Tesseract will process the PDF locally.";
+  } else if (state.ocrEngine === "all") {
+    hint.textContent = "Indra and Tesseract run locally; Azure receives the PDF for comparison.";
+  } else if (state.ocrEngine === "azure") {
+    hint.textContent = azureReady
+      ? "The PDF is sent to your configured Azure Document Intelligence endpoint for OCR."
+      : "Azure is unavailable; configure AZURE_DI_ENDPOINT and an API key in the local .env file.";
+  } else if (state.ocrEngine === "indra") {
+    hint.textContent = indraReady
+      ? "Indra runs locally. Its model downloads on first use; documents stay on this machine."
+      : "Indra is not installed; Tesseract will be used instead.";
+  } else if (state.ocrEngine === "tesseract") {
+    hint.textContent = indraReady
+      ? "Tesseract runs locally. Choose Both to compare it with Indra."
+      : "Tesseract processes every page locally.";
+  }
+}
+
+async function loadHealth() {
+  try {
+    const health = await (await fetch("/api/health")).json();
+    state.lookup = Boolean(health.lookup);
+    state.ocrEngines = health.ocr_engines || {};
+    const savedEngine = (() => {
+      try { return localStorage.getItem("bg.ocrEngine.v2"); } catch (error) { return null; }
+    })();
+    if (!savedEngine && state.ocrEngines.indra) {
+      state.ocrEngine = "indra";
+      $("#ocrEngine").value = "indra";
+    }
+    updateEngineHint();
+    const dot = $("#health .dot");
+    dot.classList.remove("ok", "bad");
+    if (health.status === "ok") {
+      dot.classList.add("ok");
+      const parts = ["Tesseract"];
+      if (state.ocrEngines.indra) parts.push("Indra");
+      if (state.ocrEngines.azure) parts.push("Azure");
+      const engines = `${parts.join(" + ")} ready`;
+      const suffix = state.lookup ? "name check on" : (state.ocrEngines.azure ? "Azure remote OCR available" : "local only");
+      $("#healthText").textContent = `${engines} · ${suffix}`;
+      $("#healthText").title = health.tesseract || "";
+    } else {
+      dot.classList.add("bad");
+      $("#healthText").textContent = "Tesseract not found";
+      $("#healthText").title = "Set TESSERACT_CMD or install Tesseract 5";
+    }
+  } catch (error) {
+    $("#healthText").textContent = "API unreachable";
+  }
+}
+
+async function loadMasters() {
+  try {
+    state.masters = await api("/api/masters");
+  } catch (error) {
+    state.masters = {};
+  }
+  const masters = state.masters || {};
+  $("#contractors").innerHTML = (masters.contractors || [])
+    .map((name) => `<option value="${esc(name)}"></option>`).join("");
+  $("#banks").innerHTML = (masters.banks || [])
+    .map((name) => `<option value="${esc(name)}"></option>`).join("");
+  $("#regStatus").innerHTML = `<option value="">All statuses</option>` +
+    (masters.statuses || []).map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  $("#regProject").innerHTML = `<option value="">All projects</option>` +
+    (masters.project_options || []).map((p) =>
+      `<option value="${esc(p.code)}">${esc(p.code)}${p.name && p.name !== p.code ? " — " + esc(p.name) : ""}</option>`
+    ).join("");
+}
+
+/* ---------- modal ---------- */
+
+function closeModal() {
+  $("#modal").hidden = true;
+  $("#modalBody").innerHTML = "";
+}
+
+function openModal(title, inner, onSubmit, submitLabel = "Save") {
+  $("#modalTitle").textContent = title;
+  $("#modalBody").innerHTML = `
+    <form id="modalForm">
+      ${inner}
+      <div class="notice error" id="modalError" hidden></div>
+      <div class="modal-actions">
+        <button class="btn ghost" type="button" id="modalCancel">Cancel</button>
+        <button class="btn primary" type="submit">${esc(submitLabel)}</button>
+      </div>
+    </form>`;
+  $("#modal").hidden = false;
+  $("#modalCancel").addEventListener("click", closeModal);
+  $("#modalForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const errorBox = $("#modalError");
+    errorBox.hidden = true;
+    const button = $("#modalForm button[type=submit]");
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = "Saving…";
+    try {
+      await onSubmit(new FormData(event.target), event.target);
+      closeModal();
+    } catch (error) {
+      errorBox.textContent = error.message;
+      errorBox.hidden = false;
+      button.disabled = false;
+      button.textContent = original;
+    }
+  });
+}
+
+$("#modalClose").addEventListener("click", closeModal);
+$("#modal").addEventListener("click", (event) => { if (event.target.id === "modal") closeModal(); });
+document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("#modal").hidden) closeModal(); });
+
+/* ---------- review: upload ---------- */
+
+async function ensureRun() {
+  if (state.runId) return state.runId;
+  const run = await api("/api/runs", { method: "POST" });
+  state.runId = run.run_id;
+  state.runStatus = "draft";
+  try { sessionStorage.setItem("bg.run", run.run_id); } catch (error) { /* private mode */ }
+  return state.runId;
+}
+
+function resetReviewPanels() {
+  $("#queue").innerHTML = "";
+  $("#results").innerHTML = "";
+  $("#resultCard").hidden = true;
+  $("#confirmCard").hidden = true;
+  $("#newBatch").hidden = true;
+  $("#drop").hidden = false;
+}
+
+function loadEntries(run, { restored = false } = {}) {
+  state.runId = run.run_id;
+  state.entries = run.files || [];
+  state.runStatus = run.status || "draft";
+  state.confirmed = run.status === "confirmed";
+  resetReviewPanels();
+  $("#drop").hidden = state.confirmed;
+  for (const entry of state.entries) {
+    renderEntry(entry);
+    if (restored) {
+      const item = document.createElement("li");
+      item.innerHTML = `<span class="badge note">restored</span><span class="name">${esc(entry.source_pdf)}</span>
+        <span class="state">${entry.pages} pages · ${(entry.ocr_confidence * 100).toFixed(0)}%</span>`;
+      $("#queue").appendChild(item);
+    }
+  }
+  refreshSummary();
+}
+
+async function restoreRun() {
+  let saved = null;
+  try { saved = sessionStorage.getItem("bg.run"); } catch (error) { /* private mode */ }
+  if (!saved) return;
+  try {
+    const run = await api(`/api/runs/${saved}`);
+    if (!run.files.length) return;
+    loadEntries(run, { restored: true });
+  } catch (error) {
+    try { sessionStorage.removeItem("bg.run"); } catch (ignored) { /* ignore */ }
+  }
+}
+
+function engineLabel(engine) {
+  return {
+    tesseract: "Tesseract",
+    indra: "Indra",
+    azure: "Azure DI",
+    both: "Indra + Tesseract",
+    all: "All engines",
+  }[engine] || engine || "OCR";
+}
+
+async function loadWorkbook(reset = false) {
+  if (reset) state.workbookOffset = 0;
+  const sheet = $("#workbookSheet").value;
+  const query = new URLSearchParams({ offset: state.workbookOffset, limit: state.workbookLimit });
+  if (sheet) query.set("sheet", sheet);
+  $("#workbookBody").innerHTML = '<div class="empty">Loading workbook…</div>';
+  try {
+    const data = await api(`/api/workbook/view?${query}`);
+    const selector = $("#workbookSheet");
+    const prior = data.sheet || "";
+    selector.innerHTML = (data.sheets || []).map((name) => `<option value="${esc(name)}">${esc(name)}</option>`).join("");
+    selector.value = prior;
+    $("#downloadWorkbook").hidden = !data.sheets?.length;
+    if (!data.sheets?.length) {
+      $("#workbookBody").innerHTML = '<div class="empty">The review workbook has not been created yet. Save a reviewed upload first.</div>';
+      $("#workbookHint").textContent = "";
+      $("#workbookPage").textContent = "";
+      return;
+    }
+    const headers = data.headers || [];
+    const rows = data.rows || [];
+    $("#workbookBody").innerHTML = `<div class="tablewrap"><table><thead><tr>${headers.map((h) => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${headers.map((_, i) => `<td>${esc(row[i] == null ? "" : row[i])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    $("#workbookHint").textContent = `${data.total} rows · read only`;
+    const first = data.total ? data.offset + 1 : 0;
+    const last = Math.min(data.offset + data.limit, data.total);
+    $("#workbookPage").textContent = `${first}–${last} of ${data.total}`;
+    $("#workbookPrev").disabled = data.offset <= 0;
+    $("#workbookNext").disabled = data.offset + data.limit >= data.total;
+  } catch (error) {
+    $("#workbookBody").innerHTML = `<div class="notice error">${esc(error.message)}</div>`;
+  }
+}
+
+function confText(value, source) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return "";
+  const percent = (number * 100).toFixed(0);
+  return source === "parse" ? `cov ${percent}%` : `${percent}%`;
+}
+
+function variantSummary(payload) {
+  const variants = Object.entries(payload.ocr_variants || {});
+  const ran = variants.filter(([, info]) => info && !info.error);
+  const errored = variants.filter(([, info]) => info && info.error);
+  const pieces = ran.map(([name, info]) => {
+    const conf = confText(info.confidence, info.confidence_source);
+    return `${engineLabel(name)} ${info.pages}p${conf ? " " + conf : ""}`;
+  });
+  const failed = errored.map(([name, info]) => `${engineLabel(name)} failed`);
+  if (pieces.length || failed.length) {
+    return " · " + [...pieces, ...failed].join(" vs ");
+  }
+  if (payload.ocr_engine) return ` · ${engineLabel(payload.ocr_engine)}`;
+  return "";
+}
+
+function queueItem(name) {
+  const item = document.createElement("li");
+  item.innerHTML = `<span class="badge note">queued</span><span class="name">${esc(name)}</span>
+    <span class="state">waiting for the current file</span>`;
+  $("#queue").appendChild(item);
+  return item;
+}
+
+const uploadQueue = [];
+let uploadDraining = false;
+let activeJob = null;
+let progressTimer = null;
+
+function formatElapsed(seconds) {
+  const total = Math.max(0, Math.round(Number(seconds) || 0));
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return mins ? `${mins}m ${secs}s` : `${secs}s`;
+}
+
+async function uploadFiles(files) {
+  if (state.confirmed) {
+    showFlash("warn", "This run is already confirmed. Start a new batch to upload more PDFs.");
+    return;
+  }
+  const all = Array.from(files || []);
+  const pdfs = all.filter((file) => /\.pdf$/i.test(file.name));
+  if (pdfs.length < all.length) {
+    showFlash("warn", `${all.length - pdfs.length} file(s) skipped — only PDFs are read.`);
+  }
+  if (!pdfs.length) return;
+  // Show every dropped file at once, then read them one by one. A drop while
+  // another file is still reading joins the same queue instead of vanishing.
+  for (const file of pdfs) uploadQueue.push({ file, item: queueItem(file.name) });
+  return drainUploads();
+}
+
+async function drainUploads() {
+  if (uploadDraining) return;
+  uploadDraining = true;
+  state.busy = true;
+  setConfirmEnabled();
+  $("#newBatch").hidden = true;
+  startProgressPolling();
+  try {
+    while (uploadQueue.length) {
+      activeJob = uploadQueue.shift();
+      await uploadOne(activeJob.file, activeJob.item);
+      activeJob = null;
+    }
+  } finally {
+    activeJob = null;
+    uploadDraining = false;
+    state.busy = false;
+    stopProgressPolling();
+    refreshSummary();
+  }
+}
+
+function startProgressPolling() {
+  if (progressTimer) return;
+  progressTimer = window.setInterval(pollProgress, 2500);
+  pollProgress();
+}
+
+function stopProgressPolling() {
+  if (!progressTimer) return;
+  window.clearInterval(progressTimer);
+  progressTimer = null;
+}
+
+async function pollProgress() {
+  if (!state.runId || !activeJob) return;
+  try {
+    const run = await api(`/api/runs/${state.runId}`);
+    const progress = run.progress || {};
+    const key = Object.keys(progress).find(
+      (name) => name === activeJob.file.name || name.startsWith(activeJob.file.name.replace(/\.pdf$/i, ""))
+    );
+    const info = key ? progress[key] : null;
+    if (!info || !activeJob.item) return;
+    const engine = engineLabel(info.engine);
+    const stateText = info.pages_total
+      ? `page ${info.page} of ${info.pages_total} · ${engine} · ${formatElapsed(info.elapsed)}`
+      : `${engine} · ${formatElapsed(info.elapsed)}`;
+    activeJob.item.innerHTML = `<span class="spinner"></span><span class="name">${esc(activeJob.file.name)}</span>
+      <span class="state">${esc(stateText)}</span>`;
+  } catch (error) {
+    // A progress poll must never disturb the upload.
+  }
+}
+
+async function uploadOne(file, item) {
+  const started = performance.now();
+  const engine = engineLabel(state.ocrEngine);
+  item.innerHTML = `<span class="spinner"></span><span class="name">${esc(file.name)}</span>
+    <span class="state">${state.lookup ? "reading with " + esc(engine) + "… then checking official names" : "reading with " + esc(engine) + "…"}</span>`;
+  try {
+    await ensureRun();
+    const body = new FormData();
+    body.append("file", file, file.name);
+    body.append("engine", state.ocrEngine);
+    const response = await fetch(`/api/runs/${state.runId}/upload`, {
+      method: "POST", credentials: "same-origin", body,
+    });
+    if (response.status === 401) { location.replace("/login"); return; }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.detail || "Upload failed");
+    const existing = state.entries.find((entry) => entry.source_pdf === payload.source_pdf);
+    if (payload.duplicate && existing) {
+      item.innerHTML = `<span class="badge note">already read</span><span class="name">${esc(payload.source_pdf)}</span>
+        <span class="state">uploaded twice · showing the existing card</span>`;
+      revealEntry(existing);
+      return;
+    }
+    state.entries.push(payload);
+    const seconds = ((performance.now() - started) / 1000).toFixed(0);
+    const checked = Object.keys(payload.lookup || {}).length ? " · names checked" : "";
+    item.innerHTML = `<span class="badge ok">read</span><span class="name">${esc(file.name)}</span>
+      <span class="state">${payload.pages} pages · ${(payload.ocr_confidence * 100).toFixed(0)}%${variantSummary(payload)}${checked} · ${seconds}s</span>`;
+    renderEntry(payload);
+    refreshSummary();
+  } catch (error) {
+    item.innerHTML = `<span class="badge flag">failed</span><span class="name">${esc(file.name)}</span>
+      <span class="state" title="${esc(error.message)}">${esc(error.message)}</span>`;
+  }
+}
+
+/* ---------- review: rendering ---------- */
+
+function entryOpenFlags(entry) {
+  const open = {};
+  for (const [column, meta] of Object.entries(entry.fields || {})) {
+    const flags = meta.flags || [];
+    if (!flags.length) continue;
+    const before = entry.extracted_values[column] ?? "";
+    const after = entry.values[column] ?? "";
+    if (String(before) === String(after) || String(after).trim() === "") open[column] = flags;
+  }
+  return open;
+}
+
+function optionsFor(spec, entry) {
+  const masters = state.masters || {};
+  if (spec.from === "tollPlazas") {
+    const project = entry.values["Project Name"];
+    const all = masters.toll_plazas || [];
+    const names = all.filter((plaza) => !project || plaza.project === project).map((plaza) => plaza.name);
+    const current = entry.values["Toll Plaza Name"];
+    if (current && !names.includes(current)) names.unshift(current);
+    return [...new Set(names)].sort((a, b) => a.localeCompare(b));
+  }
+  const map = {
+    companies: masters.companies, projects: masters.projects, natures: masters.natures,
+    banks: masters.banks, statuses: masters.statuses, bgTypes: masters.bg_types,
+    extended: masters.extended, contractors: masters.contractors,
+  };
+  return map[spec.from] || [];
+}
+
+function lookupFor(entry, key) {
+  const field = key === "Bank Name" ? "bank" : key === "Name of Contractor" ? "contractor" : "";
+  return field ? ((entry.lookup || {})[field] || null) : null;
+}
+
+function sourceHost(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ""); } catch (error) { return ""; }
+}
+
+function labelFor(spec, value) {
+  const masters = state.masters || {};
+  if (spec.from === "projects") {
+    const option = (masters.project_options || []).find((project) => project.code === value);
+    return option && option.name && option.name !== value ? `${value} — ${option.name}` : value;
+  }
+  if (spec.from === "tollPlazas") {
+    const option = (masters.toll_plazas || []).find((plaza) => plaza.name === value);
+    return option && option.chainage ? `${value} [${option.chainage}]` : value;
+  }
+  return value;
+}
+
+function fieldHtml(spec, entry) {
+  const value = entry.values[spec.key] ?? "";
+  const meta = (entry.fields || {})[spec.key] || {};
+  const flags = entryOpenFlags(entry)[spec.key] || [];
+  const notes = meta.notes || [];
+  const invalid = REQUIRED.includes(spec.key) && String(value).trim() === "";
+  const id = `${entry.source_pdf}::${spec.key}`.replace(/[^A-Za-z0-9:_-]/g, "_");
+
+  const badges = [
+    ...flags.map((flag) => `<span class="badge flag" title="Blocking: fix the value or confirm anyway">${esc(flag)}</span>`),
+    ...notes.map((note) => `<span class="badge note">${esc(note)}</span>`),
+  ].join(" ");
+
+  let control = "";
+  const common = `id="${id}" data-key="${esc(spec.key)}" data-file="${esc(entry.source_pdf)}"`;
+  const info = lookupFor(entry, spec.key);
+  const matches = info && info.status === "ok" ? (info.matches || []) : [];
+  if (spec.type === "select" || (spec.type === "datalist" && matches.length)) {
+    const options = optionsFor(spec, entry);
+    const seen = new Set([""]);
+    const items = [{ value: "", label: "—" }];
+    const add = (option) => {
+      if (seen.has(option.value)) return;
+      seen.add(option.value);
+      items.push(option);
+    };
+    for (const match of matches) {
+      const id = match.identifier ? ` — ${match.identifier}` : "";
+      add({ value: match.name, label: `${match.name}${id}` });
+    }
+    if (matches.length) {
+      const read = (info.raw || entry.extracted_values[spec.key] || "").trim();
+      if (read) add({ value: read, label: `as read: ${read}` });
+    }
+    for (const option of options) add({ value: option, label: labelFor(spec, option) });
+    if (value !== "" && !seen.has(value)) add({ value, label: value });
+    control = `<select ${common}>
+      ${items.map((item) => `<option value="${esc(item.value)}"${item.value === value ? " selected" : ""}>${esc(item.label)}</option>`).join("")}
+    </select>`;
+  } else if (spec.type === "datalist") {
+    const listId = spec.from || "contractors";
+    const placeholder = spec.key === "Bank Name" ? "Type or pick a bank" : "Type or pick a contractor";
+    control = `<input ${common} list="${listId}" value="${esc(value)}" placeholder="${placeholder}">`;
+  } else if (spec.type === "number") {
+    control = `<input ${common} type="number" step="0.01" min="0" value="${value === "" ? "" : esc(value)}">`;
+  } else if (spec.type === "date") {
+    control = `<input ${common} type="date" value="${esc(String(value).slice(0, 10))}">`;
+  } else if (spec.type === "textarea") {
+    control = `<textarea ${common} rows="2">${esc(value)}</textarea>`;
+  } else {
+    control = `<input ${common} type="text" value="${esc(value)}" spellcheck="false"${spec.mono ? ' style="font-family:var(--mono)"' : ""}>`;
+  }
+
+  const hint = [];
+  if (spec.key === "BG Amount") {
+    const amount = amountInr(value);
+    if (amount) hint.push(`<span data-hint="amount">${esc(amount)}</span>`);
+  }
+  if (spec.key === "Company Name" && entry.values["Project Name"]) {
+    const option = ((state.masters || {}).project_options || []).find(
+      (project) => project.code === entry.values["Project Name"]
+    );
+    const expected = option && option.company;
+    if (expected && value && value !== expected) {
+      hint.push(`<span data-hint="company-mismatch">project ${esc(option.code)} belongs to ${esc(expected)}</span>`);
+    }
+  }
+  if (meta.page) hint.push(`<span>page ${esc(meta.page)}</span>`);
+  if (meta.raw) hint.push(`<span>OCR: ${esc(String(meta.raw).slice(0, 90))}</span>`);
+  const web = lookupFor(entry, spec.key);
+  if (web) {
+    const top = (web.matches || [])[0];
+    if (web.status === "ok" && top) {
+      const proof = top.identifier
+        ? `${top.kind || "id"} ${top.identifier}`
+        : "no CIN/IFSC — check the source";
+      const host = sourceHost(top.source_url || "");
+      hint.push(`<span title="${esc(top.source_url || "")}">web: ${esc(proof)}${host ? ` · ${esc(host)}` : ""}</span>`);
+    } else if (web.status === "failed") {
+      hint.push(`<span title="${esc(web.error || "")}">web check unavailable — kept as read</span>`);
+    } else if (web.status === "no_match") {
+      hint.push(`<span>no web match — kept as read</span>`);
+    }
+  }
+
+  return `<div class="field${invalid ? " invalid" : ""}" data-field="${esc(spec.key)}">
+    <label for="${id}">${esc(spec.key)} ${badges}</label>
+    ${control}
+    ${hint.length ? `<div class="hintline">${hint.join("")}</div>` : ""}
+  </div>`;
+}
+
+function comparisonHtml(entry) {
+  const comparison = entry.ocr_comparison || {};
+  const engines = Object.entries(comparison.engines || {});
+  const errors = Object.entries(entry.ocr_errors || {}).filter(([, text]) => text);
+  if (engines.length < 2) {
+    if (!errors.length) return "";
+    return `<details class="compare"><summary><b>OCR engines</b> — ${errors.length} did not run</summary>
+      <div class="body"><ul style="margin:6px 0;padding-left:18px;font-size:12px">
+      ${errors.map(([name, text]) => `<li><b>${esc(engineLabel(name))}</b>: ${esc(text)}</li>`).join("")}
+      </ul></div></details>`;
+  }
+  const names = engines.map(([name]) => name);
+  const head = names.map((name) => `<th>${esc(engineLabel(name))}</th>`).join("");
+  const engineRows = engines.map(([name, info]) => `<tr>
+      <td>${esc(engineLabel(name))}${name === comparison.base ? " <span class=\"badge note\">base</span>" : ""}</td>
+      <td>${info.pages}/${info.pages_expected}</td>
+      <td>${info.fields_unflagged}/${info.fields_found}</td>
+      <td>${info.flags}</td>
+      <td>${esc(confText(info.confidence, info.confidence_source) || "—")}</td>
+    </tr>`).join("");
+  const fieldRows = Object.entries(comparison.columns || {}).map(([column, info]) => {
+    const cells = names.map((name) => {
+      const value = info.values ? info.values[name] : undefined;
+      const blank = value === undefined || value === null || String(value).trim() === "";
+      const flags = (info.flags && info.flags[name]) || [];
+      const badge = flags.length ? ` <span class="badge flag">${esc(flags[0])}</span>` : "";
+      return `<td>${blank ? "—" : esc(String(value))}${badge}</td>`;
+    }).join("");
+    const chosen = info.chosen ? `${info.agreement ? "agree" : "chosen"} · ${engineLabel(info.chosen)}` : "—";
+    return `<tr><td>${esc(column)}</td>${cells}<td>${esc(chosen)}</td></tr>`;
+  }).join("");
+  const pageRows = (comparison.pages || []).map((row) => {
+    const cells = names.map((name) => {
+      const info = row.engines ? row.engines[name] : null;
+      if (!info) return "<td>not read</td>";
+      const conf = confText(info.confidence, info.confidence_source);
+      return `<td>${info.chars} chars${conf ? " · " + esc(conf) : ""}</td>`;
+    }).join("");
+    const overlaps = Object.entries(row.overlap || {}).map(
+      ([pair, value]) => `${pair} ${(Number(value) * 100).toFixed(0)}%`
+    ).join(" · ");
+    return `<tr><td>${row.page}</td>${cells}<td>${esc(overlaps || "—")}</td></tr>`;
+  }).join("");
+  const merged = (comparison.merged_fields || []).length;
+  const disagreements = (comparison.disagreements || []).length;
+  return `<details class="compare">
+    <summary><b>Engine comparison</b> · ${engines.length} engines · ${merged} field(s) taken from the other read${disagreements ? ` · ${disagreements} disagreement(s)` : ""}${errors.length ? ` · ${errors.length} failed` : ""}</summary>
+    <div class="body">
+      <h4>Engine totals</h4>
+      <table><thead><tr><th>Engine</th><th>Pages read</th><th>Clean fields</th><th>Flags</th><th>Score</th></tr></thead>
+        <tbody>${engineRows}</tbody></table>
+      <h4>Field by field</h4>
+      <table><thead><tr><th>Column</th>${head}<th>Result</th></tr></thead>
+        <tbody>${fieldRows}</tbody></table>
+      <h4>Page by page</h4>
+      <table><thead><tr><th>Page</th>${head}<th>Text overlap</th></tr></thead>
+        <tbody>${pageRows}</tbody></table>
+      ${errors.length ? `<h4>Engines that did not run</h4><ul style="margin:4px 0;padding-left:18px">${errors.map(([name, text]) => `<li><b>${esc(engineLabel(name))}</b>: ${esc(text)}</li>`).join("")}</ul>` : ""}
+    </div>
+  </details>`;
+}
+
+function renderEntry(entry, before = null) {
+  const id = `file_${state.entries.indexOf(entry)}`;
+  const open = entryOpenFlags(entry);
+  const flagCount = Object.values(open).reduce((total, flags) => total + flags.length, 0);
+  const conf = confText(entry.ocr_confidence, entry.ocr_confidence_source);
+  const section = document.createElement("section");
+  section.className = "file";
+  section.id = id;
+  section.innerHTML = `
+    <div class="file-head">
+      <span class="badge ${flagCount ? "warn" : "ok"}">${flagCount ? flagCount + " open" : "no flags"}</span>
+      <div style="min-width:0">
+        <div class="title" title="${esc(entry.source_pdf)}">${esc(entry.source_pdf)}</div>
+        <div class="meta">${entry.pages} pages · ${engineLabel(entry.ocr_engine)}${conf ? " " + esc(conf) : ""}${variantSummary(entry)}</div>
+      </div>
+      <div class="tools">
+        ${state.confirmed ? "" : `<button class="btn ghost small" type="button" data-action="reset" data-file="${esc(entry.source_pdf)}">Reset to OCR</button>`}
+      </div>
+    </div>
+    ${comparisonHtml(entry)}
+    <div class="file-body">
+      <div class="grid">${FIELDS.map((spec) => fieldHtml(spec, entry)).join("")}</div>
+    </div>
+    <div class="footrow">
+      <span><b>source_pdf</b> ${esc(entry.values.source_pdf || entry.source_pdf)}</span>
+      <span><b>created_at</b> ${esc(fmtDateTime(entry.values.created_at))}</span>
+      <span><b>created_by</b> ${esc(state.user.username)} (at save)</span>
+      <span><b>reminder_sent_at</b> blank (scheduler)</span>
+    </div>`;
+  if (before) $("#results").insertBefore(section, before);
+  else $("#results").appendChild(section);
+}
+
+function revealEntry(entry) {
+  const card = document.getElementById(`file_${state.entries.indexOf(entry)}`);
+  if (!card) return;
+  card.classList.remove("flash");
+  void card.offsetWidth;
+  card.classList.add("flash");
+  card.scrollIntoView({ behavior: "smooth", block: "center" });
+  window.setTimeout(() => card.classList.remove("flash"), 1900);
+}
+
+function fieldBadges(entry, key) {
+  const meta = (entry.fields || {})[key] || {};
+  const flags = entryOpenFlags(entry)[key] || [];
+  return [
+    ...flags.map((flag) => `<span class="badge flag">${esc(flag)}</span>`),
+    ...(meta.notes || []).map((note) => `<span class="badge note">${esc(note)}</span>`),
+  ].join(" ");
+}
+
+function rerenderEntry(entry) {
+  const index = state.entries.indexOf(entry);
+  const existing = document.getElementById(`file_${index}`);
+  if (!existing) return renderEntry(entry);
+  const open = entryOpenFlags(entry);
+  const flagCount = Object.values(open).reduce((total, flags) => total + flags.length, 0);
+  const badge = $(".badge", existing);
+  badge.className = `badge ${flagCount ? "warn" : "ok"}`;
+  badge.textContent = flagCount ? `${flagCount} open` : "no flags";
+  for (const spec of FIELDS) {
+    const holder = existing.querySelector(`[data-field="${CSS.escape(spec.key)}"]`);
+    if (!holder) continue;
+    holder.classList.toggle("invalid", REQUIRED.includes(spec.key) && String(entry.values[spec.key] ?? "").trim() === "");
+    const label = holder.querySelector("label");
+    if (label) label.innerHTML = `${esc(spec.key)} ${fieldBadges(entry, spec.key)}`;
+  }
+}
+
+/* ---------- review: editing ---------- */
+
+function updateAmountHint(input, entry) {
+  const holder = input.closest(".field");
+  if (!holder) return;
+  let hint = holder.querySelector(".hintline");
+  const text = amountInr(entry.values["BG Amount"]);
+  if (!text) {
+    const stale = hint ? hint.querySelector('[data-hint="amount"]') : null;
+    if (stale) stale.remove();
+    if (hint && !hint.children.length) hint.remove();
+    return;
+  }
+  if (!hint) {
+    hint = document.createElement("div");
+    hint.className = "hintline";
+    holder.appendChild(hint);
+  }
+  let span = hint.querySelector('[data-hint="amount"]');
+  if (!span) {
+    span = document.createElement("span");
+    span.dataset.hint = "amount";
+    hint.insertBefore(span, hint.firstChild);
+  }
+  span.textContent = text;
+}
+
+document.addEventListener("input", (event) => {
+  const input = event.target.closest("[data-key][data-file]");
+  if (!input) return;
+  const entry = state.entries.find((item) => item.source_pdf === input.dataset.file);
+  if (!entry) return;
+  entry.values[input.dataset.key] = input.value;
+  if (input.dataset.key === "BG Amount") updateAmountHint(input, entry);
+  if (input.dataset.key === "Project Name") {
+    // Toll plaza list depends on the project; rebuild that card's field.
+    const holder = input.closest(".file");
+    const tollSpec = FIELDS.find((spec) => spec.key === "Toll Plaza Name");
+    const existing = holder.querySelector('[data-field="Toll Plaza Name"]');
+    const wrap = document.createElement("div");
+    wrap.innerHTML = fieldHtml(tollSpec, entry);
+    existing.replaceWith(wrap.firstElementChild);
+  }
+  rerenderEntry(entry);
+  refreshSummary();
+});
+
+document.addEventListener("click", (event) => {
+  const reset = event.target.closest('[data-action="reset"]');
+  if (!reset) return;
+  const entry = state.entries.find((item) => item.source_pdf === reset.dataset.file);
+  if (!entry) return;
+  entry.values = { ...entry.extracted_values, source_pdf: entry.source_pdf };
+  const index = state.entries.indexOf(entry);
+  const card = document.getElementById(`file_${index}`);
+  const anchor = card ? card.nextSibling : null;
+  if (card) card.remove();
+  renderEntry(entry, anchor);
+  refreshSummary();
+});
+
+/* ---------- review: summary + save ---------- */
+
+function refreshSummary() {
+  const card = $("#confirmCard");
+  if (!state.entries.length) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+  let openFlags = 0;
+  let missing = 0;
+  for (const entry of state.entries) {
+    openFlags += Object.values(entryOpenFlags(entry)).reduce((total, flags) => total + flags.length, 0);
+    missing += REQUIRED.filter((column) => String(entry.values[column] ?? "").trim() === "").length;
+  }
+  const parts = [`<b>${state.entries.length}</b> ${state.entries.length === 1 ? "row" : "rows"} ready`];
+  parts.push(openFlags ? `<span style="color:var(--warn)">${openFlags} open flags</span>` : "no open flags");
+  if (missing) parts.push(`<span style="color:var(--danger)">${missing} required blank</span>`);
+  $("#flagSummary").innerHTML = parts.join(" · ");
+  $("#confirmHint").textContent = "Save writes your reviewed rows directly to the register and workbook.";
+  $("#newBatch").hidden = state.busy || !state.entries.length;
+  setConfirmEnabled();
+}
+
+function setConfirmEnabled() {
+  const button = $("#confirmBtn");
+  button.disabled = state.busy || !state.entries.length || state.confirmed;
+  if (state.confirmed) {
+    button.textContent = "Already saved";
+    return;
+  }
+  button.textContent = `Save ${state.entries.length} ${state.entries.length === 1 ? "row" : "rows"}`;
+  button.title = "";
+}
+
+async function confirmRows(includeFlagged) {
+  if (!state.runId || !state.entries.length) return;
+  const button = $("#confirmBtn");
+  button.disabled = true;
+  button.textContent = "Writing…";
+  try {
+    const payload = await api(`/api/runs/${state.runId}/confirm`, {
+      method: "POST",
+      body: {
+        include_flagged: Boolean(includeFlagged),
+        rows: state.entries.map((entry) => ({ source_pdf: entry.source_pdf, values: entry.values })),
+      },
+    });
+    state.confirmed = (payload.written || []).length > 0;
+    if (state.confirmed) state.runStatus = "confirmed";
+    const clean = (payload.written || []).length > 0
+      && !(payload.not_written || []).length
+      && !(payload.skipped_duplicate || []).length;
+    showResult(clean ? "ok" : "info", resultHtml(payload));
+  } catch (error) {
+    if (error.status === 409) showProblems(error.payload);
+    else showResult("error", esc(error.message));
+  } finally {
+    setConfirmEnabled();
+  }
+}
+
+function showProblems(payload) {
+  const rows = (payload && payload.data && payload.data.rows) || {};
+  const items = Object.entries(rows).map(([file, info]) => {
+    const bits = [];
+    if (info.missing && info.missing.length) bits.push(`missing ${info.missing.join(", ")}`);
+    if (info.flags && Object.keys(info.flags).length) {
+      bits.push(...Object.entries(info.flags).map(([column, flags]) => `${column}: ${flags.join(" · ")}`));
+    }
+    if (info.error) bits.push(info.error);
+    return `<li><b>${esc(file)}</b> — ${esc(bits.join("; "))}</li>`;
+  });
+  showResult("error", `<b>${esc((payload && payload.detail) || "Some rows need attention.")}</b>
+    <ul>${items.join("")}</ul>
+    <div class="result-actions">
+      <button class="btn danger" type="button" id="forceConfirm">Save with open flags anyway</button>
+      <span class="muted">Use after checking the paper guarantee. Missing required fields are still refused.</span>
+    </div>`);
+  const force = $("#forceConfirm");
+  if (force) force.addEventListener("click", () => confirmRows(true));
+}
+
+function notWrittenReason(item) {
+  const flags = Object.entries(item.flags || {})
+    .map(([column, names]) => `${column} (${(names || []).join(", ")})`);
+  if (item.reason === "missing_required") {
+    const missing = (item.missing || []).join(", ");
+    return missing ? `missing: ${missing}` : "missing required fields";
+  }
+  if (item.reason === "open_flags") return flags.length ? `open flags: ${flags.join(", ")}` : "open flags";
+  if (item.reason === "duplicate") {
+    return item.existing
+      ? `already in the register as ${item.existing["BG No"]} (${item.existing.Status})`
+      : "already in the workbook";
+  }
+  if (item.reason === "bad_value") return item.error || "bad value";
+  return [item.reason ? String(item.reason).replace(/_/g, " ") : "not written", item.error]
+    .filter(Boolean).join(" — ");
+}
+
+function resultHtml(payload) {
+  const written = payload.written || [];
+  const notWritten = payload.not_written || [];
+  const skipped = payload.skipped_duplicate || [];
+  const closed = payload.closed_by_extension || [];
+  const download = canExport()
+    ? `<a class="btn primary" href="/api/runs/${encodeURIComponent(state.runId)}/workbook" download>Download review workbook</a>`
+    : "";
+  const target = payload.path || payload.workbook || "";
+  const headline = written.length
+    ? `<b>${written.length} written</b>${target ? ` to <code>${esc(target)}</code>` : ""}.`
+    : `<b>Nothing written</b> — no rows were added.`;
+  const notWrittenBlock = notWritten.length
+    ? `<div style="margin-top:10px"><b>Not written</b>
+        <ul>${notWritten.map((item) => `<li><b>${esc(item.source_pdf)}</b> — ${esc(notWrittenReason(item))}</li>`).join("")}</ul>
+      </div>`
+    : "";
+  const skippedBlock = skipped.length
+    ? `<div class="muted" style="margin-top:8px">Skipped, already present: ${skipped.map((name) => esc(name)).join(", ")}</div>`
+    : "";
+  const closedBlock = closed.length
+    ? `<div class="muted" style="margin-top:8px">Closed by extension: ${closed.map((item) => esc(item["BG No"])).join(", ")} (history kept)</div>`
+    : "";
+  return `${headline}
+    ${notWrittenBlock}
+    ${skippedBlock}
+    ${closedBlock}
+    <div class="result-actions">
+      ${download}
+      <button class="btn ghost" type="button" id="newBatchInline">Start another batch</button>
+      <span class="kbd">audit: ${esc(payload.audit || "")}</span>
+    </div>`;
+}
+
+function showResult(kind, html) {
+  const card = $("#resultCard");
+  card.hidden = false;
+  card.innerHTML = `<div class="notice ${kind}">${html}</div>`;
+  card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  const inline = $("#newBatchInline");
+  if (inline) inline.addEventListener("click", startNewBatch);
+}
+
+function startNewBatch() {
+  if (state.busy) return;
+  state.runId = null;
+  state.entries = [];
+  state.confirmed = false;
+  state.runStatus = "";
+  try { sessionStorage.removeItem("bg.run"); } catch (error) { /* private mode */ }
+  resetReviewPanels();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* ---------- runs ---------- */
+
+function statusPill(status) {
+  const map = { confirmed: "ok", draft: "" };
+  return `<span class="pill ${map[status] || ""}">${esc(status || "draft")}</span>`;
+}
+
+async function loadRuns() {
+  const body = $("#runsBody");
+  body.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const payload = await api("/api/runs");
+    const runs = payload.runs || [];
+    $("#runsHint").textContent = runs.length
+      ? `${runs.length} recent run${runs.length === 1 ? "" : "s"} · ${isAdmin() ? "all owners" : "yours"}`
+      : "";
+    if (!runs.length) {
+      body.innerHTML = `<div class="empty">No runs yet. Upload a PDF in Review to start one.</div>`;
+      return;
+    }
+    body.innerHTML = `<div class="tablewrap"><table>
+      <thead><tr><th>Started</th><th>Owner</th><th>Status</th><th class="num">Files</th><th class="num">Open flags</th><th>Saved</th><th></th></tr></thead>
+      <tbody>${runs.map((run) => `<tr>
+        <td>${esc(fmtDateTime(run.created_at))}</td>
+        <td>${esc(run.owner)}</td>
+        <td>${statusPill(run.status)}</td>
+        <td class="num">${run.files}</td>
+        <td class="num">${run.open_flags}</td>
+        <td>${esc(fmtDateTime(run.confirmed_at))}</td>
+        <td><button class="btn ghost small" type="button" data-open-run="${esc(run.run_id)}">Open</button></td>
+      </tr>`).join("")}</tbody></table></div>`;
+    $$("[data-open-run]", body).forEach((button) => {
+      button.addEventListener("click", () => openRun(button.dataset.openRun));
+    });
+  } catch (error) {
+    body.innerHTML = `<div class="notice error">${esc(error.message)}</div>`;
+  }
+}
+
+async function openRun(runId) {
+  try {
+    const run = await api(`/api/runs/${encodeURIComponent(runId)}`);
+    try { sessionStorage.setItem("bg.run", runId); } catch (error) { /* private mode */ }
+    loadEntries(run);
+    showView("review");
+  } catch (error) {
+    showFlash("error", esc(error.message));
+  }
+}
+
+/* ---------- register ---------- */
+
+function statCard(label, value) {
+  return `<div class="stat"><b>${esc(value)}</b><span>${esc(label)}</span></div>`;
+}
+
+function registerParams() {
+  const params = new URLSearchParams();
+  const q = $("#regQ").value.trim();
+  if (q) params.set("q", q);
+  if ($("#regStatus").value) params.set("status", $("#regStatus").value);
+  if ($("#regProject").value) params.set("project", $("#regProject").value);
+  if ($("#regOverdue").checked) params.set("overdue", "true");
+  if ($("#regWindow").checked) params.set("window", "30");
+  params.set("limit", String(state.regLimit));
+  params.set("offset", String(state.regOffset));
+  return params;
+}
+
+async function loadRegister(reset = false) {
+  if (reset) state.regOffset = 0;
+  const body = $("#regBody");
+  body.innerHTML = `<div class="empty">Loading…</div>`;
+  const params = registerParams();
+  try {
+    const page = await api(`/api/register?${params.toString()}`);
+    const stats = page.stats || {};
+    $("#regStats").innerHTML = [
+      statCard("Total BGs", stats.total || 0),
+      statCard("Active", (stats.by_status || {}).Active || 0),
+      statCard("Expiring / Expired", ((stats.by_status || {}).Expiring || 0) + ((stats.by_status || {}).Expired || 0)),
+      statCard("Due in 7 days", stats.due_in_7_days || 0),
+      statCard("Overdue", stats.overdue || 0),
+    ].join("");
+
+    const exportParams = new URLSearchParams(params);
+    exportParams.delete("limit");
+    exportParams.delete("offset");
+    $("#regExport").href = `/api/register/export?${exportParams.toString()}`;
+
+    const rows = page.rows || [];
+    if (!rows.length) {
+      body.innerHTML = `<div class="empty">No rows match these filters. Confirmed BGs appear here.</div>`;
+    } else {
+      body.innerHTML = `<div class="tablewrap"><table>
+        <thead><tr>
+          <th>BG No</th><th>Company</th><th>Project</th><th>Contractor</th>
+          <th class="num">Amount</th><th>From</th><th>To</th><th>Status</th>
+          <th>Reminder</th><th></th>
+        </tr></thead>
+        <tbody>${rows.map((row) => `<tr>
+          <td class="mono">${esc(row["BG No"])}</td>
+          <td>${esc(row["Company Name"])}</td>
+          <td>${esc(row["Project Name"])}</td>
+          <td>${esc(row["Name of Contractor"])}</td>
+          <td class="num">${esc(amountInr(row["BG Amount"]))}</td>
+          <td>${esc(fmtDate(row["From"]))}</td>
+          <td>${esc(fmtDate(row["To"]))}</td>
+          <td><span class="pill ${String(row.Status) === "Closed" ? "" : String(row.Status) === "Active" ? "ok" : "warn"}">${esc(row.Status)}</span></td>
+          <td>${row.reminder_sent_at ? esc(fmtDateTime(row.reminder_sent_at)) : `<span class="muted">not sent</span>`}</td>
+          <td><div class="rowactions">
+            ${isAdmin() ? `<button class="btn ghost small" type="button" data-edit-row="${esc(row.id)}">Edit</button>
+            <button class="btn danger small" type="button" data-close-row="${esc(row.id)}" data-bg="${esc(row["BG No"])}">Close</button>` : ""}
+          </div></td>
+        </tr>`).join("")}</tbody></table></div>`;
+      $$("[data-edit-row]", body).forEach((button) => {
+        button.addEventListener("click", () => editRegisterRow(button.dataset.editRow));
+      });
+      $$("[data-close-row]", body).forEach((button) => {
+        button.addEventListener("click", () => closeRegisterRow(button.dataset.closeRow, button.dataset.bg));
+      });
+    }
+    const start = page.total ? page.offset + 1 : 0;
+    const end = Math.min(page.offset + page.limit, page.total);
+    $("#regPage").textContent = `${start}–${end} of ${page.total}`;
+    $("#regPrev").disabled = page.offset <= 0;
+    $("#regNext").disabled = page.offset + page.limit >= page.total;
+  } catch (error) {
+    body.innerHTML = `<div class="notice error">${esc(error.message)}</div>`;
+  }
+}
+
+function selectField(name, label, options, value, blank = true) {
+  const list = [...new Set([...(options || []), ...(value ? [value] : [])])];
+  return `<div class="formfield"><label>${esc(label)}</label><select name="${esc(name)}">
+    ${blank ? `<option value="">—</option>` : ""}
+    ${list.map((option) => `<option value="${esc(option)}"${option === value ? " selected" : ""}>${esc(option)}</option>`).join("")}
+  </select></div>`;
+}
+
+function textField(name, label, type, value, extra = "") {
+  return `<div class="formfield"><label>${esc(label)}</label>
+    <input name="${esc(name)}" type="${esc(type)}" value="${esc(value ?? "")}" ${extra}></div>`;
+}
+
+function areaField(name, label, value, rows = 2) {
+  return `<div class="formfield"><label>${esc(label)}</label>
+    <textarea name="${esc(name)}" rows="${rows}">${esc(value ?? "")}</textarea></div>`;
+}
+
+function registerForm(row) {
+  const masters = state.masters || {};
+  const tollOptions = (masters.toll_plazas || []).map((plaza) => plaza.name);
+  return `<p class="muted" style="margin:0 0 12px">BG No <code>${esc(row["BG No"])}</code> is the identity and is not editable here. Every save is audited and mirrored to the review workbook.</p>
+    <div class="grid2">
+      ${selectField("Company Name", "Company Name", masters.companies, row["Company Name"])}
+      ${selectField("Project Name", "Project Name", masters.projects, row["Project Name"])}
+      ${selectField("Toll Plaza Name", "Toll Plaza Name", tollOptions, row["Toll Plaza Name"])}
+      ${textField("Name of Contractor", "Name of Contractor", "text", row["Name of Contractor"], 'list="contractors"')}
+      ${selectField("Types of BG", "Types of BG", masters.bg_types, row["Types of BG"])}
+      ${selectField("Nature of Service", "Nature of Service", masters.natures, row["Nature of Service"])}
+      ${textField("BG Amount", "BG Amount", "number", row["BG Amount"], 'step="0.01" min="0"')}
+      ${textField("Bank Name", "Bank Name", "text", row["Bank Name"], 'list="banks"')}
+      ${textField("From", "From", "date", String(row["From"] || "").slice(0, 10))}
+      ${textField("To", "To", "date", String(row["To"] || "").slice(0, 10))}
+      ${textField("Claim Period", "Claim Period", "date", String(row["Claim Period"] || "").slice(0, 10))}
+      ${selectField("Status", "Status", masters.statuses, row["Status"])}
+      ${selectField("Extended", "Extended", ["Yes", "No"], row["Extended"], false)}
+      ${areaField("Remarks", "Remarks", row["Remarks"], 2)}
+      ${areaField("LOA Number", "LOA Number", row["LOA Number"], 2)}
+      ${areaField("PO Number", "PO Number", row["PO Number"], 2)}
+    </div>`;
+}
+
+async function editRegisterRow(id) {
+  try {
+    const row = await api(`/api/register/${encodeURIComponent(id)}`);
+    openModal(`Edit ${row["BG No"]}`, registerForm(row), async (form) => {
+      const required = ["Company Name", "Project Name", "Name of Contractor", "Types of BG",
+        "Nature of Service", "BG Amount", "From", "To", "Bank Name", "Status"];
+      const dated = ["From", "To", "Claim Period"];
+      const values = {};
+      for (const [key, value] of form.entries()) {
+        if (["BG No", "source_pdf", "created_by", "created_at", "reminder_sent_at"].includes(key)) continue;
+        const text = String(value);
+        if (required.includes(key) && text.trim() === "") {
+          throw new Error(`${key} cannot be blank.`);
+        }
+        const before = dated.includes(key) ? String(row[key] ?? "").slice(0, 10) : String(row[key] ?? "");
+        if (text === before) continue;
+        values[key] = text;
+      }
+      if (!Object.keys(values).length) throw new Error("Nothing changed.");
+      await api(`/api/register/${encodeURIComponent(id)}`, { method: "PATCH", body: { values } });
+      showFlash("ok", `Updated <b>${esc(row["BG No"])}</b>. The register and workbook now match.`);
+      loadRegister();
+    }, "Save changes");
+  } catch (error) {
+    showFlash("error", esc(error.message));
+  }
+}
+
+function closeRegisterRow(id, bgNo) {
+  openModal(`Close BG ${bgNo}`, `<p class="muted" style="margin-top:0">Closing keeps the row and its history. Use it when the guarantee expired or was replaced.</p>
+    ${areaField("remarks", "Remarks", "", 3)}`, async (form) => {
+    await api(`/api/register/${encodeURIComponent(id)}/close`, {
+      method: "POST",
+      body: { remarks: form.get("remarks") || null },
+    });
+    showFlash("ok", `Closed <b>${esc(bgNo)}</b>. History preserved.`);
+    loadRegister();
+  }, "Close BG");
+}
+
+/* ---------- reminders ---------- */
+
+async function loadReminders() {
+  const body = $("#reminderBody");
+  body.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const payload = await api("/api/reminders");
+    const list = payload.reminders || [];
+    $("#reminderHint").textContent = `T-${payload.days} · ${list.length} reminder${list.length === 1 ? "" : "s"} logged`;
+    $("#reminderBanner").innerHTML = payload.dry_run
+      ? `<div class="notice warn"><b>Dry run.</b> No SMTP host is configured, so each message is written to <code>out/mail/*.eml</code> instead of being sent. Recipients: ${esc((payload.recipients || []).join(", ") || "none configured")}.</div>`
+      : `<div class="notice info">SMTP delivery is enabled. Recipients: ${esc((payload.recipients || []).join(", ") || "none configured")}.</div>`;
+    if (!list.length) {
+      body.innerHTML = `<div class="empty">No reminders have run yet. Rows due in ${payload.days} days appear here after the 09:00 IST run.</div>`;
+      return;
+    }
+    body.innerHTML = `<div class="tablewrap"><table>
+      <thead><tr><th>BG No</th><th>Expiry</th><th>Scheduled</th><th>Sent</th><th>Status</th><th>Recipients</th><th>Error</th><th></th></tr></thead>
+      <tbody>${list.map((reminder) => `<tr>
+        <td class="mono">${esc(reminder["BG No"])}</td>
+        <td>${esc(fmtDate(reminder["To"]))}</td>
+        <td>${esc(fmtDate(reminder.scheduled_for))}</td>
+        <td>${esc(fmtDateTime(reminder.sent_at))}</td>
+        <td><span class="pill ${reminder.status === "sent" ? "ok" : reminder.status === "failed" ? "bad" : "warn"}">${esc(reminder.status)}</span></td>
+        <td class="muted">${esc((reminder.recipients || []).join(", "))}</td>
+        <td class="muted">${esc(reminder.error || "")}</td>
+        <td>${isAdmin() ? `<button class="btn ghost small" type="button" data-resend="${esc(reminder.bg_id)}" data-bg="${esc(reminder["BG No"])}">Resend</button>` : ""}</td>
+      </tr>`).join("")}</tbody></table></div>`;
+    $$("[data-resend]", body).forEach((button) => {
+      button.addEventListener("click", () => resendReminder(button.dataset.resend, button.dataset.bg));
+    });
+  } catch (error) {
+    body.innerHTML = `<div class="notice error">${esc(error.message)}</div>`;
+  }
+}
+
+async function runReminders() {
+  const button = $("#runReminders");
+  button.disabled = true;
+  button.textContent = "Running…";
+  try {
+    const report = await api("/api/reminders/run");
+    const kind = report.failed ? "warn" : "ok";
+    showFlash(kind, `T-${report.days} run: <b>${report.due}</b> due · <b>${report.sent}</b> sent · <b>${report.failed}</b> failed${report.dry_run ? " (dry run)" : ""}.`);
+    loadReminders();
+  } catch (error) {
+    showFlash("error", esc(error.message));
+  } finally {
+    button.disabled = false;
+    button.textContent = "Run T-7 now";
+  }
+}
+
+async function resendReminder(bgId, bgNo) {
+  if (!window.confirm(`Resend the T-7 reminder for ${bgNo}?`)) return;
+  try {
+    const result = await api(`/api/reminders/${encodeURIComponent(bgId)}/resend`, { method: "POST" });
+    showFlash(result.status === "sent" ? "ok" : "error", `Resend for <b>${esc(bgNo)}</b>: ${esc(result.status)}${result.error ? " — " + esc(result.error) : ""}.`);
+    loadReminders();
+  } catch (error) {
+    showFlash("error", esc(error.message));
+  }
+}
+
+/* ---------- users ---------- */
+
+async function loadUsers() {
+  const body = $("#usersBody");
+  body.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const payload = await api("/api/users");
+    const users = payload.users || [];
+    body.innerHTML = `<div class="tablewrap"><table>
+      <thead><tr><th>Username</th><th>Role</th><th>Active</th><th></th></tr></thead>
+      <tbody>${users.map((user) => `<tr>
+        <td class="mono">${esc(user.username)}</td>
+        <td><select data-role-for="${esc(user.id)}" ${user.id === state.user.id ? "disabled" : ""}>
+          ${["admin", "uploader", "viewer"].map((name) => `<option value="${name}"${name === user.role ? " selected" : ""}>${name}</option>`).join("")}
+        </select></td>
+        <td><input type="checkbox" data-active-for="${esc(user.id)}" ${user.is_active ? "checked" : ""} ${user.id === state.user.id ? "disabled" : ""}></td>
+        <td><div class="rowactions">
+          <button class="btn ghost small" type="button" data-reset-pw="${esc(user.id)}" data-user="${esc(user.username)}">Reset password</button>
+        </div></td>
+      </tr>`).join("")}</tbody></table></div>`;
+    $$("[data-role-for]", body).forEach((select) => {
+      select.addEventListener("change", () => patchUser(select.dataset.roleFor, { role: select.value }, `Role changed for ${select.dataset.roleFor}.`));
+    });
+    $$("[data-active-for]", body).forEach((checkbox) => {
+      checkbox.addEventListener("change", () => patchUser(checkbox.dataset.activeFor, { is_active: checkbox.checked }, "Account updated."));
+    });
+    $$("[data-reset-pw]", body).forEach((button) => {
+      button.addEventListener("click", () => resetPassword(button.dataset.resetPw, button.dataset.user));
+    });
+  } catch (error) {
+    body.innerHTML = `<div class="notice error">${esc(error.message)}</div>`;
+  }
+}
+
+async function patchUser(id, body, message) {
+  try {
+    await api(`/api/users/${encodeURIComponent(id)}`, { method: "PATCH", body });
+    showFlash("ok", esc(message));
+    loadUsers();
+  } catch (error) {
+    showFlash("error", esc(error.message));
+    loadUsers();
+  }
+}
+
+function resetPassword(id, username) {
+  openModal(`Reset password · ${username}`, `<p class="muted" style="margin-top:0">Set a temporary password. The user's sessions are revoked immediately.</p>
+    <div class="formfield"><label>New password</label><input name="password" type="password" required autocomplete="new-password">
+    <span class="hint">8+ chars, upper, lower, digit, symbol.</span></div>`, async (form) => {
+    await api(`/api/users/${encodeURIComponent(id)}`, { method: "PATCH", body: { password: form.get("password") } });
+    showFlash("ok", `Password reset for <b>${esc(username)}</b>.`);
+  }, "Reset password");
+}
+
+$("#userForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.target;
+  const button = $("button[type=submit]", form);
+  button.disabled = true;
+  try {
+    const payload = {
+      username: form.username.value.trim(),
+      password: form.password.value,
+      // New accounts start read-only; an admin can change the role below.
+      role: "viewer",
+    };
+    const created = await api("/api/users", { method: "POST", body: payload });
+    showFlash("ok", `Created <b>${esc(created.user.username)}</b> as ${esc(created.user.role)}. Change the role in the table if they need to upload and save runs.`);
+    form.reset();
+    loadUsers();
+  } catch (error) {
+    showFlash("error", esc(error.message));
+  } finally {
+    button.disabled = false;
+  }
+});
+
+/* ---------- audit ---------- */
+
+async function loadAudit() {
+  const body = $("#auditBody");
+  body.innerHTML = `<div class="empty">Loading…</div>`;
+  const action = $("#auditAction").value;
+  try {
+    const payload = await api(`/api/audit?limit=300${action ? `&action=${encodeURIComponent(action)}` : ""}`);
+    const entries = payload.entries || [];
+    if (!entries.length) {
+      body.innerHTML = `<div class="empty">No audit entries${action ? " for this action" : ""} yet.</div>`;
+      return;
+    }
+    body.innerHTML = `<div class="tablewrap"><table>
+      <thead><tr><th>When (UTC)</th><th>Action</th><th>User</th><th>BG No</th><th>IP</th><th>Details</th></tr></thead>
+      <tbody>${entries.map((entry) => {
+        const details = entry.new || entry.old ? JSON.stringify(entry.new || entry.old) : "";
+        return `<tr>
+          <td class="mono">${esc(entry.ts)}</td>
+          <td><span class="pill">${esc(entry.action)}</span></td>
+          <td>${esc(entry.user || "")}</td>
+          <td class="mono">${esc(entry.bg_no || "")}</td>
+          <td class="muted">${esc(entry.ip || "")}</td>
+          <td class="muted" title="${esc(details)}">${esc(details.slice(0, 160))}${details.length > 160 ? "…" : ""}</td>
+        </tr>`;
+      }).join("")}</tbody></table></div>`;
+  } catch (error) {
+    body.innerHTML = `<div class="notice error">${esc(error.message)}</div>`;
+  }
+}
+
+/* ---------- password + logout ---------- */
+
+function changePassword() {
+  openModal("Change your password", `<p class="muted" style="margin-top:0">Signed in as <b>${esc(state.user.username)}</b>. Changing it signs out other devices.</p>
+    <div class="grid2">
+      <div class="formfield"><label>Current password</label><input name="current" type="password" required autocomplete="current-password"></div>
+      <div class="formfield"><label>New password</label><input name="next" type="password" required autocomplete="new-password"><span class="hint">8+ chars, upper, lower, digit, symbol.</span></div>
+      <div class="formfield"><label>Repeat new password</label><input name="repeat" type="password" required autocomplete="new-password"></div>
+    </div>`, async (form) => {
+    if (form.get("next") !== form.get("repeat")) throw new Error("The new passwords do not match.");
+    await api("/api/change-password", {
+      method: "POST",
+      body: { current_password: form.get("current"), new_password: form.get("next") },
+    });
+    showFlash("ok", "Password changed.");
+  }, "Change password");
+}
+
+$("#logoutBtn").addEventListener("click", async () => {
+  try { await api("/api/logout", { method: "POST" }); } catch (error) { /* already signed out */ }
+  location.replace("/login");
+});
+
+$("#changePwBtn").addEventListener("click", changePassword);
+
+/* ---------- wiring ---------- */
+
+$("#nav").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-view]");
+  if (button) showView(button.dataset.view);
+});
+window.addEventListener("hashchange", () => {
+  const name = location.hash.replace("#", "");
+  if (name && name !== state.view) showView(name);
+});
+
+$("#browse").addEventListener("click", () => $("#fileInput").click());
+try {
+  const saved = localStorage.getItem("bg.ocrEngine.v2");
+  localStorage.removeItem("bg.ocrEngine");
+  if (["indra", "tesseract", "azure", "both", "all"].includes(saved)) state.ocrEngine = saved;
+} catch (error) { /* private mode */ }
+$("#ocrEngine").value = state.ocrEngine;
+updateEngineHint();
+$("#ocrEngine").addEventListener("change", (event) => {
+  state.ocrEngine = event.target.value;
+  try { localStorage.setItem("bg.ocrEngine.v2", state.ocrEngine); } catch (error) { /* private mode */ }
+  updateEngineHint();
+});
+$("#fileInput").addEventListener("change", (event) => {
+  uploadFiles(event.target.files);
+  event.target.value = "";
+});
+
+const drop = $("#drop");
+for (const type of ["dragenter", "dragover"]) {
+  drop.addEventListener(type, (event) => { event.preventDefault(); drop.classList.add("hot"); });
+}
+for (const type of ["dragleave", "drop"]) {
+  drop.addEventListener(type, (event) => { event.preventDefault(); drop.classList.remove("hot"); });
+}
+drop.addEventListener("drop", (event) => {
+  if (event.dataTransfer && event.dataTransfer.files) uploadFiles(event.dataTransfer.files);
+});
+drop.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    $("#fileInput").click();
+  }
+});
+
+$("#confirmBtn").addEventListener("click", () => confirmRows(false));
+$("#newBatch").addEventListener("click", startNewBatch);
+$("#resetWorkbook").addEventListener("click", async () => {
+  if (!window.confirm("Recreate out/BG Tracker_ingested.xlsx from the tracker template? Rows already confirmed in it will be removed. The register is not touched.")) return;
+  try {
+    await api("/api/workbook/reset", { method: "POST" });
+    showFlash("ok", "Review workbook reset from the tracker template.");
+  } catch (error) {
+    showFlash("error", esc(error.message));
+  }
+});
+
+$("#refreshRuns").addEventListener("click", loadRuns);
+$("#refreshWorkbook").addEventListener("click", () => loadWorkbook(true));
+$("#workbookSheet").addEventListener("change", () => loadWorkbook(true));
+$("#workbookPrev").addEventListener("click", () => {
+  state.workbookOffset = Math.max(0, state.workbookOffset - state.workbookLimit);
+  loadWorkbook();
+});
+$("#workbookNext").addEventListener("click", () => {
+  state.workbookOffset += state.workbookLimit;
+  loadWorkbook();
+});
+$("#regSearch").addEventListener("click", () => loadRegister(true));
+$("#regQ").addEventListener("keydown", (event) => { if (event.key === "Enter") loadRegister(true); });
+$("#regStatus").addEventListener("change", () => loadRegister(true));
+$("#regProject").addEventListener("change", () => loadRegister(true));
+$("#regOverdue").addEventListener("change", () => loadRegister(true));
+$("#regWindow").addEventListener("change", () => loadRegister(true));
+$("#regPrev").addEventListener("click", () => {
+  state.regOffset = Math.max(0, state.regOffset - state.regLimit);
+  loadRegister();
+});
+$("#regNext").addEventListener("click", () => {
+  state.regOffset += state.regLimit;
+  loadRegister();
+});
+$("#refreshReminders").addEventListener("click", loadReminders);
+$("#runReminders").addEventListener("click", runReminders);
+$("#refreshUsers").addEventListener("click", loadUsers);
+$("#refreshAudit").addEventListener("click", loadAudit);
+$("#auditAction").addEventListener("change", loadAudit);
+
+/* ---------- boot ---------- */
+
+async function boot() {
+  try {
+    const me = await api("/api/me");
+    state.user = me.user;
+  } catch (error) {
+    return; // api() sent the browser to /login
+  }
+  applyRole();
+  await loadMasters();
+  loadHealth();
+  const requested = location.hash.replace("#", "");
+  showView(requested && allowedViews().includes(requested) ? requested : (canUpload() ? "review" : "register"));
+  if (canUpload()) restoreRun();
+}
+
+boot();
+</script>
+</body>
+</html>

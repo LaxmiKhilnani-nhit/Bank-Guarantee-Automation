@@ -19,32 +19,47 @@ PRAGMA foreign_keys = ON;
 -- ============ lookups / masters ============
 
 CREATE TABLE IF NOT EXISTS company (
-  id   INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  name      TEXT NOT NULL UNIQUE,
+  source    TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS project (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  company_id INTEGER REFERENCES company(id) ON DELETE RESTRICT,
-  code       TEXT NOT NULL UNIQUE,
-  name       TEXT
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  company_id      INTEGER REFERENCES company(id) ON DELETE RESTRICT,
+  code            TEXT NOT NULL UNIQUE,
+  name            TEXT,
+  state           TEXT,
+  "round"         INTEGER,
+  project_manager TEXT,
+  source          TEXT,
+  is_active       INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS toll_plaza (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  project_id INTEGER REFERENCES project(id) ON DELETE RESTRICT,
-  name       TEXT NOT NULL,
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id          INTEGER REFERENCES project(id) ON DELETE RESTRICT,
+  name                TEXT NOT NULL,
+  chainage            TEXT,
+  toll_manager        TEXT,
+  maintenance_manager TEXT,
+  corridor_manager    TEXT,
+  source              TEXT,
+  is_active           INTEGER NOT NULL DEFAULT 1,
   UNIQUE (project_id, name)
 );
 
 CREATE TABLE IF NOT EXISTS bank (
-  id   INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE
+  id     INTEGER PRIMARY KEY AUTOINCREMENT,
+  name   TEXT NOT NULL UNIQUE,
+  source TEXT
 );
 
 CREATE TABLE IF NOT EXISTS contractor (
-  id   INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE
+  id     INTEGER PRIMARY KEY AUTOINCREMENT,
+  name   TEXT NOT NULL UNIQUE,
+  source TEXT
 );
 
 CREATE TABLE IF NOT EXISTS bg_type (
@@ -75,6 +90,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   is_active     INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
   last_login    TEXT,
+  failed_attempts INTEGER NOT NULL DEFAULT 0,
+  locked_until  TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -83,6 +100,30 @@ CREATE TABLE IF NOT EXISTS user_roles (
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
   PRIMARY KEY (user_id, role_id)
+);
+
+-- Server-side sessions: the browser only holds an opaque token. The token is
+-- stored hashed so a copy of the database cannot be replayed as a login.
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at TEXT NOT NULL,
+  last_seen  TEXT,
+  ip         TEXT,
+  user_agent TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+
+-- Answers from the optional Firecrawl name lookup, keyed by exact input so the
+-- same wording is never billed twice. Not a matcher: identical text only.
+CREATE TABLE IF NOT EXISTS lookup_cache (
+  field      TEXT NOT NULL,
+  query      TEXT NOT NULL,
+  payload    TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (field, query)
 );
 
 -- ============ LOA / PO parent (1 LOA : M BGs, ST007 extend chain) ============
@@ -110,6 +151,7 @@ CREATE TABLE IF NOT EXISTS bg_records (
   contractor_id    INTEGER REFERENCES contractor(id) ON DELETE RESTRICT,
   bank_id          INTEGER REFERENCES bank(id) ON DELETE RESTRICT,
   loa_id           TEXT REFERENCES loa_records(id) ON DELETE RESTRICT,
+  po_number        TEXT,
   bg_amount        NUMERIC NOT NULL CHECK (bg_amount > 0),
   from_date        TEXT NOT NULL,                       -- 'YYYY-MM-DD'
   to_date          TEXT NOT NULL,                       -- 'YYYY-MM-DD'
@@ -190,7 +232,7 @@ CREATE TABLE IF NOT EXISTS reminders (
   UNIQUE (bg_id, scheduled_for)
 );
 
--- ============ audit log (ST009, R5 maker-checker trail) ============
+-- ============ audit log (ST009, user action history) ============
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -198,7 +240,10 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   user_id   TEXT REFERENCES users(id) ON DELETE SET NULL,
   action    TEXT NOT NULL
             CHECK (action IN ('upload','extract','confirm','export','remind',
-                              'extend','close','login','user_create','user_update')),
+                              'extend','close','login','login_failed','locked',
+                              'logout','submit','review_save','user_create',
+                              'user_update','password_change','role_change',
+                              'reminder_sent','reminder_resend','workbook_reset')),
   bg_id     TEXT REFERENCES bg_records(id) ON DELETE SET NULL,
   bg_no     TEXT,
   old_data  TEXT CHECK (old_data IS NULL OR json_valid(old_data)),
@@ -244,7 +289,8 @@ SELECT
   n.name  AS "Nature of Service",
   ct.name AS "Name of Contractor",
   bk.name AS "Bank Name",
-  l.loa_po_number AS "LOA/PO Number",
+  l.loa_po_number AS "LOA Number",
+  b.po_number AS "PO Number",
   u.username AS created_by_name
 FROM bg_records b
 LEFT JOIN company c       ON c.id = b.company_id

@@ -1,0 +1,86 @@
+# Whole app in Docker: FastAPI review UI + local Indra and Tesseract OCR.
+#
+#   docker compose build
+#   docker compose up -d            -> http://127.0.0.1:8000
+#   docker compose logs -f app
+#
+# The host port is loopback-only on purpose (same promise as running the script
+# by hand). Change it with BG_WEB_PORT, e.g. $env:BG_WEB_PORT="8010".
+services:
+  app:
+    build:
+      context: .
+      args:
+        BG_BASE_IMAGE: ${BG_BASE_IMAGE:-python:3.13-slim}
+        BG_INSTALL_OS_DEPS: ${BG_INSTALL_OS_DEPS:-1}
+    image: bg-automation:local
+    container_name: bg-automation-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${BG_WEB_PORT:-8000}:8000"
+    environment:
+      BG_WEB_HOST: 0.0.0.0
+      BG_WEB_PORT: "8000"
+      # Accounts and sessions. A random bootstrap password is logged once when
+      # BG_BOOTSTRAP_ADMIN_PASS is empty and no account exists yet.
+      BG_BOOTSTRAP_ADMIN_USER: ${BG_BOOTSTRAP_ADMIN_USER:-admin}
+      BG_BOOTSTRAP_ADMIN_PASS: ${BG_BOOTSTRAP_ADMIN_PASS:-}
+      BG_BOOTSTRAP_ADMIN_EMAIL: ${BG_BOOTSTRAP_ADMIN_EMAIL:-}
+      BG_SESSION_MINUTES: ${BG_SESSION_MINUTES:-30}
+      BG_COOKIE_SECURE: ${BG_COOKIE_SECURE:-0}
+      # T-7 reminders. Empty BG_SMTP_HOST keeps the safe default: messages are
+      # written to out/mail/*.eml instead of being sent. Set BG_MAIL_DRY_RUN=0
+      # as well when a real mailbox is configured.
+      BG_SMTP_HOST: ${BG_SMTP_HOST:-}
+      BG_SMTP_PORT: ${BG_SMTP_PORT:-587}
+      BG_SMTP_USER: ${BG_SMTP_USER:-}
+      BG_SMTP_PASS: ${BG_SMTP_PASS:-}
+      BG_MAIL_FROM: ${BG_MAIL_FROM:-bg-automation@localhost}
+      BG_MAIL_FROM_NAME: ${BG_MAIL_FROM_NAME:-BG Automation}
+      BG_MAIL_DRY_RUN: ${BG_MAIL_DRY_RUN:-1}
+      BG_FINANCE_DL: ${BG_FINANCE_DL:-}
+      BG_USER_TEAM_DL: ${BG_USER_TEAM_DL:-}
+      BG_REMINDER_DAYS: ${BG_REMINDER_DAYS:-7}
+      BG_APP_URL: ${BG_APP_URL:-http://127.0.0.1:8000}
+      # In-process 09:00 IST scheduler, plus the token-guarded manual trigger.
+      BG_SCHEDULER: ${BG_SCHEDULER:-1}
+      BG_SCHEDULER_TIME: ${BG_SCHEDULER_TIME:-09:00}
+      BG_INTERNAL_TOKEN: ${BG_INTERNAL_TOKEN:-}
+      # Optional Firecrawl name check. Empty key = fully local, OCR-only.
+      BG_FIRECRAWL_API_KEY: ${BG_FIRECRAWL_API_KEY:-}
+      BG_LOOKUP: ${BG_LOOKUP:-1}
+      BG_LOOKUP_TIMEOUT: ${BG_LOOKUP_TIMEOUT:-120}
+      BG_LOOKUP_MAX_CREDITS: ${BG_LOOKUP_MAX_CREDITS:-100}
+      BG_LOOKUP_TTL_DAYS: ${BG_LOOKUP_TTL_DAYS:-30}
+      BG_LOOKUP_MAX_MATCHES: ${BG_LOOKUP_MAX_MATCHES:-5}
+      # Hugging Face/Indra model downloads persist in the mounted local data folder.
+      BG_OCR_ENGINE: ${BG_OCR_ENGINE:-indra}
+      BG_INDRA_THREADS: ${BG_INDRA_THREADS:-4}
+      BG_INDRA_MODE: ${BG_INDRA_MODE:-auto}
+      # Azure Document Intelligence is opt-in at upload time; credentials stay
+      # in the local, git-ignored .env file.
+      AZURE_DI_ENDPOINT: ${AZURE_DI_ENDPOINT:-}
+      AZURE_DI_KEY: ${AZURE_DI_KEY:-}
+      AZURE_DI_KEY_2: ${AZURE_DI_KEY_2:-}
+      AZURE_DI_MODEL: ${AZURE_DI_MODEL:-prebuilt-layout}
+      AZURE_DI_PAGE_BATCH_SIZE: ${AZURE_DI_PAGE_BATCH_SIZE:-2}
+      AZURE_DI_MAX_BYTES: ${AZURE_DI_MAX_BYTES:-3800000}
+      HF_HOME: /app/data/huggingface
+    volumes:
+      # Outputs, OCR archive and the masters database stay on the host, so the
+      # files a reviewer checks are the same ones the local run produces.
+      - ./out:/app/out
+      - ./data:/app/data
+      - ./db/sqlite:/app/db/sqlite
+      # Template of record: readable, never writable, inside the container.
+      - "./BG Tracker.xlsx:/app/BG Tracker.xlsx:ro"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import json,sys,urllib.request; sys.exit(0 if json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=15)).get('status') == 'ok' else 1)"
+      interval: 30s
+      timeout: 20s
+      start_period: 20s
+      retries: 3

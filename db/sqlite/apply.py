@@ -24,9 +24,9 @@ EXPECTED_TABLES = [
 ]
 
 SEED_MINIMUMS = {
-    "bg_type": 2, "bg_status": 6, "roles": 3, "bank": 7,
-    "project": 12, "contractor": 31, "nature_of_service": 25,
-    "company": 1, "toll_plaza": 32,
+    "bg_type": 2, "bg_status": 6, "roles": 3,
+    "project": 28, "nature_of_service": 27,
+    "company": 3, "toll_plaza": 46,
 }
 
 

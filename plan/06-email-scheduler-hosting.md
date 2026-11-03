@@ -2,7 +2,6 @@
 id: PLAN-06
 title: Email, Scheduler, Hosting and Operations
 status: active
-owner: Laxmi
 last_updated: 2026-10-08
 version: 3
 inputs: ["BG_Automation_Plan.md (R4, R8)"]
@@ -34,7 +33,7 @@ open behind the `MailSender` interface.
 
 - Subject: `BG {BG No} expiring {To} — {Project}/{Contractor} — extend or close?`
 - Body includes: Company, Project, Toll Plaza, BG No, Amount, Bank, From, To,
-  Claim Period, LOA/PO Number, Remarks, a link to the Register row, and the
+  Claim Period, LOA Number, PO Number, Remarks, a link to the Register row, and the
   instruction to reply `EXTEND` or `CLOSE`.
 - One mail per BG (no digest in the pilot) so each decision stays traceable
   (ST006–ST007).

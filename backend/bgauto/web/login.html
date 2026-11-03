@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · BG Automation</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --panel:#ffffff; --text:#111827; --muted:#6b7280;
+    --line:#e4e7ec; --line-strong:#d0d5dd; --brand:#0f766e; --brand-ink:#0b5f59;
+    --danger:#b42318; --danger-bg:#fef3f2; --radius:14px;
+    --shadow:0 1px 2px rgba(16,24,40,.05), 0 10px 28px -16px rgba(16,24,40,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0a0e14; --panel:#111823; --text:#e6eaf0; --muted:#98a2b3;
+      --line:#1e2836; --line-strong:#2a3646; --brand:#2dd4bf; --brand-ink:#5eead4;
+      --danger:#fda29b; --danger-bg:#2a1215;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 30px -18px rgba(0,0,0,.7);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0}
+  body{
+    background:var(--bg); color:var(--text); display:grid; place-items:center; padding:24px;
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{width:100%; max-width:390px}
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:26px;
+  }
+  .brand{display:flex; align-items:center; gap:12px; margin-bottom:22px}
+  .mark{
+    width:42px; height:42px; border-radius:12px; display:grid; place-items:center;
+    background:var(--brand); color:#fff; font-weight:700; letter-spacing:.5px; font-size:14px;
+  }
+  h1{font-size:17px; margin:0; letter-spacing:-.01em}
+  .sub{margin:3px 0 0; font-size:12.5px; color:var(--muted)}
+  label{display:block; font-size:12px; font-weight:600; color:var(--muted); margin:14px 0 5px}
+  input{
+    width:100%; padding:10px 12px; border:1px solid var(--line-strong); border-radius:9px;
+    background:var(--panel); color:var(--text); font:inherit; font-size:14px; min-height:42px;
+  }
+  input:focus{outline:2px solid color-mix(in srgb, var(--brand) 45%, transparent); outline-offset:1px; border-color:var(--brand)}
+  .btn{
+    width:100%; margin-top:20px; display:inline-flex; justify-content:center; align-items:center;
+    border-radius:10px; padding:11px 14px; font:600 14px/1 inherit; border:1px solid transparent;
+    cursor:pointer; background:var(--brand); color:#04211e;
+  }
+  .btn:hover{background:var(--brand-ink); color:#fff}
+  .btn:disabled{opacity:.55; cursor:not-allowed}
+  .notice{border-radius:10px; padding:10px 12px; font-size:13px; border:1px solid; margin-top:16px}
+  .notice.error{background:var(--danger-bg); border-color:var(--danger); color:var(--danger)}
+  .foot{margin-top:18px; font-size:11.5px; color:var(--muted); text-align:center}
+  code{font-family:ui-monospace,Consolas,monospace; font-size:.9em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="brand">
+      <div class="mark">BG</div>
+      <div>
+        <h1>Bank Guarantee automation</h1>
+        <p class="sub">Local OCR · register · reminders</p>
+      </div>
+    </div>
+    <form id="loginForm" autocomplete="on">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" required autofocus>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button class="btn" id="signIn" type="submit">Sign in</button>
+      <div class="notice error" id="error" hidden></div>
+    </form>
+    <p class="foot">Accounts are managed by an admin inside the app.<br>Everything stays on this machine.</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = (sel) => document.querySelector(sel);
+
+async function alreadySignedIn() {
+  try {
+    const response = await fetch("/api/session", { credentials: "same-origin" });
+    if (!response.ok) return;
+    const payload = await response.json();
+    if (payload.authenticated) location.replace("/");
+  } catch (error) { /* server not up yet: stay on the form */ }
+}
+
+$("#loginForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = $("#signIn");
+  const error = $("#error");
+  error.hidden = true;
+  button.disabled = true;
+  button.textContent = "Signing in…";
+  try {
+    const response = await fetch("/api/login", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: $("#username").value.trim(),
+        password: $("#password").value,
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.detail || "Sign in failed.");
+    location.replace("/");
+  } catch (problem) {
+    error.textContent = problem.message;
+    error.hidden = false;
+    $("#password").select();
+  } finally {
+    button.disabled = false;
+    button.textContent = "Sign in";
+  }
+});
+
+for (const id of ["username", "password"]) {
+  $("#" + id).addEventListener("input", () => { $("#error").hidden = true; });
+}
+
+alreadySignedIn();
+</script>
+</body>
+</html>

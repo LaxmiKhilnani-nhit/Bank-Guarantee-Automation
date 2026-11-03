@@ -1,0 +1,16 @@
+# Local BG ingestion pipeline (runs offline, no Azure)
+#
+# Tesseract itself is a native binary, not a pip package. See README.md for
+# install options. Set TESSERACT_CMD if it is not in a default location.
+
+openpyxl>=3.1
+pytesseract>=0.3.13
+pymupdf>=1.24,<2.0
+pillow>=10.0
+indra-ocr>=1.1.2
+azure-ai-documentintelligence>=1.0.0,<2.0.0
+
+# Review UI (python -m bgauto.web)
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9

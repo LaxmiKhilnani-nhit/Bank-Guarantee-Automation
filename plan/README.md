@@ -2,7 +2,6 @@
 id: PLAN-INDEX
 title: BG Automation — Plan Index
 status: active
-owner: Laxmi
 last_updated: 2026-10-08
 version: 3
 inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx", "BG_UseCase_Story_Tracking.xlsx"]
@@ -65,6 +64,6 @@ tables for anything comparable, Mermaid for every flow.
 ## References
 
 - Master plan: `../BG_Automation_Plan.md`
-- Tracker: `../BG Tracker.xlsx` (Sheet1, 20 columns)
+- Tracker: `../BG Tracker.xlsx` (Sheet1, 21 columns; LOA and PO are separate)
 - Stories: `../BG_UseCase_Story_Tracking.xlsx`
 - Change history: `00-log.md`
