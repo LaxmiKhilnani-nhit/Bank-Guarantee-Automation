@@ -114,11 +114,14 @@ class WebTests(TempDatabase):
         self.assertFalse(probe.json()["authenticated"])
         self.assertIsNone(probe.json()["user"])
 
-    def test_health_reports_indra_engine(self):
+    def test_health_reports_datalab_configuration(self):
         client = TestClient(api.app)
-        with patch.object(api.ocr, "indra_available", return_value=True):
+        with patch.object(api.ocr, "datalab_available", return_value=True):
             payload = client.get("/api/health").json()
-        self.assertTrue(payload["ocr_engines"]["indra"])
+        self.assertEqual(payload["status"], "ok")
+        self.assertTrue(payload["datalab"]["configured"])
+        self.assertEqual(payload["ocr_engine"], "datalab")
+        self.assertEqual(payload["ocr_mode"], config.DATALAB_MODE)
 
     def test_wrong_password_is_refused(self):
         client = TestClient(api.app)

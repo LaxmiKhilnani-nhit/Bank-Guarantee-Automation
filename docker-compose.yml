@@ -1,4 +1,4 @@
-# Whole app in Docker: FastAPI review UI + local Indra and Tesseract OCR.
+# Whole app in Docker: FastAPI review UI with Datalab OCR.
 #
 #   docker compose build
 #   docker compose up -d            -> http://127.0.0.1:8000
@@ -12,7 +12,6 @@ services:
       context: .
       args:
         BG_BASE_IMAGE: ${BG_BASE_IMAGE:-python:3.13-slim}
-        BG_INSTALL_OS_DEPS: ${BG_INSTALL_OS_DEPS:-1}
     image: bg-automation:local
     container_name: bg-automation-app
     restart: unless-stopped
@@ -46,26 +45,20 @@ services:
       BG_SCHEDULER: ${BG_SCHEDULER:-1}
       BG_SCHEDULER_TIME: ${BG_SCHEDULER_TIME:-09:00}
       BG_INTERNAL_TOKEN: ${BG_INTERNAL_TOKEN:-}
-      # Optional Firecrawl name check. Empty key = fully local, OCR-only.
+      # Optional Firecrawl name check. Empty key = no lookup (OCR still runs).
       BG_FIRECRAWL_API_KEY: ${BG_FIRECRAWL_API_KEY:-}
       BG_LOOKUP: ${BG_LOOKUP:-1}
       BG_LOOKUP_TIMEOUT: ${BG_LOOKUP_TIMEOUT:-120}
       BG_LOOKUP_MAX_CREDITS: ${BG_LOOKUP_MAX_CREDITS:-100}
       BG_LOOKUP_TTL_DAYS: ${BG_LOOKUP_TTL_DAYS:-30}
       BG_LOOKUP_MAX_MATCHES: ${BG_LOOKUP_MAX_MATCHES:-5}
-      # Hugging Face/Indra model downloads persist in the mounted local data folder.
-      BG_OCR_ENGINE: ${BG_OCR_ENGINE:-indra}
-      BG_INDRA_THREADS: ${BG_INDRA_THREADS:-4}
-      BG_INDRA_MODE: ${BG_INDRA_MODE:-auto}
-      # Azure Document Intelligence is opt-in at upload time; credentials stay
-      # in the local, git-ignored .env file.
-      AZURE_DI_ENDPOINT: ${AZURE_DI_ENDPOINT:-}
-      AZURE_DI_KEY: ${AZURE_DI_KEY:-}
-      AZURE_DI_KEY_2: ${AZURE_DI_KEY_2:-}
-      AZURE_DI_MODEL: ${AZURE_DI_MODEL:-prebuilt-layout}
-      AZURE_DI_PAGE_BATCH_SIZE: ${AZURE_DI_PAGE_BATCH_SIZE:-2}
-      AZURE_DI_MAX_BYTES: ${AZURE_DI_MAX_BYTES:-3800000}
-      HF_HOME: /app/data/huggingface
+      # Datalab OCR. The key stays in the git-ignored .env file and is never
+      # written to source, logs or the image. Mode: lite|fast|balanced|accurate.
+      DATALAB_API_KEY: ${DATALAB_API_KEY:-}
+      BG_DATALAB_MODE: ${BG_DATALAB_MODE:-fast}
+      BG_DATALAB_TIMEOUT: ${BG_DATALAB_TIMEOUT:-600}
+      BG_DATALAB_MAX_POLLS: ${BG_DATALAB_MAX_POLLS:-300}
+      BG_DATALAB_POLL_INTERVAL: ${BG_DATALAB_POLL_INTERVAL:-2}
     volumes:
       # Outputs, OCR archive and the masters database stay on the host, so the
       # files a reviewer checks are the same ones the local run produces.

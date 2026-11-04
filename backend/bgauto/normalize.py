@@ -191,7 +191,7 @@ def bg_no_from_filename(name: str) -> str | None:
     return re.sub(r"\s", "", m.group(1))
 
 
-# Character pairs Tesseract swaps in practice. Two tokens may only be treated as
+# Character pairs OCR engines swap in practice. Two tokens may only be treated as
 # the same number if every difference falls inside one of these groups.
 _CONFUSION_GROUPS = [
     {"0", "O", "Q"},

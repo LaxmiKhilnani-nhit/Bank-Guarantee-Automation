@@ -40,7 +40,7 @@ def main() -> None:
     host = os.environ.get("BG_WEB_HOST", "127.0.0.1")
     port = int(os.environ.get("BG_WEB_PORT", "8000"))
     print(f"BG ingestion review UI -> http://{host}:{port}")
-    print("Local only: no Azure, no outbound calls. Ctrl+C to stop.")
+    print("PDFs are sent to the Datalab API for OCR; the register stays local. Ctrl+C to stop.")
     uvicorn.run(app, host=host, port=port, log_level="info")
 
 

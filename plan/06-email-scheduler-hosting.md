@@ -64,7 +64,7 @@ scheduler is an acceptable alternative for the pilot.
   `127.0.0.1:8000`, where the FastAPI app runs as a Windows Service
   (uvicorn).
 - Data folder: `C:/bg-auto/data/` holds `BG Tracker.xlsx`, `app.db`, `pdfs/`,
-  `di-json/`, and `backups/`. The service account owns it.
+  `ocr-json/`, and `backups/`. The service account owns it.
 - Configuration is 100% environment-driven, so a later move to App Service
   needs no code change.
 

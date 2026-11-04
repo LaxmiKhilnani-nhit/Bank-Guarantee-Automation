@@ -24,11 +24,11 @@ The uploader reviews their own extracted values and saves the run directly.
 sequenceDiagram
   participant U as Uploader
   participant API as FastAPI
-  participant OCR as Indra/Tesseract (local)
+  participant OCR as Datalab API (remote)
   participant X as BG Tracker.xlsx
   U->>API: Upload PDF and request extraction
-  API->>OCR: Read all pages locally
-  OCR-->>API: Text, lines, boxes, confidence
+  API->>OCR: Send PDF with the configured mode
+  OCR-->>API: JSON page tree, page text, quality score
   API->>API: Extract fields, save draft (owner = U)
   U->>API: Review and edit fields, then Save
   API->>API: Validate mandatory fields, dedupe BG No
@@ -71,7 +71,7 @@ Accept: no BG gets two T-7 mails; every send is logged with recipients and subje
 
 ```mermaid
 flowchart TD
-  X["DI error, unreadable scan, or missing mandatory fields"] --> F["Job marked failed, error logged"]
+  X["Datalab error, unreadable scan, or missing mandatory fields"] --> F["Job marked failed, error logged"]
   F --> M["Job appears in manual review queue"]
   M -->|"fixable"| R["Uploader or admin enters the fields and saves"]
   M -->|"not fixable"| B["Leave blank - never write a bad row to Excel"]

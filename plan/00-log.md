@@ -2,8 +2,8 @@
 id: PLAN-LOG
 title: Decision and Change Log
 status: active
-last_updated: 2026-11-02
-version: 7
+last_updated: 2026-11-04
+version: 8
 inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx", "BG_UseCase_Story_Tracking.xlsx", "plan/"]
 outputs: ["plan/00-log.md"]
 ---
@@ -19,6 +19,35 @@ current state. Newest entries are first.
 Format for each entry: date, author, what changed, why, files affected.
 
 ## 2. Log (newest first)
+
+### 2026-11-04 — Team — Datalab replaces Tesseract, Indra and Azure OCR
+
+- What: removed the Tesseract, Indra and Azure Document Intelligence adapters
+  and their dependencies. OCR now goes through the Datalab API using
+  `datalab-python-sdk` with a single fixed mode (`fast` by default,
+  `BG_DATALAB_MODE`). The upload UI no longer has an engine selector; Datalab is
+  the only engine. `bgauto/compare.py` and its tests are kept for reference but
+  the upload flow no longer runs or displays an engine comparison.
+- Confidence: Datalab's `parse_quality_score` (0–5), when provided, is mapped
+  to `score / 5` with source `datalab_quality`. `fast` often omits it, so the UI
+  and CLI simply show no confidence instead of 0%. Image extraction and captions
+  are disabled.
+- Health: `GET /api/health` is now a local configuration check (SDK installed
+  plus key or saved login); it never spends an API call.
+- Privacy: the PDF leaves the machine for Datalab. The register, workbook and
+  archive stay local; the optional Firecrawl lookup still sends only the OCR'd
+  names and IFSC codes.
+- Config: `DATALAB_API_KEY`, `BG_DATALAB_MODE`, `BG_DATALAB_BASE_URL`,
+  `BG_DATALAB_TIMEOUT`, `BG_DATALAB_MAX_POLLS`, `BG_DATALAB_POLL_INTERVAL`.
+  The key lives only in the git-ignored `.env` (or the SDK's saved login).
+  `config.py` now applies that `.env` for local runs as well as Compose; a real
+  environment variable still wins.
+- Files: `backend/bgauto/{ocr,config,cli}.py`,
+  `backend/bgauto/web/{api,runs,index.html,__main__}.py`,
+  `backend/tests/{test_ocr,test_web,test_config}.py`, `backend/requirements.txt`,
+  `Dockerfile`, `docker-compose.yml`, `.env.example`, `backend/README.md`,
+  `db/migrations/V1__schema.sql`, `plan/01-architecture.md`,
+  `plan/04-ocr-extraction.md`, `plan/05-flows.md`.
 
 ### 2026-11-02 — Team — Optional Azure Document Intelligence OCR test engine
 
@@ -366,7 +395,7 @@ Format for each entry: date, author, what changed, why, files affected.
 | # | Decision needed | Owner | Status |
 |---|----------------|-------|--------|
 | 1 | SMTP mailbox, Finance DL, User Team DL, template sign-off | TBD | Open |
-| 2 | Azure DI S0 resource group in Central India + cost-alert owner | TBD | Open |
+| 2 | Datalab plan/quota owner and cost-alert contact | TBD | Open |
 | 3 | Confirm `To` (not Claim Period) as the T-7 anchor | TBD | Open |
 
 ## References

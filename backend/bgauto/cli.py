@@ -41,16 +41,23 @@ def _expand(patterns: list[str]) -> list[Path]:
     return [p for p in dict.fromkeys(files) if p.suffix.lower() == ".pdf"]
 
 
-def _archive(extraction: Extraction, directory: Path) -> Path:
+def _archive(extraction: Extraction, directory: Path, mode: str | None = None) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     target = directory / f"{extraction.source.stem}.json"
     payload = {
         "source_pdf": extraction.source.name,
-        "engine": "tesseract-local",
+        "engine": extraction.ocr.engine,
+        "mode": mode or config.DATALAB_MODE,
         "ocr": {
             "mean_confidence": extraction.ocr.mean_conf,
+            "confidence_source": extraction.ocr.confidence_source,
             "pages": [
-                {"page": p.number, "mean_confidence": p.mean_conf, "text": p.text}
+                {
+                    "page": p.number,
+                    "mean_confidence": p.mean_conf,
+                    "confidence_source": p.confidence_source,
+                    "text": p.text,
+                }
                 for p in extraction.ocr.pages
             ],
         },
@@ -76,10 +83,16 @@ def _notes(extraction: Extraction) -> str:
     return "; ".join(parts)
 
 
+def _confidence(ex: Extraction) -> str:
+    if ex.ocr.mean_conf <= 0:
+        return "no Datalab quality score"
+    return f"OCR conf {ex.ocr.mean_conf:.2%}"
+
+
 def _print_summary(extractions: list[Extraction]) -> None:
     for ex in extractions:
         print("")
-        print(f"PDF   : {ex.source.name}  ({len(ex.ocr.pages)} pages, OCR conf {ex.ocr.mean_conf:.2%})")
+        print(f"PDF   : {ex.source.name}  ({len(ex.ocr.pages)} pages, {_confidence(ex)})")
         for name in (
             "Company Name", "Name of Contractor", "BG No", "BG Amount", "From", "To",
             "Claim Period", "Bank Name", "Types of BG", "Nature of Service",
@@ -101,7 +114,6 @@ def cmd_ingest(args: argparse.Namespace) -> int:
         print("No PDF files matched.", file=sys.stderr)
         return 2
 
-    ocr.configure()
     db_path = Path(args.db) if args.db else None
     try:
         ensure_schema(db_path)
@@ -118,10 +130,10 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     extractions: list[Extraction] = []
     for pdf_path in files:
         print(f"OCR   : {pdf_path.name} ...", flush=True)
-        document = ocr.ocr_pdf(pdf_path, dpi=args.dpi)
+        document = ocr.convert_pdf(pdf_path, mode=args.mode)
         result = extract(document, masters)
         extractions.append(result)
-        archive = _archive(result, Path(args.archive_dir))
+        archive = _archive(result, Path(args.archive_dir), args.mode)
         print(f"        archived OCR -> {archive}")
 
     rows = []
@@ -243,7 +255,12 @@ def build_parser() -> argparse.ArgumentParser:
     ingest.add_argument("--tracker", default=str(config.TRACKER_PATH), help="tracker template")
     ingest.add_argument("--archive-dir", default=str(config.OCR_ARCHIVE_DIR), help="OCR JSON archive")
     ingest.add_argument("--db", default=None, help="SQLite masters database")
-    ingest.add_argument("--dpi", type=int, default=None, help="render DPI (default 300)")
+    ingest.add_argument(
+        "--mode",
+        default=None,
+        choices=list(config.DATALAB_MODES),
+        help=f"Datalab processing mode (default {config.DATALAB_MODE})",
+    )
     ingest.set_defaults(func=cmd_ingest)
 
     masters = sub.add_parser(

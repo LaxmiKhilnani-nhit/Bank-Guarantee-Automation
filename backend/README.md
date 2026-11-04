@@ -1,15 +1,15 @@
 # Local BG ingestion (`bgauto`)
 
-Scanned Bank Guarantee PDF -> the 21 tracker columns. Indra reads locally by
-default; Tesseract is available locally, and Azure Document Intelligence is an
-optional remote OCR engine for testing. Confirmed rows are appended to a
-**copy** of `BG Tracker.xlsx`; the source tracker is never edited.
+Scanned Bank Guarantee PDF -> the 21 tracker columns. OCR runs through the
+**Datalab API**; the register, review workbook and masters stay on this machine.
+Confirmed rows are appended to a **copy** of `BG Tracker.xlsx`; the source
+tracker is never edited.
 
 ```
 Sample_Bank_Guarantees/*.pdf
         |
         v
-  local Indra / local Tesseract / optional Azure --> extraction + validators
+  Datalab API (JSON page tree) --> extraction + validators
         |
         v
   label-anchored extraction + validators (blank beats wrong)
@@ -21,89 +21,44 @@ Sample_Bank_Guarantees/*.pdf
 
 ## Prerequisites
 
-- Python 3.10+ (Docker uses Python 3.13) with the venv at `.venv`
-- Tesseract 5 with `eng` language data
+- Python 3.11+ (Docker uses Python 3.13) with the venv at `.venv`
+- A Datalab API key (https://www.datalab.to/app/keys) or a saved `datalab login`
 
 ```powershell
 .venv\Scripts\python.exe -m pip install -r backend/requirements.txt
 ```
 
-Tesseract lookup order (`bgauto/config.py`):
+## Datalab OCR
 
-1. `TESSERACT_CMD` environment variable
-2. `%LOCALAPPDATA%\bgauto\tesseract\Library\bin\tesseract.exe` (the no-admin
-   micromamba install used here)
-3. `C:\Program Files\Tesseract-OCR\tesseract.exe` and the x86 equivalent
-4. `tesseract` on `PATH`
+The app sends each uploaded PDF (or each CLI file) to the Datalab API and
+converts its JSON page tree into the page text the extractor already uses. The
+key is read from `DATALAB_API_KEY` in the git-ignored `.env` file (loaded by the
+app and by Compose), from a real environment variable, or from the SDK's saved
+login at `~/.config/datalab/config.json`. The key is never written to source,
+committed config or logs.
 
-Language data is found next to the binary (`../share/tessdata` or
-`./tessdata`); override with `TESSDATA_PREFIX`.
+- **Mode.** One fixed mode, `BG_DATALAB_MODE`, default `fast`. The other modes
+  are `lite`, `balanced` and `accurate`; the CLI can override per run with
+  `--mode`.
+- **Confidence.** When Datalab returns a `parse_quality_score` (0–5), the app
+  shows `score / 5` with source `datalab_quality`. It is a document-level
+  quality signal, not a per-word probability. `fast` often returns no score;
+  the UI and CLI then simply omit confidence rather than showing 0%.
+- **Allowed content.** Images and image captions are disabled so the JSON holds
+  only the layout text the extractor needs.
+- **Failure.** A missing key, exhausted allowance (HTTP 402) or conversion error
+  fails that upload with a readable message; the PDF is removed from the run and
+  nothing is written to the register.
+- **Health.** `GET /api/health` checks that the SDK is installed and a key or
+  saved login exists. It does not spend an API call.
 
-No-admin install used on this machine:
+`bgauto/compare.py` is kept for reference and its unit tests still pass, but the
+upload flow no longer runs or displays an engine comparison: Datalab is the only
+engine.
 
-```powershell
-$dir = "$env:LOCALAPPDATA\bgauto"
-# micromamba.exe from https://micro.mamba.pm/api/micromamba/win-64/latest
-$env:MAMBA_ROOT_PREFIX = "$dir\mamba"
-& "$dir\tools\Library\bin\micromamba.exe" create -y -p "$dir\tesseract" -c conda-forge tesseract
-```
-
-## Indra local OCR
-
-The app uses the upstream `indra-ocr` Python package and runs its ONNX models
-inside the app container. The model files download on first OCR use and remain
-in `./data/huggingface`; PDFs and page text are not sent to an OCR service.
-The default `auto` mode reads a valid PDF text layer and OCRs scanned pages.
-Choose `ocr` with `BG_INDRA_MODE=ocr` to run OCR on every page regardless of
-the text layer. `BG_INDRA_THREADS` controls local CPU use. Tesseract remains
-available in the upload selector and is the fallback if Indra cannot run.
-
-Indra's Python package and its model weights have separate license terms; the
-weights are fetched from the upstream model repository at first use. Check the
-upstream terms for the intended deployment.
-
-## Azure Document Intelligence test engine
-
-Set `AZURE_DI_ENDPOINT`, `AZURE_DI_KEY`, and optionally `AZURE_DI_KEY_2` in the
-local git-ignored `.env` file. Compose passes these values only to the app
-container. The Azure and All engines are enabled only when an endpoint and key
-are configured. Azure uses the `prebuilt-layout` model by default; override it
-with `AZURE_DI_MODEL` if needed. It sends at most two pages and 4 MB per
-request by default, which supports the observed F0 test resource limits and
-automatically covers longer PDFs in page batches. Set `AZURE_DI_PAGE_BATCH_SIZE`
-and `AZURE_DI_MAX_BYTES` up to the S0 limits only if the resource is Standard.
-The secondary key is tried only when Azure rejects the primary key with an
-authentication error.
-
-Selecting Azure sends the PDF bytes to the configured Azure endpoint.
-Selecting All runs local Indra and Tesseract plus Azure, so the PDF is sent to
-Azure as part of the comparison. The default remains local Indra. Use sample
-documents for tests unless remote processing of a document has been approved.
-
-## How the engine comparison works
-
-The old comparison picked one whole extraction: "most required fields, then
-fewest flags, then confidence". That rewards an engine for filling one more box,
-even when the other engine read the page correctly, and it cannot compare a
-one-page read with a full read.
-
-`bgauto/compare.py` compares the things a reviewer can check:
-
-1. **Page coverage first.** An engine that read 1 of 22 pages cannot become the
-   base just because it filled one more field on that page.
-2. **Per field.** Each engine votes for a value.
-   - Both engines agree: the value is kept with no flag.
-   - They disagree: the base engine's unflagged value is kept and flagged
-     `engine_disagrees`; the other value stays visible in the comparison panel.
-   - One engine is blank: the other engine's value fills the gap and is marked
-     `from_<engine>`.
-3. **Per page.** The panel shows how many characters each engine read on each
-   page and the word overlap between engines on that page, so a page that only
-   one engine read is obvious.
-
-Indra line confidence is the OCR model's reported confidence. Tesseract
-confidence is based on recognized words. The UI displays the source engine's
-confidence value when it is available.
+**Privacy.** The PDF leaves this machine on its way to Datalab. If that is not
+acceptable for a document, do not upload it. The register, workbook, database
+and OCR archive stay local.
 
 ## Run
 
@@ -122,7 +77,7 @@ $env:PYTHONPATH = "backend"
 | `--tracker` | `BG Tracker.xlsx` | template of record; only ever read |
 | `--archive-dir` | `data/ocr-json` | per-PDF OCR text and confidence |
 | `--db` | `db/sqlite/bg_automation.sqlite3` | masters for dropdown matching |
-| `--dpi` | `300` | render DPI |
+| `--mode` | `BG_DATALAB_MODE` (`fast`) | Datalab mode: `lite`, `fast`, `balanced`, `accurate` |
 
 Exit code 0 means every PDF was read; the summary and review files say which
 fields need a human. Re-running into the same workbook skips duplicate BG
@@ -132,8 +87,8 @@ numbers, so delete the output workbook (or pass a new `--out`) to start clean.
 
 `python -m bgauto.web` serves the same pipeline as a small local app at
 `http://127.0.0.1:8000` (or the Docker port). Every page, stylesheet and script
-is served by the process without a CDN. Outbound calls are limited to optional
-name lookup and Azure OCR when those features are enabled or selected.
+is served by the process without a CDN. Uploaded PDFs go to the Datalab API for
+OCR; the optional Firecrawl lookup sends only the OCR'd names and IFSC codes.
 
 | Action | admin | uploader | viewer |
 |---|---|---|---|
@@ -171,9 +126,8 @@ name lookup and Azure OCR when those features are enabled or selected.
 
 ## Run in Docker
 
-The same app (FastAPI UI + local Indra/Tesseract OCR) runs as one container.
-The image installs Tesseract locally, and Indra weights are cached in the
-mounted `./data/huggingface` directory.
+The same app (FastAPI UI + Datalab OCR) runs as one container. The image holds
+the SDK; PDFs are sent to the Datalab API using the key from `.env`.
 
 ```powershell
 docker compose build
@@ -189,8 +143,9 @@ docker compose logs -f app
   workbooks, OCR archives and the masters database are the same files a local
   run produces. `BG Tracker.xlsx` is mounted read-only.
 - **Template.** It must exist before `up`, because compose bind-mounts it.
-- **Health.** `GET /api/health` performs a real OCR round-trip; the Docker
-  healthcheck fails if Tesseract cannot read the test image (`status: degraded`).
+- **Health.** `GET /api/health` checks that the Datalab SDK is installed and a
+  key or saved login exists. It makes no paid call; a missing key reports
+  `status: degraded`.
 - **Rebuild after code changes.** `docker compose build && docker compose up -d`;
   `docker compose restart` reuses the old image.
 - **CLI inside the container.** Same image, so the importer and ingest command
@@ -230,6 +185,11 @@ those values into the container. The app still starts with an empty file.
 | `BG_APP_URL` | `http://127.0.0.1:8000` | link inside the reminder |
 | `BG_SCHEDULER` / `BG_SCHEDULER_TIME` | `1` / `09:00` | in-process IST scheduler |
 | `BG_INTERNAL_TOKEN` | empty | protects `/internal/daily-reminder` |
+| `DATALAB_API_KEY` | empty | Datalab key for OCR; health is degraded without it |
+| `BG_DATALAB_MODE` | `fast` | `lite`, `fast`, `balanced` or `accurate` |
+| `BG_DATALAB_BASE_URL` | `https://www.datalab.to` | API base URL |
+| `BG_DATALAB_TIMEOUT` | `600` | seconds allowed for one conversion |
+| `BG_DATALAB_MAX_POLLS` / `BG_DATALAB_POLL_INTERVAL` | `300` / `2` | polling limits |
 | `BG_FIRECRAWL_API_KEY` | empty | Firecrawl key for the official-name check; empty = off |
 | `BG_LOOKUP` | `1` | `0` disables lookups even when a key is set |
 | `BG_LOOKUP_TIMEOUT` | `120` | seconds to wait for one PDF's two lookups |
@@ -272,9 +232,10 @@ Firecrawl key the upload also asks the web for the official Indian names:
   confirmed BGs, not seeded from a list.
 
 **Privacy.** Only the OCR'd bank name, contractor name and up to three IFSC
-codes leave the machine. The PDF, amounts, dates, addresses and beneficiary
-details do not. This is the one outbound call in the app; keep the key
-server-side in `.env`, and rotate it if it is ever pasted into a chat or ticket.
+codes leave the machine for this lookup. The PDF, amounts, dates, addresses and
+beneficiary details do not (the PDF was already sent to Datalab for OCR). Keep
+the key server-side in `.env`, and rotate it if it is ever pasted into a chat or
+ticket.
 
 ## Register, T-7 reminders and operations
 
@@ -342,9 +303,9 @@ mapping, so a wrong or duplicate row fails the suite.
 
 Unit and HTTP tests run against a temp database and temp output directory:
 extraction, masters, schema bootstrap, scrypt auth/lockout, the role matrix,
-confirm + workbook writes, register corrections, reminders, and the Firecrawl
-lookup with a fake agent (no network). No OCR runs, and the real
-`BG Tracker.xlsx` is never touched.
+confirm + workbook writes, register corrections, reminders, the Datalab adapter
+(client and options faked), and the Firecrawl lookup with a fake agent. No
+network call is made, and the real `BG Tracker.xlsx` is never touched.
 
 ```powershell
 $env:PYTHONPATH = "backend"
@@ -391,9 +352,9 @@ still keeps one row per guarantee so reminders stay per BG.
 
 ## Known limits
 
-- English-only Tesseract models. Hindi/regional text is not read.
+- Datalab reads printed text; handwritten notes and rubber stamps are still not
+  parsed reliably.
 - The bank must print recognisable labels; a BG with no labels goes to review.
-- Handwriting and rubber stamps are not parsed.
 - BG number shape is assumed to be `NNN[A-Z]+NNNNNN` (e.g. `264GT02252580004`,
   `0816NDLG00007526`); other issuers may need the regex in
   `normalize.normalise_bg_no` widened.

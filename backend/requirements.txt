@@ -1,14 +1,11 @@
-# Local BG ingestion pipeline (runs offline, no Azure)
+# BG ingestion pipeline (OCR through the Datalab API)
 #
-# Tesseract itself is a native binary, not a pip package. See README.md for
-# install options. Set TESSERACT_CMD if it is not in a default location.
+# datalab-python-sdk needs Python 3.11+. Supply DATALAB_API_KEY in the
+# git-ignored .env file, or run `datalab login` once to store a key under
+# ~/.config/datalab/config.json.
 
 openpyxl>=3.1
-pytesseract>=0.3.13
-pymupdf>=1.24,<2.0
-pillow>=10.0
-indra-ocr>=1.1.2
-azure-ai-documentintelligence>=1.0.0,<2.0.0
+datalab-python-sdk>=0.8
 
 # Review UI (python -m bgauto.web)
 fastapi>=0.115
