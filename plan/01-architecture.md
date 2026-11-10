@@ -26,21 +26,21 @@ new integration.
 
 ## 3. System context
 
-A user uploads BG PDFs on a web dashboard. The backend sends each PDF to the
-Datalab API for OCR and field extraction. A human reviews the result, and
-confirmed rows are appended to the Excel tracker. A daily job emails Finance
-and the User Team 7 days before expiry.
+A user uploads BG PDFs on a web dashboard. The backend runs each PDF through a
+pinned Datalab pipeline (convert then structured extract). A human reviews the
+result, and confirmed rows are appended to the Excel tracker. A daily job
+emails Finance and the User Team 7 days before expiry.
 
 ```mermaid
 flowchart LR
   Uploader["Uploader or Admin\n(React dashboard)"] -->|HTTPS| API["FastAPI on port 8000\n(upload, review, register, auth)"]
   Viewer["Viewer - Finance / User Team"] -->|HTTPS read and export| API
-  API -->|PDF + API key| DL["Datalab API\n(remote OCR)"]
+  API -->|PDF + API key| DL["Datalab API\n(pipeline: convert + extract)"]
   API -->|single writer| XLSX["BG Tracker.xlsx\n(Sheet1, 21 columns)"]
   API -->|SQL| DB[("SQLite\nusers, jobs, audit, reminders")]
   API -->|STARTTLS port 587| SMTP["smtp.office365.com\n(service mailbox)"]
   SMTP -->|T-7 reminder| DLIST["Finance DL + User Team DL"]
-  API -->|OCR and review archive| STORE["Local run archive"]
+  API -->|pipeline results and review archive| STORE["Local run archive"]
 ```
 
 Phase 1 has no Graph, SharePoint, or Entra. Each external dependency sits
@@ -54,7 +54,7 @@ flowchart TB
   subgraph UI["Frontend - React (Vite)"]
     Login["Login"]
     Upload["Upload - drag and drop, multiple PDFs"]
-    Review["Review - OCR text plus editable form"]
+    Review["Review - page text plus editable form"]
     Register["Register - table, Due-7d and Overdue filters, search, export"]
     RemLog["Reminders log"]
     Users["Users and Admin"]
@@ -62,7 +62,7 @@ flowchart TB
   subgraph SVC["Backend - FastAPI"]
     AuthN["Auth - JWT cookie, role checks"]
     Jobs["Jobs - upload, fetch, edit, confirm"]
-    Extract["Extractor - Datalab page text plus field rules"]
+    Extract["Extractor - Datalab convert -> extract pipeline"]
     Track["TrackerStore - append row, dedupe on BG No"]
     Mail["MailSender - SMTP"]
     Sched["Scheduler - daily 09:00 T-7 check"]
@@ -80,7 +80,7 @@ flowchart TB
 | Component | Responsibility | Key rule |
 |-----------|---------------|----------|
 | Upload | Accept PDFs, create a job per file | Max file size and type validated before queuing |
-| Extractor | Convert the PDF with Datalab, apply field rules, return fields + confidence | Never invent values; a failed conversion fails that upload |
+| Extractor | Run the pinned Datalab pipeline, map its JSON through master resolution, return fields + extras | Never invent values; a failed convert or extract fails that upload |
 | Review | Let humans fix fields and pick dropdowns | Uploader edits own drafts; admin edits any |
 | TrackerStore | Append confirmed rows to Excel | One writer at a time; reject duplicate BG No with 409 |
 | MailSender | Send T-7 mails, log results | Retry 3 times, then dead-letter |
@@ -93,7 +93,7 @@ flowchart LR
   Internet --> IIS["IIS reverse proxy (HTTPS)"]
   IIS --> FE["Static React build"]
   IIS -->|"/api/*"| SVC["Windows Service\n(uvicorn FastAPI on 127.0.0.1:8000)"]
-  SVC --> DATA["C:/bg-auto/data/\nBG Tracker.xlsx, app.db, pdfs/, OCR cache, backups/"]
+  SVC --> DATA["C:/bg-auto/data/\nBG Tracker.xlsx, app.db, pdfs/, pipeline archive, backups/"]
   SVC -->|PDF + API key| DIC["Datalab API\n(remote OCR)"]
   SVC -->|outbound port 587| O365["smtp.office365.com"]
   TS["Task Scheduler - daily 09:00 IST"] -->|calls API| SVC

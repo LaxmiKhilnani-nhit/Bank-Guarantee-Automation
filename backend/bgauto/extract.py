@@ -984,6 +984,11 @@ class Extraction:
     # Every master plaza named in the document, in document order. The review
     # card uses the first one; the workbook gets one row per plaza.
     plazas: list[str] = field(default_factory=list)
+    # Read-only document data that has no tracker column: authorised
+    # signatories, stamp-duty certificates, amount in words, type wording.
+    extras: dict = field(default_factory=dict)
+    # Datalab pipeline provenance (pipeline id/version, execution id, mode).
+    pipeline: dict = field(default_factory=dict)
 
     def value(self, name: str):
         f = self.fields.get(name)
@@ -1016,6 +1021,8 @@ class Extraction:
                 }
                 for name, f in self.fields.items()
             },
+            "extras": self.extras,
+            "pipeline": self.pipeline,
             "warnings": self.warnings,
         }
 
@@ -1057,6 +1064,431 @@ def extract(ocr: DocumentOCR, masters: Masters, today: dt.date | None = None) ->
     result.fields["reminder_sent_at"] = Field().note("set_by_scheduler")
 
     # Status is deterministic but still flagged: the reviewer confirms it.
+    finalise(result, today)
+    return result
+
+
+# --- Datalab pipeline mapping --------------------------------------------
+
+
+def _pipeline_text(value) -> str | None:
+    """A trimmed scalar from the extraction JSON, or None."""
+    if value is None or isinstance(value, (dict, list)):
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    text = squash(str(value))
+    return text or None
+
+
+def _pipeline_number(value) -> float | None:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value) if value > 0 else None
+    return parse_amount(str(value))
+
+
+def _pipeline_date(value, name: str) -> Field:
+    field = Field()
+    raw = _pipeline_text(value)
+    if not raw:
+        field.flag(f"{name}_not_found")
+        return field
+    parsed = parse_date(raw)
+    if parsed is None:
+        field.flag(f"{name}_not_found")
+        field.note(f"unparsed_date: {raw[:60]}")
+        return field
+    field.value = parsed
+    field.raw = raw
+    field.note("from_datalab")
+    return field
+
+
+def _pipeline_reference(value, missing_flag: str) -> Field:
+    field = Field()
+    raw = _pipeline_text(value)
+    if not raw:
+        field.flag(missing_flag)
+        return field
+    tail = _clean_loa_tail(raw) or raw
+    if len(tail) < 5 or not re.search(r"\d", tail):
+        field.flag(missing_flag)
+        field.note(f"unusable_reference: {raw[:60]}")
+        return field
+    field.value = tail[:160].strip(" .,;:'\"-")
+    field.raw = raw
+    field.note("from_datalab")
+    return field
+
+
+def _pipeline_project(data: dict, masters: Masters) -> Field:
+    """Resolve the printed project name/code against the project master."""
+    project_name = _pipeline_text(data.get("project_name"))
+    project_code = _pipeline_text(data.get("project_code"))
+    codes = {
+        str(option.get("code") or "").strip().upper(): option
+        for option in (masters.project_options or [])
+        if option.get("code")
+    }
+
+    if project_code:
+        token = re.sub(r"[^A-Z0-9]", "", project_code.upper())
+        if token in codes:
+            return Field(value=codes[token]["code"], raw=project_code, page=None).note(
+                "from_datalab"
+            )
+
+    if project_name and project_name.upper() in codes:
+        return Field(value=codes[project_name.upper()]["code"], raw=project_name).note(
+            "from_datalab"
+        )
+
+    if project_name:
+        names = {
+            str(option.get("name") or ""): str(option.get("code") or "")
+            for option in (masters.project_options or [])
+            if option.get("code") and option.get("name")
+        }
+        exact = difflib.get_close_matches(project_name, list(names), n=1, cutoff=0.9)
+        if exact:
+            return Field(value=names[exact[0]], raw=project_name).note(
+                "from_project_name"
+            )
+
+    loa = Field(value=_pipeline_text(data.get("loa_or_tender_number")))
+    lines: list[tuple[int, str]] = []
+    if project_name:
+        lines.append((1, f"PROJECT NAME: {project_name}"))
+    if project_code:
+        lines.append((1, f"PROJECT CODE: {project_code}"))
+    if loa.value:
+        lines.append((1, f"LOA NO: {loa.value}"))
+
+    candidates = _project_candidates(lines, loa, masters)
+    if not candidates:
+        return Field().note("project_not_found")
+    top = candidates[0][0]
+    best = [code for score, code in candidates if score == top]
+    if len(best) == 1:
+        return Field(value=best[0], raw=project_name or project_code).note(
+            "from_datalab"
+        )
+    return Field().note("candidates: " + ", ".join(best))
+
+
+def _pipeline_plazas(
+    data: dict, masters: Masters
+) -> tuple[list[dict], list[str], bool]:
+    """Match Datalab's plaza names against the plaza master.
+
+    Returns ``(hits, unmatched, first_matched)``. ``first_matched`` is false
+    when the first plaza named in the document is not in the master, so the
+    caller can leave the cell blank rather than silently use a later plaza.
+    """
+    raw_names = data.get("toll_plaza_names")
+    if isinstance(raw_names, str):
+        raw_names = [raw_names]
+    if not isinstance(raw_names, list):
+        raw_names = []
+
+    components = [
+        component
+        for component in _plaza_components(masters)
+        if not _is_corridor_alias(component, masters)
+    ]
+    hits: list[dict] = []
+    unmatched: list[str] = []
+    first_matched = True
+    seen_first = False
+
+    for raw_name in raw_names:
+        phrase = _pipeline_text(raw_name)
+        if not phrase:
+            continue
+        for part in _split_plaza_phrases(phrase) or [phrase]:
+            match = _match_phrase(part, components)
+            if not seen_first:
+                seen_first = True
+                first_matched = match is not None
+            if match is None:
+                if part not in unmatched:
+                    unmatched.append(part)
+                continue
+            if not any(
+                hit["name"] == match["name"] and hit["project"] == match["project"]
+                for hit in hits
+            ):
+                hits.append(match)
+    return hits, unmatched, first_matched
+
+
+def _pipeline_signatories(value) -> list[dict]:
+    if not isinstance(value, list):
+        return []
+    out: list[dict] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        clean = {
+            key: _pipeline_text(item.get(key))
+            for key in ("name", "sol_id", "designation")
+        }
+        clean = {key: text for key, text in clean.items() if text}
+        if clean:
+            out.append(clean)
+    return out
+
+
+def _pipeline_stamp_duty(value) -> list[dict]:
+    if not isinstance(value, list):
+        return []
+    text_keys = (
+        "certificate_no",
+        "certificate_issued_date",
+        "account_reference",
+        "unique_doc_reference",
+        "description_of_document",
+        "first_party",
+        "second_party",
+        "stamp_duty_paid_by",
+        "stamp_serial_number",
+    )
+    out: list[dict] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        clean = {key: _pipeline_text(item.get(key)) for key in text_keys}
+        clean["consideration_price"] = _pipeline_number(item.get("consideration_price"))
+        clean["stamp_duty_amount"] = _pipeline_number(item.get("stamp_duty_amount"))
+        clean = {key: val for key, val in clean.items() if val not in (None, "")}
+        if clean:
+            out.append(clean)
+    return out
+
+
+def extract_from_pipeline(
+    document: DocumentOCR,
+    data: dict,
+    masters: Masters,
+    today: dt.date | None = None,
+    pipeline_meta: dict | None = None,
+) -> Extraction:
+    """Map Datalab's structured extraction JSON to the tracker columns.
+
+    Datalab supplies the values. Local code only normalises them and resolves
+    master data (company/project/plaza/nature/contractor/bank). A missing or
+    invalid value becomes a blank cell with a flag; there is no text-rule
+    fallback.
+    """
+    today = today or dt.date.today()
+    data = data if isinstance(data, dict) else {}
+    result = Extraction(source=document.source, ocr=document)
+    result.pipeline = dict(pipeline_meta or {})
+    result.warnings = list(result.pipeline.get("warnings") or [])
+
+    project = _pipeline_project(data, masters)
+    plaza_hits, unmatched, first_matched = _pipeline_plazas(data, masters)
+
+    result.plazas = [hit["name"] for hit in plaza_hits]
+
+    plaza = Field()
+    if not plaza_hits:
+        plaza.note("plaza_not_found")
+        if unmatched:
+            plaza.note("unmatched: " + ", ".join(unmatched[:4]))
+    elif not first_matched:
+        plaza.note("plaza_not_found")
+        plaza.note("unmatched: " + ", ".join(unmatched[:4]))
+    else:
+        plaza.value = plaza_hits[0]["name"]
+        plaza.raw = "plaza name in document"
+        plaza.page = 1
+        plaza.note("from_datalab")
+        if len(plaza_hits) > 1:
+            plaza.note("also_covers: " + ", ".join(hit["name"] for hit in plaza_hits[1:]))
+        if unmatched:
+            plaza.note("unmatched: " + ", ".join(unmatched[:4]))
+
+    # A plaza can identify the project when the printed project did not.
+    if project.value is None:
+        hit_projects = list(
+            dict.fromkeys(hit["project"] for hit in plaza_hits if hit.get("project"))
+        )
+        if len(hit_projects) == 1:
+            project = Field(
+                value=hit_projects[0], raw="plaza in document", page=1
+            ).note("derived_from_plaza")
+        elif len(hit_projects) > 1:
+            project = Field().note("candidates: " + ", ".join(hit_projects))
+    elif plaza_hits:
+        hit_projects = {
+            hit["project"] for hit in plaza_hits if hit.get("project")
+        }
+        if hit_projects and project.value not in hit_projects:
+            project.note(
+                "project_conflict: project="
+                + str(project.value)
+                + ", plaza="
+                + ", ".join(sorted(hit_projects))
+            )
+
+    company_raw = _pipeline_text(data.get("company_name"))
+    project_company = masters.company_for_project(project.value)
+    if project_company:
+        company = Field(
+            value=project_company, raw=company_raw or "project master", page=1
+        ).note("derived_from_project")
+        if company_raw and company_raw != project_company:
+            company.note(f"company_conflict: datalab={company_raw}")
+        if project_company not in masters.companies:
+            company.flag("company_not_in_master")
+    elif company_raw:
+        alias = company_from_text(company_raw)
+        value = alias or _best_master(company_raw, masters.companies, cutoff=0.82) or company_raw
+        company = Field(value=value, raw=company_raw, page=1).note("from_datalab")
+        if value not in masters.companies:
+            company.flag("company_not_in_master")
+    else:
+        company = Field().flag("company_not_found")
+
+    bg_type_raw = _pipeline_text(data.get("bg_type"))
+    bg_type_wording = _pipeline_text(data.get("bg_type_wording"))
+    bg_type = Field()
+    for candidate in (bg_type_raw, bg_type_wording):
+        if not candidate:
+            continue
+        upper = candidate.upper()
+        if "PBG" in upper or "PERFORMANCE" in upper:
+            bg_type = Field(value="PBG", raw=candidate).note("from_datalab")
+            break
+        if "ABG" in upper or "ADVANCE" in upper:
+            bg_type = Field(value="ABG", raw=candidate).note("from_datalab")
+            break
+    if bg_type.value is None:
+        bg_type.flag("bg_type_not_found")
+
+    nature_raw = _pipeline_text(data.get("nature_of_service"))
+    if not nature_raw:
+        nature = Field().flag("nature_not_found")
+    else:
+        match = _best_master(nature_raw, masters.natures, cutoff=0.75)
+        nature = Field(value=match or nature_raw, raw=nature_raw).note("from_datalab")
+        if not match:
+            nature.flag("nature_not_in_master")
+
+    contractor_raw = _pipeline_text(data.get("contractor_name"))
+    if not contractor_raw:
+        contractor = Field().flag("contractor_not_found")
+    else:
+        cleaned = _clean_contractor(contractor_raw) or contractor_raw
+        match = _best_master(cleaned, masters.contractors, cutoff=0.82)
+        contractor = Field(value=match or cleaned, raw=contractor_raw).note(
+            "from_datalab"
+        )
+
+    bg_no_raw = _pipeline_text(data.get("bg_no"))
+    bg_no = Field()
+    hint = bg_no_from_filename(document.source.stem)
+    if not bg_no_raw:
+        bg_no.flag("bg_no_not_found")
+    else:
+        cleaned = normalise_bg_no(bg_no_raw)
+        repaired = False
+        if not cleaned and hint:
+            cleaned = match_bg_no_hint(bg_no_raw, hint)
+            repaired = bool(cleaned)
+        if not cleaned:
+            bg_no.flag("bg_no_not_found")
+            bg_no.raw = bg_no_raw
+        else:
+            bg_no.value = cleaned
+            bg_no.raw = bg_no_raw
+            if hint and cleaned == hint:
+                bg_no.confidence = 0.85 if repaired else 0.95
+                if repaired:
+                    bg_no.note("bg_no_repaired_from_filename")
+            elif hint:
+                bg_no.flag("bg_no_differs_from_filename")
+                bg_no.confidence = 0.6
+            else:
+                bg_no.confidence = 0.7
+
+    amount_raw = data.get("bg_amount")
+    amount_value = _pipeline_number(amount_raw)
+    words_raw = _pipeline_text(data.get("bg_amount_in_words"))
+    words_value = amount_in_words_to_number(words_raw) if words_raw else None
+    amount = Field()
+    if amount_value is None:
+        amount.flag("amount_not_found")
+        if words_value:
+            amount.note(f"amount_in_words: {words_value}")
+    else:
+        amount.value = amount_value
+        amount.raw = str(amount_raw)
+        amount.note("from_datalab")
+        if words_value and abs(words_value - amount_value) > 1:
+            amount.flag("amount_vs_words_mismatch")
+
+    frm = _pipeline_date(data.get("from_date"), "from")
+    to = _pipeline_date(data.get("to_date"), "to")
+    claim = _pipeline_date(data.get("claim_expiry_date"), "claim")
+
+    bank_raw = _pipeline_text(data.get("bank_name"))
+    bank = Field()
+    if not bank_raw:
+        bank.flag("bank_not_matched")
+    else:
+        master_match = _best_master(bank_raw, masters.banks, cutoff=0.85)
+        value = master_match or normalise_bank(bank_raw) or bank_raw
+        bank = Field(value=value, raw=bank_raw).note("from_datalab")
+        if not master_match and value == bank_raw:
+            bank.note("bank_not_in_alias_list")
+
+    result.fields["Company Name"] = company
+    result.fields["Project Name"] = project
+    result.fields["Toll Plaza Name"] = plaza
+    result.fields["Extended"] = Field().note("review_dropdown")
+    result.fields["Types of BG"] = bg_type
+    result.fields["Nature of Service"] = nature
+    result.fields["Name of Contractor"] = contractor
+    result.fields["BG No"] = bg_no
+    result.fields["BG Amount"] = amount
+    result.fields["From"] = frm
+    result.fields["To"] = to
+    result.fields["Claim Period"] = claim
+    result.fields["Bank Name"] = bank
+    result.fields["Remarks"] = Field().note("review_free_text")
+    result.fields["LOA Number"] = _pipeline_reference(
+        data.get("loa_or_tender_number"), "loa_not_found"
+    )
+    result.fields["PO Number"] = _pipeline_reference(
+        data.get("po_number"), "po_not_found"
+    )
+    result.fields["source_pdf"] = Field(value=document.source.name)
+    result.fields["created_by"] = Field().note("set_on_confirm")
+    result.fields["created_at"] = Field(value=dt.datetime.now())
+    result.fields["reminder_sent_at"] = Field().note("set_by_scheduler")
+
+    extras = {
+        "authorized_signatories": _pipeline_signatories(
+            data.get("authorized_signatories")
+        ),
+        "stamp_duty_certificates": _pipeline_stamp_duty(
+            data.get("stamp_duty_certificates")
+        ),
+        "bg_amount_in_words": words_raw,
+        "currency": _pipeline_text(data.get("currency")),
+        "bg_type_wording": bg_type_wording,
+        "project_name_printed": _pipeline_text(data.get("project_name")),
+    }
+    result.extras = {
+        key: value for key, value in extras.items() if value not in (None, "", [])
+    }
+
     finalise(result, today)
     return result
 

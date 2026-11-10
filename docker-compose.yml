@@ -59,6 +59,9 @@ services:
       BG_DATALAB_TIMEOUT: ${BG_DATALAB_TIMEOUT:-600}
       BG_DATALAB_MAX_POLLS: ${BG_DATALAB_MAX_POLLS:-300}
       BG_DATALAB_POLL_INTERVAL: ${BG_DATALAB_POLL_INTERVAL:-2}
+      BG_DATALAB_PIPELINE_ID: ${BG_DATALAB_PIPELINE_ID:-pl_INVNggnY7MaE}
+      BG_DATALAB_PIPELINE_VERSION: ${BG_DATALAB_PIPELINE_VERSION:-1}
+      BG_DATALAB_EXTRACTION_MODE: ${BG_DATALAB_EXTRACTION_MODE:-turbo}
     volumes:
       # Outputs, OCR archive and the masters database stay on the host, so the
       # files a reviewer checks are the same ones the local run produces.

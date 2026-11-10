@@ -358,8 +358,8 @@ def _json_pages(raw, confidence: float | None) -> list[PageOCR]:
     return pages
 
 
-def _quality(result) -> float | None:
-    score = getattr(result, "parse_quality_score", None)
+def _quality_value(score) -> float | None:
+    """Normalise Datalab's 0-5 parse-quality score to 0-1."""
     try:
         value = float(score)
     except (TypeError, ValueError):
@@ -369,12 +369,38 @@ def _quality(result) -> float | None:
     return max(0.0, min(1.0, value / 5.0))
 
 
+def _quality(result) -> float | None:
+    return _quality_value(getattr(result, "parse_quality_score", None))
+
+
 def _pages_from_result(result) -> list[PageOCR]:
     confidence = _quality(result)
     pages = _json_pages(getattr(result, "json", None), confidence)
     if pages:
         return pages
     return _markdown_pages(getattr(result, "markdown", "") or "", confidence)
+
+
+def document_from_payload(
+    source: Path,
+    json_payload=None,
+    markdown: str = "",
+    quality=None,
+    engine: str = "datalab",
+) -> DocumentOCR:
+    """Build ``DocumentOCR`` from a pipeline convert step result.
+
+    Pipeline steps return plain dictionaries rather than a ``ConversionResult``,
+    so the same JSON/Markdown readers are exposed here for the pipeline adapter.
+    """
+    confidence = _quality_value(quality)
+    pages = _json_pages(json_payload, confidence)
+    if not pages:
+        pages = _markdown_pages(markdown or "", confidence)
+    if not pages:
+        raise RuntimeError("Datalab returned no pages for the PDF")
+    return DocumentOCR(source=source, pages=pages, engine=engine)
+
 
 
 # --- public entry point --------------------------------------------------

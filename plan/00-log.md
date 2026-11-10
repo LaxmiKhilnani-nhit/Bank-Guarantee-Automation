@@ -2,8 +2,8 @@
 id: PLAN-LOG
 title: Decision and Change Log
 status: active
-last_updated: 2026-11-04
-version: 8
+last_updated: 2026-11-10
+version: 11
 inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx", "BG_UseCase_Story_Tracking.xlsx", "plan/"]
 outputs: ["plan/00-log.md"]
 ---
@@ -19,6 +19,45 @@ current state. Newest entries are first.
 Format for each entry: date, author, what changed, why, files affected.
 
 ## 2. Log (newest first)
+
+### 2026-11-10 — Team — Datalab convert → extract pipeline replaces text-rule extraction
+
+- What: uploads and CLI ingestion now run the published Datalab pipeline
+  `pl_INVNggnY7MaE` (development pipeline; production deploys the same schema on
+  a fresh account as version 1): `convert` for page text, then structured
+  `extract` in `turbo` mode. The extract JSON is authoritative; local code only
+  normalises values and resolves company/project/plaza/nature/contractor/bank
+  against the masters. There is no OCR-text rule fallback: a missing or invalid
+  value becomes a blank cell with a flag.
+- Schema: production schema **v1** (18 fields), maintained manually in the
+  Datalab UI as pipeline `BG_Fields_Extraction_dev`; the fresh production
+  account will publish it as version 1 (`v3` was only an internal working label
+  on the development account). No schema file or sync script is executed by the
+  app; the v1 field contract is mirrored for readers in
+  `plan/04-ocr-extraction.md` §3.1. The exact schema and the full pipeline
+  definition are preserved as reference snapshots in
+  `docs/datalab-schema-v1.json` and `docs/datalab-pipeline-v1.json`; the original
+  field wish-list and its coverage table live in
+  `docs/Fields To Capture From BG Through D.md`. The pipeline version is pinned
+  with `BG_DATALAB_PIPELINE_VERSION` (default `1`); the extraction mode is
+  informational via `BG_DATALAB_EXTRACTION_MODE`.
+- Extras: authorised signatories, stamp-duty certificates, amount in words,
+  type wording and the printed project name are kept in
+  `Extraction.extras`, the run archive and a read-only **Document extras**
+  section in the review card. No DB or workbook columns were added.
+- Results: both raw step payloads are archived immediately under
+  `out/web/<run>/pipeline/`; Datalab expires them after about a day. The adapter
+  sets `skip_cache=true` because a cached convert checkpoint has no downloadable
+  step result.
+- Confidence: turbo returns no citations or per-field scores. The UI shows a
+  document-level `parse_quality_score` when present and otherwise no confidence
+  (never 0%). Failed extract steps fail the upload; there is no blank-row
+  fallback.
+- Files: `backend/bgauto/{pipeline,extract,ocr,normalize,config,cli}.py`,
+  `backend/bgauto/web/{api,runs,index.html}`, `.env.example`,
+  `docker-compose.yml`, `backend/tests/{test_pipeline,test_extract,test_web,test_config}.py`,
+  `backend/README.md`, `plan/04-ocr-extraction.md`, `docs/datalab-schema-v1.json`,
+  `docs/datalab-pipeline-v1.json`, `docs/Fields To Capture From BG Through D.md`.
 
 ### 2026-11-04 — Team — Datalab replaces Tesseract, Indra and Azure OCR
 

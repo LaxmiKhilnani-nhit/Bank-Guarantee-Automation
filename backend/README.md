@@ -1,22 +1,23 @@
 # Local BG ingestion (`bgauto`)
 
-Scanned Bank Guarantee PDF -> the 21 tracker columns. OCR runs through the
-**Datalab API**; the register, review workbook and masters stay on this machine.
-Confirmed rows are appended to a **copy** of `BG Tracker.xlsx`; the source
-tracker is never edited.
+Scanned Bank Guarantee PDF -> the 21 tracker columns. Extraction runs through a
+**Datalab pipeline** (convert -> structured extract); the register, review
+workbook and masters stay on this machine. Confirmed rows are appended to a
+**copy** of `BG Tracker.xlsx`; the source tracker is never edited.
 
 ```
 Sample_Bank_Guarantees/*.pdf
         |
         v
-  Datalab API (JSON page tree) --> extraction + validators
+  Datalab pipeline (convert -> extract JSON)
         |
         v
-  label-anchored extraction + validators (blank beats wrong)
+  master resolution + normalisation (blank beats wrong)
         |
         +--> out/<run>/BG Tracker_ingested.xlsx   review workbook (21 columns)
         +--> out/<run>/review/*.json, summary.csv flags/notes per field
-        +--> out/<run>/ocr/*.json                 raw page text + confidence
+        +--> out/<run>/pipeline/*.json            raw convert + extract results
+        +--> out/<run>/ocr/*.json                 normalised report + page text
 ```
 
 ## Prerequisites
@@ -28,37 +29,66 @@ Sample_Bank_Guarantees/*.pdf
 .venv\Scripts\python.exe -m pip install -r backend/requirements.txt
 ```
 
-## Datalab OCR
+## Datalab pipeline
 
-The app sends each uploaded PDF (or each CLI file) to the Datalab API and
-converts its JSON page tree into the page text the extractor already uses. The
-key is read from `DATALAB_API_KEY` in the git-ignored `.env` file (loaded by the
-app and by Compose), from a real environment variable, or from the SDK's saved
-login at `~/.config/datalab/config.json`. The key is never written to source,
-committed config or logs.
+Every uploaded PDF (or CLI file) runs through one published Datalab pipeline:
+first `convert`, then structured `extract`. The extract step's JSON is the
+authoritative source for the tracker fields; the app only normalises values and
+resolves company/project/plaza/bank against the local masters. There is no
+OCR-text rule fallback. A missing or invalid value becomes a blank cell with a
+flag so the reviewer sees it.
 
-- **Mode.** One fixed mode, `BG_DATALAB_MODE`, default `fast`. The other modes
-  are `lite`, `balanced` and `accurate`; the CLI can override per run with
-  `--mode`.
-- **Confidence.** When Datalab returns a `parse_quality_score` (0–5), the app
-  shows `score / 5` with source `datalab_quality`. It is a document-level
-  quality signal, not a per-word probability. `fast` often returns no score;
-  the UI and CLI then simply omit confidence rather than showing 0%.
-- **Allowed content.** Images and image captions are disabled so the JSON holds
-  only the layout text the extractor needs.
-- **Failure.** A missing key, exhausted allowance (HTTP 402) or conversion error
-  fails that upload with a readable message; the PDF is removed from the run and
-  nothing is written to the register.
-- **Health.** `GET /api/health` checks that the SDK is installed and a key or
-  saved login exists. It does not spend an API call.
+The pipeline and its extraction schema are maintained in the Datalab UI (the
+schema is not in this repository; the v1 field contract is mirrored for readers
+in `plan/04-ocr-extraction.md` §3.1). Pin the release with
+`BG_DATALAB_PIPELINE_VERSION` so a manual edit cannot silently change results.
+The key is read from `DATALAB_API_KEY` in the git-ignored `.env` file (loaded by
+the app and by Compose), from a real environment variable, or from the SDK's
+saved login at `~/.config/datalab/config.json`. The key is never written to
+source, committed config or logs.
+
+- **Pipeline.** `BG_DATALAB_PIPELINE_ID` (default `pl_INVNggnY7MaE`) and
+  `BG_DATALAB_PIPELINE_VERSION` (default `1`: the production pipeline is
+  deployed on a fresh Datalab account, so its first published version is 1).
+  Leave the version empty to follow the active published version. While testing
+  on the development account, that pipeline publishes the same schema as
+  version 3, so use `3` there.
+- **Snapshots.** `docs/datalab-schema-v1.json` holds the exact v1 schema and
+  `docs/datalab-pipeline-v1.json` the full pipeline definition (both steps), so
+  the setup can be rebuilt if the Datalab account or provider changes. The
+  snapshot records the development account's active version (3) and the
+  production target (1). They are reference files; the app does not read them.
+  `docs/Fields To Capture From BG Through D.md` keeps the original wish-list and
+  its v1 coverage table.
+- **Extraction mode.** Stored in the pipeline itself (currently `turbo`);
+  `BG_DATALAB_EXTRACTION_MODE` is informational and only reported by health.
+- **Cache.** The adapter sets `skip_cache=true`. A cached convert checkpoint has
+  no downloadable step result, so page text and the raw archive would be missing.
+- **Extras.** Authorised signatories, stamp-duty certificates, amount in words,
+  type wording and the printed project name are kept in the run archive and the
+  review card's read-only **Document extras** section. They are not tracker
+  columns.
+- **Confidence.** When the convert step returns a `parse_quality_score` (0–5),
+  the app shows `score / 5` with source `datalab_quality`. `turbo` usually
+  omits it; the UI and CLI then show no confidence rather than 0%.
+- **Failure.** A missing key, exhausted allowance (HTTP 402), failed convert or
+  failed extract fails that upload with a readable message; the PDF is removed
+  from the run and nothing is written to the register. There is no blank-row
+  fallback.
+- **Archive.** `out/web/<run>/pipeline/<pdf>.json` holds both raw step results;
+  `out/web/<run>/ocr/<pdf>.json` holds the normalised report. Datalab expires
+  results after about a day, so both are written immediately.
+- **Health.** `GET /api/health` reports the pinned pipeline id/version and
+  checks that the SDK is installed and a key or saved login exists. It does not
+  spend an API call.
 
 `bgauto/compare.py` is kept for reference and its unit tests still pass, but the
-upload flow no longer runs or displays an engine comparison: Datalab is the only
-engine.
+upload flow no longer runs or displays an engine comparison: the Datalab
+pipeline is the only engine.
 
 **Privacy.** The PDF leaves this machine on its way to Datalab. If that is not
 acceptable for a document, do not upload it. The register, workbook, database
-and OCR archive stay local.
+and pipeline archive stay local.
 
 ## Run
 
@@ -75,9 +105,8 @@ $env:PYTHONPATH = "backend"
 | `--out` | `out/BG Tracker_ingested.xlsx` | review workbook (template copied on first run) |
 | `--report` | `out/review` | JSON + `summary.csv` for the reviewer |
 | `--tracker` | `BG Tracker.xlsx` | template of record; only ever read |
-| `--archive-dir` | `data/ocr-json` | per-PDF OCR text and confidence |
+| `--archive-dir` | `data/ocr-json` | per-PDF pipeline step results and report |
 | `--db` | `db/sqlite/bg_automation.sqlite3` | masters for dropdown matching |
-| `--mode` | `BG_DATALAB_MODE` (`fast`) | Datalab mode: `lite`, `fast`, `balanced`, `accurate` |
 
 Exit code 0 means every PDF was read; the summary and review files say which
 fields need a human. Re-running into the same workbook skips duplicate BG
@@ -87,8 +116,9 @@ numbers, so delete the output workbook (or pass a new `--out`) to start clean.
 
 `python -m bgauto.web` serves the same pipeline as a small local app at
 `http://127.0.0.1:8000` (or the Docker port). Every page, stylesheet and script
-is served by the process without a CDN. Uploaded PDFs go to the Datalab API for
-OCR; the optional Firecrawl lookup sends only the OCR'd names and IFSC codes.
+is served by the process without a CDN. Uploaded PDFs go to the Datalab
+pipeline; the optional Firecrawl lookup sends only the extracted names and IFSC
+codes.
 
 | Action | admin | uploader | viewer |
 |---|---|---|---|
@@ -126,8 +156,8 @@ OCR; the optional Firecrawl lookup sends only the OCR'd names and IFSC codes.
 
 ## Run in Docker
 
-The same app (FastAPI UI + Datalab OCR) runs as one container. The image holds
-the SDK; PDFs are sent to the Datalab API using the key from `.env`.
+The same app (FastAPI UI + Datalab pipeline) runs as one container. The image
+holds the SDK; PDFs are sent to the Datalab pipeline using the key from `.env`.
 
 ```powershell
 docker compose build
@@ -185,8 +215,11 @@ those values into the container. The app still starts with an empty file.
 | `BG_APP_URL` | `http://127.0.0.1:8000` | link inside the reminder |
 | `BG_SCHEDULER` / `BG_SCHEDULER_TIME` | `1` / `09:00` | in-process IST scheduler |
 | `BG_INTERNAL_TOKEN` | empty | protects `/internal/daily-reminder` |
-| `DATALAB_API_KEY` | empty | Datalab key for OCR; health is degraded without it |
-| `BG_DATALAB_MODE` | `fast` | `lite`, `fast`, `balanced` or `accurate` |
+| `DATALAB_API_KEY` | empty | Datalab key for the pipeline; health is degraded without it |
+| `BG_DATALAB_MODE` | `fast` | mode used only by `ocr.convert_pdf` (reference/test path); pipeline runs use the pipeline's convert settings |
+| `BG_DATALAB_PIPELINE_ID` | `pl_INVNggnY7MaE` | published pipeline to run |
+| `BG_DATALAB_PIPELINE_VERSION` | `1` | pinned production version (fresh account starts at 1); empty = active version |
+| `BG_DATALAB_EXTRACTION_MODE` | `turbo` | informational only; reported by health |
 | `BG_DATALAB_BASE_URL` | `https://www.datalab.to` | API base URL |
 | `BG_DATALAB_TIMEOUT` | `600` | seconds allowed for one conversion |
 | `BG_DATALAB_MAX_POLLS` / `BG_DATALAB_POLL_INTERVAL` | `300` / `2` | polling limits |
@@ -323,32 +356,37 @@ Each field carries two independent lists:
   printed (`auto_status`, `date_scanned`, `from_table_row`, `derived_from_text`,
   `review_dropdown`).
 
-`Extended`, `Remarks` and `created_by` are reviewer-owned and always blank from
-OCR. `Project Name` and `Toll Plaza Name` are filled only when the document
-names them (see below); otherwise they are blank with a `project_not_found` /
-`plaza_not_found` note for the reviewer. Corridor matching tolerates OCR slips
-and `-`/`to`/space separators (`Bareily to Sitapur` -> `BS`). When a guarantee
-names several toll plazas the first one is shown, the rest are listed in an
-`also_covers` note, and confirm writes one workbook row per plaza. The register
-still keeps one row per guarantee so reminders stay per BG.
+`Extended`, `Remarks`, `created_by` and `reminder_sent_at` are reviewer- or
+scheduler-owned and always blank from the pipeline. `Project Name` and
+`Toll Plaza Name` are filled only when Datalab names them and the local masters
+resolve them; otherwise they are blank with a `project_not_found` /
+`plaza_not_found` note for the reviewer. Corridor matching tolerates spelling
+slips and `-`/`to`/space separators (`Bareily to Sitapur` -> `BS`). When a
+guarantee names several toll plazas the first one is shown, the rest are listed
+in an `also_covers` note, and confirm writes one workbook row per plaza. The
+register still keeps one row per guarantee so reminders stay per BG.
 
 ## What is extracted
 
+Datalab returns the values; the app normalises them and resolves masters. It
+never re-derives a missing value from page text.
+
 | Column | Source |
 |---|---|
-| Company Name | full legal SPV of the resolved project (`NSPPL`/`NEPPL`/`NWPPL` are aliases of Southern/Eastern/Western); OCR beneficiary only when the project is unknown |
-| Project Name | fuzzy corridor name in the text, all-plaza agreement, or a code inside a reference (`/KRK/`, `[KRK]`, `Project: KRK`) |
-| Toll Plaza Name | first plaza in the document from the masters; other plazas go to `also_covers` and extra Excel rows |
-| Types of BG | "Performance Security/Guarantee" -> PBG, "Advance" -> ABG |
-| Nature of Service | keyword hints mapped to the `nature_of_service` master (`Routine Maintenance` and `Supply & Installation of Overhead Gantry` included) |
-| Name of Contractor | `APPLICANT` (`:` or `>`), "on behalf of:", the `(A)` deed clause, SFMS `:7033:`, then a covering-letter letterhead |
-| BG No | `OUR REFERENCE`/`BG NO` votes + global scan + filename cross-check |
-| BG Amount | `GUARANTEE AMOUNT` digits, cross-checked against the words |
-| From / To / Claim Period | labelled dates, `valid up to`, then the cover-letter date triplet |
-| Bank Name | bank keyword -> canonical bank name (no seeded list), then the optional Firecrawl check |
+| Company Name | full legal SPV of the resolved project (`NSPPL`/`NEPPL`/`NWPPL` are aliases of Southern/Eastern/Western); Datalab's beneficiary when the project is unknown |
+| Project Name | Datalab's printed corridor name matched to the project master, else the all-plaza agreement or the LOA reference |
+| Toll Plaza Name | Datalab's ordered plaza list matched to the plaza master; other plazas go to `also_covers` and extra Excel rows |
+| Types of BG | Datalab's `bg_type`, then the printed type wording (Performance -> PBG, Advance -> ABG) |
+| Nature of Service | Datalab's printed service, fuzzy-matched to the `nature_of_service` master |
+| Name of Contractor | Datalab's applicant/contractor name, cleaned and matched to the contractor master |
+| BG No | Datalab's number, validated and cross-checked against the filename |
+| BG Amount | Datalab's numeric amount, cross-checked against the amount in words |
+| From / To / Claim Period | Datalab's three dates, normalised to `YYYY-MM-DD` |
+| Bank Name | Datalab's issuing bank, matched to the bank master |
 | Status | `To` vs today (Expired/Active), flagged `auto_status` |
-| LOA Number | `LOA`/`Letter of Acceptance` label; `Tender No` is a marked last resort |
-| PO Number | Explicit `Purchase Order`/`P.O.`/`Work Order` label |
+| LOA Number | Datalab's `loa_or_tender_number` |
+| PO Number | Datalab's `po_number` |
+| Extras (not columns) | authorised signatories, stamp-duty certificates, amount in words, type wording, printed project name |
 
 ## Known limits
 
@@ -359,8 +397,8 @@ still keeps one row per guarantee so reminders stay per BG.
   `0816NDLG00007526`); other issuers may need the regex in
   `normalize.normalise_bg_no` widened.
 - Status is a suggestion: Expiring/T‐7 reminders still come from the review
-  step, not from OCR.
+  step, not from the pipeline.
 - The official-name check needs a Firecrawl key and internet access. Without
-  either (or after a timeout) the reviewer sees the OCR text and any names
+  either (or after a timeout) the reviewer sees the extracted name and any names
   already created by earlier confirmed BGs, so nothing is blocked but no web
   name is suggested.

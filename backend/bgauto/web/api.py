@@ -7,8 +7,8 @@ Start it with::
 
 Then open http://127.0.0.1:8000 . The server binds to loopback only. The page
 and every asset are served from this process: no CDN. The register stays local,
-but every uploaded PDF is sent to the Datalab API for OCR. The optional
-Firecrawl name lookup sends just the OCR'd bank/contractor names and IFSC codes.
+but every uploaded PDF is sent to the Datalab pipeline. The optional Firecrawl
+name lookup sends just the extracted bank/contractor names and IFSC codes.
 
 Roles (``plan/03``): an uploader owns and saves their runs, an admin administers,
 and a viewer reads the register and workbook. Every route states its role in
@@ -222,6 +222,11 @@ def health() -> dict:
             "configured": ocr_ok,
             "base_url": config.DATALAB_BASE_URL,
             "mode": config.DATALAB_MODE,
+        },
+        "pipeline": {
+            "id": config.DATALAB_PIPELINE_ID,
+            "version": config.DATALAB_PIPELINE_VERSION,
+            "extraction_mode": config.DATALAB_EXTRACTION_MODE,
         },
         "database": str(config.DB_PATH) if config.DB_PATH.exists() else None,
         "template": str(config.TRACKER_PATH) if config.TRACKER_PATH.exists() else None,

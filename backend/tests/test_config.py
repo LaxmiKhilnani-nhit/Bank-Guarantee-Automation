@@ -49,3 +49,19 @@ class DotEnvTests(unittest.TestCase):
 
     def test_missing_file_is_ignored(self) -> None:
         config._load_dotenv(Path(self._tmp.name) / "absent.env")
+
+
+class PipelineConfigTests(unittest.TestCase):
+    def test_pipeline_defaults_are_sane(self) -> None:
+        self.assertTrue(config.DATALAB_PIPELINE_ID.startswith("pl_"))
+        self.assertTrue(
+            config.DATALAB_PIPELINE_VERSION is None
+            or isinstance(config.DATALAB_PIPELINE_VERSION, int)
+        )
+        self.assertIn(
+            config.DATALAB_EXTRACTION_MODE, config.DATALAB_PIPELINE_MODES
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

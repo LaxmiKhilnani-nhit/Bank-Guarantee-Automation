@@ -122,6 +122,10 @@
   .compare th{color:var(--muted); font-weight:650; position:sticky; top:0; background:var(--panel)}
   .compare td{max-width:240px; overflow-wrap:anywhere}
   .compare h4{margin:10px 0 2px; font-size:11.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted)}
+  .extra-bits{display:flex; flex-wrap:wrap; gap:6px 14px; padding:8px 0 2px; font-size:12px; color:var(--muted)}
+  .extra-bits b{color:var(--text)}
+  .extra-block{margin:6px 0 10px}
+  .extra-block>b{font-size:12px}
 
   .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px 18px}
   .field{display:flex; flex-direction:column; gap:5px; min-width:0}
@@ -226,7 +230,7 @@
     <div class="mark">BG</div>
     <div>
       <h1>Bank Guarantee automation</h1>
-      <p class="sub">Local OCR · register · T-7 reminders</p>
+      <p class="sub">Datalab pipeline · register · T-7 reminders</p>
     </div>
   </div>
   <nav class="nav" id="nav" aria-label="Sections">
@@ -258,7 +262,7 @@
         </svg>
         <p class="big">Drop scanned BG PDFs here</p>
         <p class="muted">or <button class="link" id="browse" type="button">browse files</button> · PDF only, up to 25 MB each</p>
-        <p class="muted" style="font-size:12px">PDFs are sent to the Datalab API for OCR (mode <span id="ocrMode">fast</span>). The register and review data stay on this machine.</p>
+        <p class="muted" style="font-size:12px">PDFs are read by the Datalab pipeline (convert → extract, <span id="ocrMode">turbo</span>). The register and review data stay on this machine.</p>
         <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
       </div>
       <ul class="queue" id="queue" aria-live="polite"></ul>
@@ -450,7 +454,7 @@ const state = {
   busy: false,
   lookup: false,
   ocrEngine: "datalab",
-  ocrMode: "fast",
+  ocrMode: "turbo",
   regOffset: 0,
   regLimit: 100,
   workbookOffset: 0,
@@ -546,15 +550,15 @@ async function loadHealth() {
     const health = await (await fetch("/api/health")).json();
     state.lookup = Boolean(health.lookup);
     state.ocrEngine = health.ocr_engine || "datalab";
-    state.ocrMode = health.ocr_mode || "fast";
+    state.ocrMode = health.pipeline?.extraction_mode || health.ocr_mode || "turbo";
     const modeLabel = $("#ocrMode");
     if (modeLabel) modeLabel.textContent = state.ocrMode;
     const dot = $("#health .dot");
     dot.classList.remove("ok", "bad");
     if (health.status === "ok") {
       dot.classList.add("ok");
-      const suffix = state.lookup ? "name check on" : "remote OCR only";
-      $("#healthText").textContent = `Datalab (${state.ocrMode}) ready · ${suffix}`;
+      const suffix = state.lookup ? "name check on" : "remote read only";
+      $("#healthText").textContent = `Datalab pipeline (${state.ocrMode}) ready · ${suffix}`;
       $("#healthText").title = health.datalab?.base_url || "";
     } else {
       dot.classList.add("bad");
@@ -660,8 +664,9 @@ function loadEntries(run, { restored = false } = {}) {
     renderEntry(entry);
     if (restored) {
       const item = document.createElement("li");
+      const conf = confText(entry.ocr_confidence, entry.ocr_confidence_source);
       item.innerHTML = `<span class="badge note">restored</span><span class="name">${esc(entry.source_pdf)}</span>
-        <span class="state">${entry.pages} pages · ${(entry.ocr_confidence * 100).toFixed(0)}%</span>`;
+        <span class="state">${entry.pages} pages${conf ? " · " + esc(conf) : ""}</span>`;
       $("#queue").appendChild(item);
     }
   }
@@ -683,8 +688,8 @@ async function restoreRun() {
 
 function engineLabel(engine) {
   return {
-    datalab: "Datalab",
-  }[engine] || engine || "OCR";
+    datalab: "Datalab pipeline",
+  }[engine] || engine || "Datalab";
 }
 
 async function loadWorkbook(reset = false) {
@@ -762,6 +767,16 @@ function formatElapsed(seconds) {
   return mins ? `${mins}m ${secs}s` : `${secs}s`;
 }
 
+function stageLabel(stage) {
+  return {
+    starting: "starting pipeline",
+    converting: "converting PDF",
+    extracting: "extracting fields",
+    finishing: "finishing",
+    reading: "reading",
+  }[stage] || "reading";
+}
+
 async function uploadFiles(files) {
   if (state.confirmed) {
     showFlash("warn", "This run is already confirmed. Start a new batch to upload more PDFs.");
@@ -824,11 +839,12 @@ async function pollProgress() {
     const info = key ? progress[key] : null;
     if (!info || !activeJob.item) return;
     const engine = engineLabel(info.engine);
+    const stage = stageLabel(info.stage);
     const percent = Number(info.percent);
     const pct = Number.isFinite(percent) && percent > 0 ? ` · ${Math.round(percent)}%` : "";
     const stateText = info.pages_total
       ? `page ${info.page} of ${info.pages_total} · ${engine} · ${formatElapsed(info.elapsed)}`
-      : `${engine}${pct} · ${formatElapsed(info.elapsed)}`;
+      : `${stage} · ${engine}${pct} · ${formatElapsed(info.elapsed)}`;
     activeJob.item.innerHTML = `<span class="spinner"></span><span class="name">${esc(activeJob.file.name)}</span>
       <span class="state">${esc(stateText)}</span>`;
   } catch (error) {
@@ -838,9 +854,8 @@ async function pollProgress() {
 
 async function uploadOne(file, item) {
   const started = performance.now();
-  const engine = engineLabel(state.ocrEngine);
   item.innerHTML = `<span class="spinner"></span><span class="name">${esc(file.name)}</span>
-    <span class="state">${state.lookup ? "reading with " + esc(engine) + "… then checking official names" : "reading with " + esc(engine) + "…"}</span>`;
+    <span class="state">${state.lookup ? "running the Datalab pipeline… then checking official names" : "running the Datalab pipeline…"}</span>`;
   try {
     await ensureRun();
     const body = new FormData();
@@ -861,8 +876,9 @@ async function uploadOne(file, item) {
     state.entries.push(payload);
     const seconds = ((performance.now() - started) / 1000).toFixed(0);
     const checked = Object.keys(payload.lookup || {}).length ? " · names checked" : "";
+    const conf = confText(payload.ocr_confidence, payload.ocr_confidence_source);
     item.innerHTML = `<span class="badge ok">read</span><span class="name">${esc(file.name)}</span>
-      <span class="state">${payload.pages} pages · ${(payload.ocr_confidence * 100).toFixed(0)}%${variantSummary(payload)}${checked} · ${seconds}s</span>`;
+      <span class="state">${payload.pages} pages · ${engineLabel(payload.ocr_engine)}${conf ? " · " + esc(conf) : ""}${variantSummary(payload)}${checked} · ${seconds}s</span>`;
     renderEntry(payload);
     refreshSummary();
   } catch (error) {
@@ -1079,6 +1095,64 @@ function comparisonHtml(entry) {
   </details>`;
 }
 
+function extrasHtml(entry) {
+  const extras = entry.extras || {};
+  const pipeline = entry.pipeline || {};
+  const bits = [];
+  if (pipeline.id) {
+    const version = pipeline.version ? ` v${pipeline.version}` : "";
+    const mode = pipeline.extraction_mode ? ` · ${pipeline.extraction_mode}` : "";
+    bits.push(`<span><b>pipeline</b> ${esc(pipeline.id + version + mode)}</span>`);
+  }
+  if (extras.bg_type_wording) bits.push(`<span><b>type wording</b> ${esc(extras.bg_type_wording)}</span>`);
+  if (extras.bg_amount_in_words) bits.push(`<span><b>amount in words</b> ${esc(extras.bg_amount_in_words)}</span>`);
+  if (extras.project_name_printed) bits.push(`<span><b>printed project</b> ${esc(extras.project_name_printed)}</span>`);
+  if (extras.currency) bits.push(`<span><b>currency</b> ${esc(extras.currency)}</span>`);
+
+  const signatories = Array.isArray(extras.authorized_signatories) ? extras.authorized_signatories : [];
+  const stamps = Array.isArray(extras.stamp_duty_certificates) ? extras.stamp_duty_certificates : [];
+  if (!bits.length && !signatories.length && !stamps.length) return "";
+
+  const signatoryTable = signatories.length ? `<h4>Authorised signatories</h4>
+    <table><thead><tr><th>Name</th><th>SOL ID</th><th>Designation</th></tr></thead>
+      <tbody>${signatories.map((signatory) => `<tr>
+        <td>${esc(signatory.name || "—")}</td>
+        <td>${esc(signatory.sol_id || "—")}</td>
+        <td>${esc(signatory.designation || "—")}</td>
+      </tr>`).join("")}</tbody></table>` : "";
+
+  const stampLabels = [
+    ["certificate_no", "Certificate no"],
+    ["certificate_issued_date", "Issued"],
+    ["account_reference", "Account reference"],
+    ["unique_doc_reference", "Unique doc reference"],
+    ["description_of_document", "Description of document"],
+    ["consideration_price", "Consideration price"],
+    ["first_party", "First party"],
+    ["second_party", "Second party"],
+    ["stamp_duty_paid_by", "Stamp duty paid by"],
+    ["stamp_duty_amount", "Stamp duty amount"],
+    ["stamp_serial_number", "Stamp serial no"],
+  ];
+  const stampBlocks = stamps.map((stamp, index) => {
+    const rows = stampLabels
+      .filter(([key]) => stamp[key] !== undefined && stamp[key] !== null && stamp[key] !== "")
+      .map(([key, label]) => `<tr><th style="text-align:left;font-weight:600">${esc(label)}</th><td>${esc(stamp[key])}</td></tr>`)
+      .join("");
+    return `<div class="extra-block"><b>Stamp duty certificate ${index + 1}</b>
+      <table><tbody>${rows}</tbody></table></div>`;
+  }).join("");
+
+  return `<details class="compare">
+    <summary><b>Document extras</b> · read-only${signatories.length ? ` · ${signatories.length} signatory(ies)` : ""}${stamps.length ? ` · ${stamps.length} stamp certificate(s)` : ""}</summary>
+    <div class="body">
+      ${bits.length ? `<div class="extra-bits">${bits.join(" · ")}</div>` : ""}
+      ${signatoryTable}
+      ${stamps.length ? `<h4>Stamp duty certificates</h4>${stampBlocks}` : ""}
+    </div>
+  </details>`;
+}
+
 function renderEntry(entry, before = null) {
   const id = `file_${state.entries.indexOf(entry)}`;
   const open = entryOpenFlags(entry);
@@ -1095,10 +1169,11 @@ function renderEntry(entry, before = null) {
         <div class="meta">${entry.pages} pages · ${engineLabel(entry.ocr_engine)}${conf ? " " + esc(conf) : ""}${variantSummary(entry)}</div>
       </div>
       <div class="tools">
-        ${state.confirmed ? "" : `<button class="btn ghost small" type="button" data-action="reset" data-file="${esc(entry.source_pdf)}">Reset to OCR</button>`}
+        ${state.confirmed ? "" : `<button class="btn ghost small" type="button" data-action="reset" data-file="${esc(entry.source_pdf)}">Reset to extracted</button>`}
       </div>
     </div>
     ${comparisonHtml(entry)}
+    ${extrasHtml(entry)}
     <div class="file-body">
       <div class="grid">${FIELDS.map((spec) => fieldHtml(spec, entry)).join("")}</div>
     </div>

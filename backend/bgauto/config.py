@@ -103,20 +103,43 @@ IST = dt.timezone(dt.timedelta(hours=5, minutes=30), "IST")
 SCHEDULER_TIME = os.environ.get("BG_SCHEDULER_TIME", "09:00")
 INTERNAL_TOKEN = os.environ.get("BG_INTERNAL_TOKEN", "")
 
-# --- OCR settings (Datalab API) -----------------------------------------
-# Datalab converts each uploaded PDF in the cloud. The API key is read from
+# --- OCR settings (Datalab) ---------------------------------------------
+# Datalab reads each uploaded PDF in the cloud: the convert step supplies page
+# text, the extract step supplies the field JSON. The API key is read from
 # DATALAB_API_KEY (preferred) or the SDK's saved `datalab login` config.
 OCR_ENGINE = "datalab"
 DATALAB_API_KEY = os.environ.get("DATALAB_API_KEY", "").strip()
 DATALAB_BASE_URL = os.environ.get(
     "BG_DATALAB_BASE_URL", "https://www.datalab.to"
 ).rstrip("/")
-# lite | fast | balanced | accurate. `fast` is the project default.
+# lite | fast | balanced | accurate. Only used by `ocr.convert_pdf`;
+# pipeline runs take their parse mode from the pipeline's convert step.
 DATALAB_MODE = os.environ.get("BG_DATALAB_MODE", "fast").strip().lower()
 DATALAB_MODES = ("lite", "fast", "balanced", "accurate")
 DATALAB_TIMEOUT = int(os.environ.get("BG_DATALAB_TIMEOUT", "600"))
 DATALAB_MAX_POLLS = int(os.environ.get("BG_DATALAB_MAX_POLLS", "300"))
 DATALAB_POLL_INTERVAL = float(os.environ.get("BG_DATALAB_POLL_INTERVAL", "2"))
+
+# --- Pipeline (convert -> extract) ---------------------------------------
+# The pipeline owns the convert/extract settings and the extraction schema.
+# The production pipeline is deployed on a fresh account, so its first
+# published version is 1. Pin that version so a manual edit in Datalab cannot
+# silently change results; leave BG_DATALAB_PIPELINE_VERSION empty to always
+# run the active published version.
+DATALAB_PIPELINE_ID = os.environ.get(
+    "BG_DATALAB_PIPELINE_ID", "pl_INVNggnY7MaE"
+).strip()
+_pipeline_version = os.environ.get("BG_DATALAB_PIPELINE_VERSION", "1").strip()
+DATALAB_PIPELINE_VERSION = (
+    int(_pipeline_version) if _pipeline_version.isdigit() else None
+)
+DATALAB_PIPELINE_MODES = ("turbo", "fast", "balanced", "accurate")
+# Informational: the extract step's mode is stored in the Datalab pipeline, not
+# sent per run. This value is only reported by ``/api/health`` so an operator can
+# confirm which pipeline release is pinned.
+DATALAB_EXTRACTION_MODE = (
+    os.environ.get("BG_DATALAB_EXTRACTION_MODE", "turbo").strip().lower()
+)
 
 # --- Official-name lookup (Firecrawl agent) ------------------------------
 # Optional. Without a key the app stays fully local and keeps the OCR reads.

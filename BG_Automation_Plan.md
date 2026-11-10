@@ -73,11 +73,13 @@ Phase 1 has no Graph, SharePoint, or Entra. Interfaces (`MailSender`,
 `TrackerStore`, `Extractor`, `AuthProvider`) keep those swaps easy.
 Diagrams: `plan/01-architecture.md`. Flows: `plan/05-flows.md`.
 
-## 5. OCR strategy (summary)
+## 5. Extraction strategy (summary)
 
-1. Send each PDF to the Datalab API with one fixed mode (`fast` by default).
-2. Keep uncertain values editable for review; blank beats wrong.
-3. Store OCR text and extraction reports locally for audit.
+1. Run each PDF through the pinned Datalab pipeline (`convert` then structured
+   `extract`; `turbo` mode).
+2. Keep uncertain values editable for review; blank beats wrong. Local code only
+   normalises Datalab's values and resolves masters.
+3. Store both raw pipeline results and the extraction report locally for audit.
 Detail: `plan/04-ocr-extraction.md`.
 
 ## 6. Email and scheduler (summary)

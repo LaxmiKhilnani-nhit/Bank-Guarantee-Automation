@@ -74,6 +74,14 @@ def parse_date(raw: str | None) -> dt.date | None:
         return None
     text = squash(raw).upper()
 
+    # 2026-11-06 (Datalab/JSON ISO form)
+    m = re.search(r"\b(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})\b", text)
+    if m:
+        try:
+            return dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            return None
+
     # 15-SEP-2025 / 11-0CT-2028 / 15 SEP 2025
     m = re.search(r"(\d{1,2}|[IL|!]{1,2})\s*[-/.]\s*([A-Z0-9]{3,4})\s*[-/.]\s*(\d{4}|\d{2})", text)
     if m:

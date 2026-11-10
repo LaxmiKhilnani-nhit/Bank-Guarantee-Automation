@@ -1,0 +1,46 @@
+{
+  "schema_label": "v1",
+  "note": "Snapshot taken from the development pipeline (active version 3). The production pipeline is deployed on a fresh Datalab account, so the same schema publishes there as version 1.",
+  "pipeline_ref": "pl_INVNggnY7MaE",
+  "name": "BG_Fields_Extraction_dev",
+  "internal_id": 162502,
+  "source_active_version": 3,
+  "production_version": 1,
+  "extraction_mode": "turbo",
+  "fetched_at": "2026-11-10T17:55:50+05:30",
+  "steps": [
+    {
+      "type": "convert",
+      "settings": {
+        "output_mode": "fast",
+        "paginate": false,
+        "merge_cross_page": false,
+        "disable_image_captions": false,
+        "keep_pageheader_in_output": false,
+        "keep_pagefooter_in_output": false,
+        "word_bboxes": false,
+        "add_block_ids": true,
+        "disable_image_extraction": false,
+        "extras": [
+          "new_block_types"
+        ]
+      },
+      "custom_processor_id": null,
+      "eval_rubric_id": null,
+      "pending_check_url": null,
+      "pending_name": null
+    },
+    {
+      "type": "extract",
+      "settings": {
+        "extraction_mode": "turbo",
+        "page_schema": "{\n  \"type\": \"object\",\n  \"title\": \"ExtractionSchema\",\n  \"description\": \"Schema for structured data extraction\",\n  \"properties\": {\n    \"company_name\": {\n      \"type\": \"string\",\n      \"description\": \"Beneficiary/owner named in the guarantee, usually an NHIT SPV (for example NHIT Southern Projects Private Limited). Do not return the issuing bank or the contractor. Write the full name as printed, or an empty string if absent.\"\n    },\n    \"project_name\": {\n      \"type\": \"string\",\n      \"description\": \"Corridor or project name printed in the guarantee, LOA, contract, or deed (for example 'Bareilly - Sitapur'). Do not return the contractor, bank, or company. Write it as printed, or an empty string if absent.\"\n    },\n    \"toll_plaza_names\": {\n      \"type\": \"array\",\n      \"description\": \"Every toll plaza named in the document, in document order, one entry per plaza. Split combined names such as 'Bhojpuri & Mudipar' into separate entries. Use an empty array if none.\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"bg_type\": {\n      \"type\": \"string\",\n      \"description\": \"Write 'PBG' when the document says Performance Bank Guarantee or Performance Security. Write 'ABG' when it says Advance Bank Guarantee or Advance Payment Guarantee. Otherwise write an empty string.\"\n    },\n    \"bg_type_wording\": {\n      \"type\": \"string\",\n      \"description\": \"The guarantee type wording exactly as printed (for example 'Performance Security' or 'Advance Bank Guarantee'), or an empty string.\"\n    },\n    \"nature_of_service\": {\n      \"type\": \"string\",\n      \"description\": \"The work or service described in the LOA, contract, or deed (for example 'Repair and Rehabilitation of Bridge'), copied as printed. Do not return the guarantee type. Use an empty string if absent.\"\n    },\n    \"contractor_name\": {\n      \"type\": \"string\",\n      \"description\": \"Applicant/contractor in whose favour the guarantee is issued, usually written after 'M/s'. Do not return the beneficiary/company or the issuing bank. Write the full name, or an empty string if absent.\"\n    },\n    \"bg_no\": {\n      \"type\": \"string\",\n      \"description\": \"The bank guarantee number from the guarantee details or table. Copy letters and digits exactly. Do not return the bank's letter reference number or a company registration number. Use an empty string if absent.\"\n    },\n    \"bg_amount\": {\n      \"type\": \"number\",\n      \"description\": \"The bank guarantee amount in INR as a plain number, without commas, currency symbols, or words. Use null if the amount is absent.\"\n    },\n    \"bg_amount_in_words\": {\n      \"type\": \"string\",\n      \"description\": \"The guarantee amount written in words, copied as printed. Use an empty string if absent.\"\n    },\n    \"from_date\": {\n      \"type\": \"string\",\n      \"description\": \"Date of issue of the guarantee, written as DD-MM-YYYY. Use an empty string if absent.\"\n    },\n    \"to_date\": {\n      \"type\": \"string\",\n      \"description\": \"Expiry or valid-until date of the guarantee, written as DD-MM-YYYY. Use an empty string if absent.\"\n    },\n    \"claim_expiry_date\": {\n      \"type\": \"string\",\n      \"description\": \"Last date for lodging a claim under the guarantee, written as DD-MM-YYYY. This is a single date, not a date range. Use an empty string if absent.\"\n    },\n    \"bank_name\": {\n      \"type\": \"string\",\n      \"description\": \"Full name of the bank that issued the guarantee, taken from the letterhead or signature block. Do not return the beneficiary or contractor. Use an empty string if absent.\"\n    },\n    \"loa_or_tender_number\": {\n      \"type\": \"string\",\n      \"description\": \"LOA / Letter of Acceptance / tender / contract / work order reference exactly as printed. Exclude any date that follows it. Use an empty string if absent.\"\n    },\n    \"po_number\": {\n      \"type\": \"string\",\n      \"description\": \"Purchase order or work order number exactly as printed. Use an empty string if no separate PO number is shown.\"\n    },\n    \"authorized_signatories\": {\n      \"type\": \"array\",\n      \"description\": \"One entry for each authorised signatory of the bank on the guarantee. Use an empty array if none.\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Signatory name as printed, or an empty string.\"\n          },\n          \"sol_id\": {\n            \"type\": \"string\",\n            \"description\": \"Signatory identifier or SOL ID printed with the signature, or an empty string.\"\n          },\n          \"designation\": {\n            \"type\": \"string\",\n            \"description\": \"Signatory designation or title as printed, or an empty string.\"\n          }\n        }\n      }\n    },\n    \"stamp_duty_certificates\": {\n      \"type\": \"array\",\n      \"description\": \"One entry for each non-judicial e-stamp certificate attached to the document. Use an empty array if none.\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"certificate_no\": {\n            \"type\": \"string\",\n            \"description\": \"Certificate number from the stamp duty certificate, or an empty string.\"\n          },\n          \"certificate_issued_date\": {\n            \"type\": \"string\",\n            \"description\": \"Certificate issue date and time exactly as printed, or an empty string.\"\n          },\n          \"account_reference\": {\n            \"type\": \"string\",\n            \"description\": \"Account reference from the certificate details, or an empty string.\"\n          },\n          \"unique_doc_reference\": {\n            \"type\": \"string\",\n            \"description\": \"Unique document reference from the certificate details, or an empty string.\"\n          },\n          \"description_of_document\": {\n            \"type\": \"string\",\n            \"description\": \"Wording in the 'Description of Document' field only. Do not combine it with the separate 'Description' field. Use an empty string if absent.\"\n          },\n          \"consideration_price\": {\n            \"type\": \"number\",\n            \"description\": \"Consideration price in rupees as a plain number, without commas or symbols. Use null if absent.\"\n          },\n          \"first_party\": {\n            \"type\": \"string\",\n            \"description\": \"First party named on the certificate, or an empty string.\"\n          },\n          \"second_party\": {\n            \"type\": \"string\",\n            \"description\": \"Second party named on the certificate, or an empty string.\"\n          },\n          \"stamp_duty_paid_by\": {\n            \"type\": \"string\",\n            \"description\": \"Party that paid the stamp duty, as printed, or an empty string.\"\n          },\n          \"stamp_duty_amount\": {\n            \"type\": \"number\",\n            \"description\": \"Stamp duty amount in rupees as a plain number, without commas or symbols. Use null if absent.\"\n          },\n          \"stamp_serial_number\": {\n            \"type\": \"string\",\n            \"description\": \"Stamp serial number as printed, or an empty string.\"\n          }\n        }\n      }\n    }\n  }\n}",
+        "citation_granularity": "phrase"
+      },
+      "custom_processor_id": null,
+      "eval_rubric_id": null,
+      "pending_check_url": null,
+      "pending_name": null
+    }
+  ]
+}

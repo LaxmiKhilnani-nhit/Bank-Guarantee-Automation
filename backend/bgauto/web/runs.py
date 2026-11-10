@@ -29,9 +29,9 @@ if os.name == "nt":
 else:
     import fcntl
 
-from .. import config, excel, lookup, ocr, register, store
+from .. import config, excel, lookup, pipeline, register, store
 from ..auth import User
-from ..extract import HEADERS, Extraction, extract
+from ..extract import HEADERS, Extraction, extract_from_pipeline
 from ..masters import Masters
 from ..normalize import normalise_key
 
@@ -249,6 +249,8 @@ def public_entry(entry: dict) -> dict:
         "fields": entry["fields"],
         "values": entry["values"],
         "extracted_values": entry["extracted_values"],
+        "extras": entry.get("extras") or {},
+        "pipeline": entry.get("pipeline") or {},
         "lookup": entry.get("lookup") or {},
         "plazas": entry.get("plazas") or [],
     }
@@ -306,7 +308,7 @@ def add_pdf(
     data: bytes,
     user: User,
 ) -> dict:
-    """Store one upload, OCR it with Datalab and append its extraction."""
+    """Store one upload, run the Datalab pipeline and append its extraction."""
     original = Path(filename or "upload.pdf").name
     name = original
     if not name.lower().endswith(".pdf"):
@@ -361,16 +363,22 @@ def add_pdf(
                 "page_seconds": update.get("seconds"),
                 "started_at": started.isoformat(timespec="seconds"),
                 "elapsed": round((dt.datetime.now() - started).total_seconds(), 1),
-                "stage": "reading",
+                "stage": update.get("stage", "reading"),
             },
         )
 
     try:
         masters_obj = masters()
-        document = ocr.convert_pdf(pdf_path, progress=progress)
-        result = extract(document, masters_obj)
+        pipeline_result = pipeline.run(pdf_path, progress=progress)
+        document = pipeline_result.document
+        result = extract_from_pipeline(
+            document,
+            pipeline_result.data,
+            masters_obj,
+            pipeline_meta=pipeline_result.meta(),
+        )
         _progress_set(run_id, name, None)
-        _archive(run_id, result, requested)
+        _archive(run_id, result, requested, pipeline_result.raw())
     except Exception as error:
         _progress_set(run_id, name, None)
         pdf_path.unlink(missing_ok=True)
@@ -395,11 +403,13 @@ def add_pdf(
         "source_pdf": name,
         "stored_pdf": f"uploads/{name}",
         "sha256": digest,
-        "pages": len(document.pages),
+        "pages": result.pipeline.get("pages") or len(document.pages),
         "ocr_confidence": document.mean_conf,
         "ocr_confidence_source": document.confidence_source,
         "ocr_engine": result.ocr.engine,
-        "ocr_mode": config.DATALAB_MODE,
+        "ocr_mode": pipeline_result.extraction_mode or config.DATALAB_MODE,
+        "extraction_mode": pipeline_result.extraction_mode,
+        "pipeline": pipeline_result.meta(),
         "ocr_requested_engine": requested,
         "ocr_variants": {
             result.ocr.engine: {
@@ -417,6 +427,7 @@ def add_pdf(
         "fields": result.report()["fields"],
         "values": values,
         "extracted_values": extracted,
+        "extras": result.extras,
         "lookup": lookup_result,
         "plazas": result.plazas,
     }
@@ -449,13 +460,16 @@ def _archive(
     run_id: str,
     result: Extraction,
     requested: str | None = None,
+    raw_pipeline: dict | None = None,
 ) -> None:
     target = run_dir(run_id) / "ocr" / f"{result.source.stem}.json"
     payload = {
         "source_pdf": result.source.name,
         "engine": result.ocr.engine,
         "engine_requested": requested or result.ocr.engine,
-        "mode": config.DATALAB_MODE,
+        "mode": result.pipeline.get("extraction_mode") or config.DATALAB_MODE,
+        "pipeline": result.pipeline,
+        "page_count": result.pipeline.get("pages"),
         "engine_errors": {},
         "engines": {
             result.ocr.engine: {
@@ -483,6 +497,15 @@ def _archive(
         "extraction": result.report(),
     }
     target.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    if raw_pipeline:
+        pipeline_dir = run_dir(run_id) / "pipeline"
+        pipeline_dir.mkdir(parents=True, exist_ok=True)
+        raw_target = pipeline_dir / f"{result.source.stem}.json"
+        raw_target.write_text(
+            json.dumps(raw_pipeline, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
 
 # --- review helpers ------------------------------------------------------
