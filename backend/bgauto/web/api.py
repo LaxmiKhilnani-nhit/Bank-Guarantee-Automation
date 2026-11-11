@@ -6,9 +6,9 @@ Start it with::
     .venv\\Scripts\\python.exe -m bgauto.web
 
 Then open http://127.0.0.1:8000 . The server binds to loopback only. The page
-and every asset are served from this process: no CDN. OCR and the register are
-local; the only outbound call is the optional Firecrawl name lookup, which
-sends just the OCR'd bank/contractor names and IFSC codes.
+and every asset are served from this process: no CDN. The register stays local,
+but every uploaded PDF is sent to the Datalab pipeline. The optional Firecrawl
+name lookup sends just the extracted bank/contractor names and IFSC codes.
 
 Roles (``plan/03``): an uploader owns and saves their runs, an admin administers,
 and a viewer reads the register and workbook. Every route states its role in
@@ -19,18 +19,14 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
-import re
 import sqlite3
-import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-import pytesseract
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, Response, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
-from PIL import Image, ImageDraw
 from pydantic import BaseModel, Field
 
 from .. import auth, config, lookup, ocr, register, schema, scheduler, store
@@ -53,10 +49,6 @@ MUTATING = {"POST", "PUT", "PATCH", "DELETE"}
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    try:
-        ocr.configure()
-    except FileNotFoundError:
-        pass  # health reports the problem instead of refusing to start
     try:
         schema.ensure_schema()
     except (OSError, sqlite3.Error):
@@ -216,47 +208,26 @@ def favicon() -> Response:
 
 # --- health --------------------------------------------------------------
 
-_OCR_PROBE_TTL = 30.0
-_ocr_probe_cache: tuple[float, bool] | None = None
-
-
-def _ocr_probe() -> bool:
-    """Prove OCR runs by reading a tiny generated image (cached ~30 s)."""
-    global _ocr_probe_cache
-    now = time.monotonic()
-    if _ocr_probe_cache is not None and now - _ocr_probe_cache[0] < _OCR_PROBE_TTL:
-        return _ocr_probe_cache[1]
-    ok = False
-    try:
-        ocr.configure()
-        image = Image.new("RGB", (160, 60), "white")
-        ImageDraw.Draw(image).text((10, 5), "BG 123", fill="black")
-        text = pytesseract.image_to_string(image)
-        ok = bool(re.sub(r"[^A-Za-z0-9]", "", text))
-    except Exception:
-        ok = False
-    _ocr_probe_cache = (now, ok)
-    return ok
-
-
 @app.get("/health")
 @app.get("/api/health")
 def health() -> dict:
-    try:
-        tesseract = str(config.find_tesseract())
-    except FileNotFoundError:
-        tesseract = None
-    ocr_ok = _ocr_probe()
+    # A local configuration check only: health must not spend a Datalab call.
+    ocr_ok = ocr.datalab_available()
     return {
         "status": "ok" if ocr_ok else "degraded",
         "ocr_ok": ocr_ok,
-        "tesseract": tesseract,
-        "ocr_engines": {
-            "tesseract": tesseract is not None,
-            "indra": ocr.indra_available(),
-            "azure": ocr.azure_available(),
+        "ocr_engine": config.OCR_ENGINE,
+        "ocr_mode": config.DATALAB_MODE,
+        "datalab": {
+            "configured": ocr_ok,
+            "base_url": config.DATALAB_BASE_URL,
+            "mode": config.DATALAB_MODE,
         },
-        "ocr_default_engine": config.OCR_ENGINE,
+        "pipeline": {
+            "id": config.DATALAB_PIPELINE_ID,
+            "version": config.DATALAB_PIPELINE_VERSION,
+            "extraction_mode": config.DATALAB_EXTRACTION_MODE,
+        },
         "database": str(config.DB_PATH) if config.DB_PATH.exists() else None,
         "template": str(config.TRACKER_PATH) if config.TRACKER_PATH.exists() else None,
         "workbook": str(config.WORKBOOK_PATH),
@@ -409,12 +380,11 @@ def get_run(run_id: str, user: User = Depends(security.current_user)) -> dict:
 def upload_pdf(
     run_id: str,
     file: UploadFile = File(...),
-    engine: str = Form("tesseract"),
     user: User = Depends(security.require("uploader")),
 ) -> dict:
     data = file.file.read()
     try:
-        return runs.add_pdf(run_id, file.filename or "upload.pdf", data, user, engine)
+        return runs.add_pdf(run_id, file.filename or "upload.pdf", data, user)
     except FileNotFoundError as exc:
         raise _not_found(exc) from exc
     except (ValueError, PermissionError) as exc:

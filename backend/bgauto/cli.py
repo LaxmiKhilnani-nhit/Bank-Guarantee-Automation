@@ -18,8 +18,8 @@ import sqlite3
 import sys
 from pathlib import Path
 
-from . import config, excel, ocr
-from .extract import HEADERS, Extraction, extract
+from . import config, excel, pipeline
+from .extract import HEADERS, Extraction, extract_from_pipeline
 from .masters import Masters
 from .normalize import normalise_key
 from .schema import ensure_schema
@@ -41,22 +41,39 @@ def _expand(patterns: list[str]) -> list[Path]:
     return [p for p in dict.fromkeys(files) if p.suffix.lower() == ".pdf"]
 
 
-def _archive(extraction: Extraction, directory: Path) -> Path:
+def _archive(
+    extraction: Extraction,
+    directory: Path,
+    raw_pipeline: dict | None = None,
+) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     target = directory / f"{extraction.source.stem}.json"
     payload = {
         "source_pdf": extraction.source.name,
-        "engine": "tesseract-local",
+        "engine": extraction.ocr.engine,
+        "pipeline": extraction.pipeline,
         "ocr": {
             "mean_confidence": extraction.ocr.mean_conf,
+            "confidence_source": extraction.ocr.confidence_source,
             "pages": [
-                {"page": p.number, "mean_confidence": p.mean_conf, "text": p.text}
+                {
+                    "page": p.number,
+                    "mean_confidence": p.mean_conf,
+                    "confidence_source": p.confidence_source,
+                    "text": p.text,
+                }
                 for p in extraction.ocr.pages
             ],
         },
         "extraction": extraction.report(),
     }
     target.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    if raw_pipeline:
+        raw_dir = directory / "pipeline"
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        (raw_dir / f"{extraction.source.stem}.json").write_text(
+            json.dumps(raw_pipeline, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
     return target
 
 
@@ -76,10 +93,17 @@ def _notes(extraction: Extraction) -> str:
     return "; ".join(parts)
 
 
+def _confidence(ex: Extraction) -> str:
+    if ex.ocr.mean_conf <= 0:
+        return "no Datalab quality score"
+    return f"quality {ex.ocr.mean_conf:.2%}"
+
+
 def _print_summary(extractions: list[Extraction]) -> None:
     for ex in extractions:
         print("")
-        print(f"PDF   : {ex.source.name}  ({len(ex.ocr.pages)} pages, OCR conf {ex.ocr.mean_conf:.2%})")
+        pages = ex.pipeline.get("pages") or len(ex.ocr.pages)
+        print(f"PDF   : {ex.source.name}  ({pages} pages, {_confidence(ex)})")
         for name in (
             "Company Name", "Name of Contractor", "BG No", "BG Amount", "From", "To",
             "Claim Period", "Bank Name", "Types of BG", "Nature of Service",
@@ -101,7 +125,6 @@ def cmd_ingest(args: argparse.Namespace) -> int:
         print("No PDF files matched.", file=sys.stderr)
         return 2
 
-    ocr.configure()
     db_path = Path(args.db) if args.db else None
     try:
         ensure_schema(db_path)
@@ -117,12 +140,17 @@ def cmd_ingest(args: argparse.Namespace) -> int:
 
     extractions: list[Extraction] = []
     for pdf_path in files:
-        print(f"OCR   : {pdf_path.name} ...", flush=True)
-        document = ocr.ocr_pdf(pdf_path, dpi=args.dpi)
-        result = extract(document, masters)
+        print(f"Datalab: {pdf_path.name} ...", flush=True)
+        pipeline_result = pipeline.run(pdf_path)
+        result = extract_from_pipeline(
+            pipeline_result.document,
+            pipeline_result.data,
+            masters,
+            pipeline_meta=pipeline_result.meta(),
+        )
         extractions.append(result)
-        archive = _archive(result, Path(args.archive_dir))
-        print(f"        archived OCR -> {archive}")
+        archive = _archive(result, Path(args.archive_dir), pipeline_result.raw())
+        print(f"        archived pipeline -> {archive}")
 
     rows = []
     reported = []
@@ -178,7 +206,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     print("")
     print(f"Rows written : {len(rows)} -> {out_path}")
     print(f"Review files : {report_dir}")
-    print(f"OCR archive  : {Path(args.archive_dir)}")
+    print(f"Archive      : {Path(args.archive_dir)}")
     print("Reminder     : confirm these rows before they go into the real tracker.")
     return 0
 
@@ -236,14 +264,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="bgauto", description="Local BG PDF ingestion")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    ingest = sub.add_parser("ingest", help="OCR PDFs and append rows to a review workbook")
+    ingest = sub.add_parser("ingest", help="Extract PDFs and append rows to a review workbook")
     ingest.add_argument("pdfs", nargs="+", help="PDF paths or glob patterns")
     ingest.add_argument("--out", default="out/BG Tracker_ingested.xlsx", help="review workbook path")
     ingest.add_argument("--report", default="out/review", help="directory for JSON/CSV review files")
     ingest.add_argument("--tracker", default=str(config.TRACKER_PATH), help="tracker template")
-    ingest.add_argument("--archive-dir", default=str(config.OCR_ARCHIVE_DIR), help="OCR JSON archive")
+    ingest.add_argument("--archive-dir", default=str(config.OCR_ARCHIVE_DIR), help="pipeline JSON archive")
     ingest.add_argument("--db", default=None, help="SQLite masters database")
-    ingest.add_argument("--dpi", type=int, default=None, help="render DPI (default 300)")
     ingest.set_defaults(func=cmd_ingest)
 
     masters = sub.add_parser(

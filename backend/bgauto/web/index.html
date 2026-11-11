@@ -122,6 +122,10 @@
   .compare th{color:var(--muted); font-weight:650; position:sticky; top:0; background:var(--panel)}
   .compare td{max-width:240px; overflow-wrap:anywhere}
   .compare h4{margin:10px 0 2px; font-size:11.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted)}
+  .extra-bits{display:flex; flex-wrap:wrap; gap:6px 14px; padding:8px 0 2px; font-size:12px; color:var(--muted)}
+  .extra-bits b{color:var(--text)}
+  .extra-block{margin:6px 0 10px}
+  .extra-block>b{font-size:12px}
 
   .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px 18px}
   .field{display:flex; flex-direction:column; gap:5px; min-width:0}
@@ -226,7 +230,7 @@
     <div class="mark">BG</div>
     <div>
       <h1>Bank Guarantee automation</h1>
-      <p class="sub">Local OCR · register · T-7 reminders</p>
+      <p class="sub">Datalab pipeline · register · T-7 reminders</p>
     </div>
   </div>
   <nav class="nav" id="nav" aria-label="Sections">
@@ -258,19 +262,8 @@
         </svg>
         <p class="big">Drop scanned BG PDFs here</p>
         <p class="muted">or <button class="link" id="browse" type="button">browse files</button> · PDF only, up to 25 MB each</p>
-        <p class="muted" style="font-size:12px">Indra and Tesseract run locally. Azure OCR sends the selected PDF to your configured Azure endpoint.</p>
+        <p class="muted" style="font-size:12px">PDFs are read by the Datalab pipeline (convert → extract, <span id="ocrMode">turbo</span>). The register and review data stay on this machine.</p>
         <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
-      </div>
-      <div style="display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap">
-        <label for="ocrEngine" style="font-size:13px; font-weight:600">OCR engine</label>
-        <select id="ocrEngine" style="max-width:320px">
-          <option value="indra">Indra — local, every page</option>
-          <option value="tesseract">Tesseract — fast, every page</option>
-          <option value="azure">Azure Document Intelligence — remote</option>
-          <option value="both">Indra + Tesseract — compare fields</option>
-          <option value="all">All engines — Azure receives the PDF</option>
-        </select>
-        <span class="muted" id="ocrEngineHint" style="font-size:12px"></span>
       </div>
       <ul class="queue" id="queue" aria-live="polite"></ul>
       <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap">
@@ -460,8 +453,8 @@ const state = {
   runStatus: "",
   busy: false,
   lookup: false,
-  ocrEngine: "indra",
-  ocrEngines: {},
+  ocrEngine: "datalab",
+  ocrMode: "turbo",
   regOffset: 0,
   regLimit: 100,
   workbookOffset: 0,
@@ -552,66 +545,25 @@ function applyRole() {
   $("#userRole").textContent = state.user.role;
 }
 
-function updateEngineHint() {
-  const select = $("#ocrEngine");
-  const hint = $("#ocrEngineHint");
-  if (!select || !hint) return;
-  const indraReady = Boolean(state.ocrEngines.indra);
-  const azureReady = Boolean(state.ocrEngines.azure);
-  for (const option of select.options) {
-    option.disabled = (option.value === "indra" && !indraReady)
-      || (option.value === "azure" && !azureReady)
-      || (option.value === "all" && !azureReady);
-  }
-  if (state.ocrEngine === "both") {
-    hint.textContent = indraReady
-      ? "Both engines process every page locally; extracted fields and page text are compared."
-      : "Indra is not installed; Tesseract will process the PDF locally.";
-  } else if (state.ocrEngine === "all") {
-    hint.textContent = "Indra and Tesseract run locally; Azure receives the PDF for comparison.";
-  } else if (state.ocrEngine === "azure") {
-    hint.textContent = azureReady
-      ? "The PDF is sent to your configured Azure Document Intelligence endpoint for OCR."
-      : "Azure is unavailable; configure AZURE_DI_ENDPOINT and an API key in the local .env file.";
-  } else if (state.ocrEngine === "indra") {
-    hint.textContent = indraReady
-      ? "Indra runs locally. Its model downloads on first use; documents stay on this machine."
-      : "Indra is not installed; Tesseract will be used instead.";
-  } else if (state.ocrEngine === "tesseract") {
-    hint.textContent = indraReady
-      ? "Tesseract runs locally. Choose Both to compare it with Indra."
-      : "Tesseract processes every page locally.";
-  }
-}
-
 async function loadHealth() {
   try {
     const health = await (await fetch("/api/health")).json();
     state.lookup = Boolean(health.lookup);
-    state.ocrEngines = health.ocr_engines || {};
-    const savedEngine = (() => {
-      try { return localStorage.getItem("bg.ocrEngine.v2"); } catch (error) { return null; }
-    })();
-    if (!savedEngine && state.ocrEngines.indra) {
-      state.ocrEngine = "indra";
-      $("#ocrEngine").value = "indra";
-    }
-    updateEngineHint();
+    state.ocrEngine = health.ocr_engine || "datalab";
+    state.ocrMode = health.pipeline?.extraction_mode || health.ocr_mode || "turbo";
+    const modeLabel = $("#ocrMode");
+    if (modeLabel) modeLabel.textContent = state.ocrMode;
     const dot = $("#health .dot");
     dot.classList.remove("ok", "bad");
     if (health.status === "ok") {
       dot.classList.add("ok");
-      const parts = ["Tesseract"];
-      if (state.ocrEngines.indra) parts.push("Indra");
-      if (state.ocrEngines.azure) parts.push("Azure");
-      const engines = `${parts.join(" + ")} ready`;
-      const suffix = state.lookup ? "name check on" : (state.ocrEngines.azure ? "Azure remote OCR available" : "local only");
-      $("#healthText").textContent = `${engines} · ${suffix}`;
-      $("#healthText").title = health.tesseract || "";
+      const suffix = state.lookup ? "name check on" : "remote read only";
+      $("#healthText").textContent = `Datalab pipeline (${state.ocrMode}) ready · ${suffix}`;
+      $("#healthText").title = health.datalab?.base_url || "";
     } else {
       dot.classList.add("bad");
-      $("#healthText").textContent = "Tesseract not found";
-      $("#healthText").title = "Set TESSERACT_CMD or install Tesseract 5";
+      $("#healthText").textContent = "Datalab not configured";
+      $("#healthText").title = "Add DATALAB_API_KEY to the local .env file, then restart the app.";
     }
   } catch (error) {
     $("#healthText").textContent = "API unreachable";
@@ -712,8 +664,9 @@ function loadEntries(run, { restored = false } = {}) {
     renderEntry(entry);
     if (restored) {
       const item = document.createElement("li");
+      const conf = confText(entry.ocr_confidence, entry.ocr_confidence_source);
       item.innerHTML = `<span class="badge note">restored</span><span class="name">${esc(entry.source_pdf)}</span>
-        <span class="state">${entry.pages} pages · ${(entry.ocr_confidence * 100).toFixed(0)}%</span>`;
+        <span class="state">${entry.pages} pages${conf ? " · " + esc(conf) : ""}</span>`;
       $("#queue").appendChild(item);
     }
   }
@@ -735,12 +688,8 @@ async function restoreRun() {
 
 function engineLabel(engine) {
   return {
-    tesseract: "Tesseract",
-    indra: "Indra",
-    azure: "Azure DI",
-    both: "Indra + Tesseract",
-    all: "All engines",
-  }[engine] || engine || "OCR";
+    datalab: "Datalab pipeline",
+  }[engine] || engine || "Datalab";
 }
 
 async function loadWorkbook(reset = false) {
@@ -787,16 +736,15 @@ function variantSummary(payload) {
   const variants = Object.entries(payload.ocr_variants || {});
   const ran = variants.filter(([, info]) => info && !info.error);
   const errored = variants.filter(([, info]) => info && info.error);
+  // A single engine is already named in the card header; only a genuine
+  // comparison needs the extra variant line.
+  if (ran.length < 2 && !errored.length) return "";
   const pieces = ran.map(([name, info]) => {
     const conf = confText(info.confidence, info.confidence_source);
     return `${engineLabel(name)} ${info.pages}p${conf ? " " + conf : ""}`;
   });
   const failed = errored.map(([name, info]) => `${engineLabel(name)} failed`);
-  if (pieces.length || failed.length) {
-    return " · " + [...pieces, ...failed].join(" vs ");
-  }
-  if (payload.ocr_engine) return ` · ${engineLabel(payload.ocr_engine)}`;
-  return "";
+  return pieces.length || failed.length ? " · " + [...pieces, ...failed].join(" vs ") : "";
 }
 
 function queueItem(name) {
@@ -817,6 +765,16 @@ function formatElapsed(seconds) {
   const mins = Math.floor(total / 60);
   const secs = total % 60;
   return mins ? `${mins}m ${secs}s` : `${secs}s`;
+}
+
+function stageLabel(stage) {
+  return {
+    starting: "starting pipeline",
+    converting: "converting PDF",
+    extracting: "extracting fields",
+    finishing: "finishing",
+    reading: "reading",
+  }[stage] || "reading";
 }
 
 async function uploadFiles(files) {
@@ -881,9 +839,12 @@ async function pollProgress() {
     const info = key ? progress[key] : null;
     if (!info || !activeJob.item) return;
     const engine = engineLabel(info.engine);
+    const stage = stageLabel(info.stage);
+    const percent = Number(info.percent);
+    const pct = Number.isFinite(percent) && percent > 0 ? ` · ${Math.round(percent)}%` : "";
     const stateText = info.pages_total
       ? `page ${info.page} of ${info.pages_total} · ${engine} · ${formatElapsed(info.elapsed)}`
-      : `${engine} · ${formatElapsed(info.elapsed)}`;
+      : `${stage} · ${engine}${pct} · ${formatElapsed(info.elapsed)}`;
     activeJob.item.innerHTML = `<span class="spinner"></span><span class="name">${esc(activeJob.file.name)}</span>
       <span class="state">${esc(stateText)}</span>`;
   } catch (error) {
@@ -893,14 +854,12 @@ async function pollProgress() {
 
 async function uploadOne(file, item) {
   const started = performance.now();
-  const engine = engineLabel(state.ocrEngine);
   item.innerHTML = `<span class="spinner"></span><span class="name">${esc(file.name)}</span>
-    <span class="state">${state.lookup ? "reading with " + esc(engine) + "… then checking official names" : "reading with " + esc(engine) + "…"}</span>`;
+    <span class="state">${state.lookup ? "running the Datalab pipeline… then checking official names" : "running the Datalab pipeline…"}</span>`;
   try {
     await ensureRun();
     const body = new FormData();
     body.append("file", file, file.name);
-    body.append("engine", state.ocrEngine);
     const response = await fetch(`/api/runs/${state.runId}/upload`, {
       method: "POST", credentials: "same-origin", body,
     });
@@ -917,8 +876,9 @@ async function uploadOne(file, item) {
     state.entries.push(payload);
     const seconds = ((performance.now() - started) / 1000).toFixed(0);
     const checked = Object.keys(payload.lookup || {}).length ? " · names checked" : "";
+    const conf = confText(payload.ocr_confidence, payload.ocr_confidence_source);
     item.innerHTML = `<span class="badge ok">read</span><span class="name">${esc(file.name)}</span>
-      <span class="state">${payload.pages} pages · ${(payload.ocr_confidence * 100).toFixed(0)}%${variantSummary(payload)}${checked} · ${seconds}s</span>`;
+      <span class="state">${payload.pages} pages · ${engineLabel(payload.ocr_engine)}${conf ? " · " + esc(conf) : ""}${variantSummary(payload)}${checked} · ${seconds}s</span>`;
     renderEntry(payload);
     refreshSummary();
   } catch (error) {
@@ -1135,6 +1095,64 @@ function comparisonHtml(entry) {
   </details>`;
 }
 
+function extrasHtml(entry) {
+  const extras = entry.extras || {};
+  const pipeline = entry.pipeline || {};
+  const bits = [];
+  if (pipeline.id) {
+    const version = pipeline.version ? ` v${pipeline.version}` : "";
+    const mode = pipeline.extraction_mode ? ` · ${pipeline.extraction_mode}` : "";
+    bits.push(`<span><b>pipeline</b> ${esc(pipeline.id + version + mode)}</span>`);
+  }
+  if (extras.bg_type_wording) bits.push(`<span><b>type wording</b> ${esc(extras.bg_type_wording)}</span>`);
+  if (extras.bg_amount_in_words) bits.push(`<span><b>amount in words</b> ${esc(extras.bg_amount_in_words)}</span>`);
+  if (extras.project_name_printed) bits.push(`<span><b>printed project</b> ${esc(extras.project_name_printed)}</span>`);
+  if (extras.currency) bits.push(`<span><b>currency</b> ${esc(extras.currency)}</span>`);
+
+  const signatories = Array.isArray(extras.authorized_signatories) ? extras.authorized_signatories : [];
+  const stamps = Array.isArray(extras.stamp_duty_certificates) ? extras.stamp_duty_certificates : [];
+  if (!bits.length && !signatories.length && !stamps.length) return "";
+
+  const signatoryTable = signatories.length ? `<h4>Authorised signatories</h4>
+    <table><thead><tr><th>Name</th><th>SOL ID</th><th>Designation</th></tr></thead>
+      <tbody>${signatories.map((signatory) => `<tr>
+        <td>${esc(signatory.name || "—")}</td>
+        <td>${esc(signatory.sol_id || "—")}</td>
+        <td>${esc(signatory.designation || "—")}</td>
+      </tr>`).join("")}</tbody></table>` : "";
+
+  const stampLabels = [
+    ["certificate_no", "Certificate no"],
+    ["certificate_issued_date", "Issued"],
+    ["account_reference", "Account reference"],
+    ["unique_doc_reference", "Unique doc reference"],
+    ["description_of_document", "Description of document"],
+    ["consideration_price", "Consideration price"],
+    ["first_party", "First party"],
+    ["second_party", "Second party"],
+    ["stamp_duty_paid_by", "Stamp duty paid by"],
+    ["stamp_duty_amount", "Stamp duty amount"],
+    ["stamp_serial_number", "Stamp serial no"],
+  ];
+  const stampBlocks = stamps.map((stamp, index) => {
+    const rows = stampLabels
+      .filter(([key]) => stamp[key] !== undefined && stamp[key] !== null && stamp[key] !== "")
+      .map(([key, label]) => `<tr><th style="text-align:left;font-weight:600">${esc(label)}</th><td>${esc(stamp[key])}</td></tr>`)
+      .join("");
+    return `<div class="extra-block"><b>Stamp duty certificate ${index + 1}</b>
+      <table><tbody>${rows}</tbody></table></div>`;
+  }).join("");
+
+  return `<details class="compare">
+    <summary><b>Document extras</b> · read-only${signatories.length ? ` · ${signatories.length} signatory(ies)` : ""}${stamps.length ? ` · ${stamps.length} stamp certificate(s)` : ""}</summary>
+    <div class="body">
+      ${bits.length ? `<div class="extra-bits">${bits.join(" · ")}</div>` : ""}
+      ${signatoryTable}
+      ${stamps.length ? `<h4>Stamp duty certificates</h4>${stampBlocks}` : ""}
+    </div>
+  </details>`;
+}
+
 function renderEntry(entry, before = null) {
   const id = `file_${state.entries.indexOf(entry)}`;
   const open = entryOpenFlags(entry);
@@ -1151,10 +1169,11 @@ function renderEntry(entry, before = null) {
         <div class="meta">${entry.pages} pages · ${engineLabel(entry.ocr_engine)}${conf ? " " + esc(conf) : ""}${variantSummary(entry)}</div>
       </div>
       <div class="tools">
-        ${state.confirmed ? "" : `<button class="btn ghost small" type="button" data-action="reset" data-file="${esc(entry.source_pdf)}">Reset to OCR</button>`}
+        ${state.confirmed ? "" : `<button class="btn ghost small" type="button" data-action="reset" data-file="${esc(entry.source_pdf)}">Reset to extracted</button>`}
       </div>
     </div>
     ${comparisonHtml(entry)}
+    ${extrasHtml(entry)}
     <div class="file-body">
       <div class="grid">${FIELDS.map((spec) => fieldHtml(spec, entry)).join("")}</div>
     </div>
@@ -1845,17 +1864,10 @@ window.addEventListener("hashchange", () => {
 
 $("#browse").addEventListener("click", () => $("#fileInput").click());
 try {
-  const saved = localStorage.getItem("bg.ocrEngine.v2");
+  // The engine selector is gone; drop any preference left by older versions.
   localStorage.removeItem("bg.ocrEngine");
-  if (["indra", "tesseract", "azure", "both", "all"].includes(saved)) state.ocrEngine = saved;
+  localStorage.removeItem("bg.ocrEngine.v2");
 } catch (error) { /* private mode */ }
-$("#ocrEngine").value = state.ocrEngine;
-updateEngineHint();
-$("#ocrEngine").addEventListener("change", (event) => {
-  state.ocrEngine = event.target.value;
-  try { localStorage.setItem("bg.ocrEngine.v2", state.ocrEngine); } catch (error) { /* private mode */ }
-  updateEngineHint();
-});
 $("#fileInput").addEventListener("change", (event) => {
   uploadFiles(event.target.files);
   event.target.value = "";

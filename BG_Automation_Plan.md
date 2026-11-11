@@ -41,7 +41,7 @@ cloud VM available, Docker optional.
 | R3 | Excel | Append to local `BG Tracker.xlsx` (Sheet1), dedupe on BG No. SharePoint live sync waits for Graph approval |
 | R4 | Email | SMTP via `smtp.office365.com:587`. T-7 calendar days on the `To` date to Finance + User Team. Extend-or-close loop per ST006–ST007 |
 | R5 | Auth | Local users, 3 roles. Uploaders save their own reviewed rows; admins manage users; viewers read (see `plan/03-auth.md`) |
-| R6 | OCR | Indra local OCR by default; Tesseract fallback/comparison; Azure DI is optional for testing and sends selected PDFs to Central India |
+| R6 | OCR | Datalab API (`fast` by default). Every uploaded PDF is sent to Datalab for OCR; the register and archive stay local |
 | R7 | Failures | Failed OCR or missing fields go to a manual queue and stay blank (ST008). Bad rows never reach Excel |
 | R8 | Hosting | Existing Windows VM first. Environment-driven config for a later App Service move |
 
@@ -73,11 +73,13 @@ Phase 1 has no Graph, SharePoint, or Entra. Interfaces (`MailSender`,
 `TrackerStore`, `Extractor`, `AuthProvider`) keep those swaps easy.
 Diagrams: `plan/01-architecture.md`. Flows: `plan/05-flows.md`.
 
-## 5. OCR strategy (summary)
+## 5. Extraction strategy (summary)
 
-1. Run Indra OCR and Tesseract locally; cache model files under `data/huggingface`.
-2. Compare results on representative BG samples and keep uncertain values editable for review.
-3. Store OCR text and extraction reports locally for audit.
+1. Run each PDF through the pinned Datalab pipeline (`convert` then structured
+   `extract`; `turbo` mode).
+2. Keep uncertain values editable for review; blank beats wrong. Local code only
+   normalises Datalab's values and resolves masters.
+3. Store both raw pipeline results and the extraction report locally for audit.
 Detail: `plan/04-ocr-extraction.md`.
 
 ## 6. Email and scheduler (summary)
@@ -134,7 +136,7 @@ Detail: `plan/03-auth.md`. Stories: ST009 + ST011–ST013.
 ## Approvals needed
 
 1. SMTP mailbox + DLs + template sign-off.
-2. Azure DI S0 resource group in Central India + cost-alert owner.
+2. Datalab plan/quota + cost-alert owner.
 3. Confirm `To` = T-7 anchor.
 
 ## References

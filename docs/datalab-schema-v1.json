@@ -1,0 +1,148 @@
+{
+  "type": "object",
+  "title": "ExtractionSchema",
+  "description": "Schema for structured data extraction",
+  "properties": {
+    "company_name": {
+      "type": "string",
+      "description": "Beneficiary/owner named in the guarantee, usually an NHIT SPV (for example NHIT Southern Projects Private Limited). Do not return the issuing bank or the contractor. Write the full name as printed, or an empty string if absent."
+    },
+    "project_name": {
+      "type": "string",
+      "description": "Corridor or project name printed in the guarantee, LOA, contract, or deed (for example 'Bareilly - Sitapur'). Do not return the contractor, bank, or company. Write it as printed, or an empty string if absent."
+    },
+    "toll_plaza_names": {
+      "type": "array",
+      "description": "Every toll plaza named in the document, in document order, one entry per plaza. Split combined names such as 'Bhojpuri & Mudipar' into separate entries. Use an empty array if none.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bg_type": {
+      "type": "string",
+      "description": "Write 'PBG' when the document says Performance Bank Guarantee or Performance Security. Write 'ABG' when it says Advance Bank Guarantee or Advance Payment Guarantee. Otherwise write an empty string."
+    },
+    "bg_type_wording": {
+      "type": "string",
+      "description": "The guarantee type wording exactly as printed (for example 'Performance Security' or 'Advance Bank Guarantee'), or an empty string."
+    },
+    "nature_of_service": {
+      "type": "string",
+      "description": "The work or service described in the LOA, contract, or deed (for example 'Repair and Rehabilitation of Bridge'), copied as printed. Do not return the guarantee type. Use an empty string if absent."
+    },
+    "contractor_name": {
+      "type": "string",
+      "description": "Applicant/contractor in whose favour the guarantee is issued, usually written after 'M/s'. Do not return the beneficiary/company or the issuing bank. Write the full name, or an empty string if absent."
+    },
+    "bg_no": {
+      "type": "string",
+      "description": "The bank guarantee number from the guarantee details or table. Copy letters and digits exactly. Do not return the bank's letter reference number or a company registration number. Use an empty string if absent."
+    },
+    "bg_amount": {
+      "type": "number",
+      "description": "The bank guarantee amount in INR as a plain number, without commas, currency symbols, or words. Use null if the amount is absent."
+    },
+    "bg_amount_in_words": {
+      "type": "string",
+      "description": "The guarantee amount written in words, copied as printed. Use an empty string if absent."
+    },
+    "from_date": {
+      "type": "string",
+      "description": "Date of issue of the guarantee, written as DD-MM-YYYY. Use an empty string if absent."
+    },
+    "to_date": {
+      "type": "string",
+      "description": "Expiry or valid-until date of the guarantee, written as DD-MM-YYYY. Use an empty string if absent."
+    },
+    "claim_expiry_date": {
+      "type": "string",
+      "description": "Last date for lodging a claim under the guarantee, written as DD-MM-YYYY. This is a single date, not a date range. Use an empty string if absent."
+    },
+    "bank_name": {
+      "type": "string",
+      "description": "Full name of the bank that issued the guarantee, taken from the letterhead or signature block. Do not return the beneficiary or contractor. Use an empty string if absent."
+    },
+    "loa_or_tender_number": {
+      "type": "string",
+      "description": "LOA / Letter of Acceptance / tender / contract / work order reference exactly as printed. Exclude any date that follows it. Use an empty string if absent."
+    },
+    "po_number": {
+      "type": "string",
+      "description": "Purchase order or work order number exactly as printed. Use an empty string if no separate PO number is shown."
+    },
+    "authorized_signatories": {
+      "type": "array",
+      "description": "One entry for each authorised signatory of the bank on the guarantee. Use an empty array if none.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Signatory name as printed, or an empty string."
+          },
+          "sol_id": {
+            "type": "string",
+            "description": "Signatory identifier or SOL ID printed with the signature, or an empty string."
+          },
+          "designation": {
+            "type": "string",
+            "description": "Signatory designation or title as printed, or an empty string."
+          }
+        }
+      }
+    },
+    "stamp_duty_certificates": {
+      "type": "array",
+      "description": "One entry for each non-judicial e-stamp certificate attached to the document. Use an empty array if none.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "certificate_no": {
+            "type": "string",
+            "description": "Certificate number from the stamp duty certificate, or an empty string."
+          },
+          "certificate_issued_date": {
+            "type": "string",
+            "description": "Certificate issue date and time exactly as printed, or an empty string."
+          },
+          "account_reference": {
+            "type": "string",
+            "description": "Account reference from the certificate details, or an empty string."
+          },
+          "unique_doc_reference": {
+            "type": "string",
+            "description": "Unique document reference from the certificate details, or an empty string."
+          },
+          "description_of_document": {
+            "type": "string",
+            "description": "Wording in the 'Description of Document' field only. Do not combine it with the separate 'Description' field. Use an empty string if absent."
+          },
+          "consideration_price": {
+            "type": "number",
+            "description": "Consideration price in rupees as a plain number, without commas or symbols. Use null if absent."
+          },
+          "first_party": {
+            "type": "string",
+            "description": "First party named on the certificate, or an empty string."
+          },
+          "second_party": {
+            "type": "string",
+            "description": "Second party named on the certificate, or an empty string."
+          },
+          "stamp_duty_paid_by": {
+            "type": "string",
+            "description": "Party that paid the stamp duty, as printed, or an empty string."
+          },
+          "stamp_duty_amount": {
+            "type": "number",
+            "description": "Stamp duty amount in rupees as a plain number, without commas or symbols. Use null if absent."
+          },
+          "stamp_serial_number": {
+            "type": "string",
+            "description": "Stamp serial number as printed, or an empty string."
+          }
+        }
+      }
+    }
+  }
+}

@@ -29,9 +29,9 @@ if os.name == "nt":
 else:
     import fcntl
 
-from .. import compare, config, excel, lookup, ocr, register, store
+from .. import config, excel, lookup, pipeline, register, store
 from ..auth import User
-from ..extract import HEADERS, Extraction, extract
+from ..extract import HEADERS, Extraction, extract_from_pipeline
 from ..masters import Masters
 from ..normalize import normalise_key
 
@@ -249,6 +249,8 @@ def public_entry(entry: dict) -> dict:
         "fields": entry["fields"],
         "values": entry["values"],
         "extracted_values": entry["extracted_values"],
+        "extras": entry.get("extras") or {},
+        "pipeline": entry.get("pipeline") or {},
         "lookup": entry.get("lookup") or {},
         "plazas": entry.get("plazas") or [],
     }
@@ -305,9 +307,8 @@ def add_pdf(
     filename: str,
     data: bytes,
     user: User,
-    engine: str | None = None,
 ) -> dict:
-    """Store one upload, OCR it and append its extraction to the run."""
+    """Store one upload, run the Datalab pipeline and append its extraction."""
     original = Path(filename or "upload.pdf").name
     name = original
     if not name.lower().endswith(".pdf"):
@@ -334,7 +335,7 @@ def add_pdf(
         pdf_path = upload_dir / name
         pdf_path.write_bytes(data)
 
-    requested = (engine or config.OCR_ENGINE or "tesseract").strip().lower()
+    requested = (config.OCR_ENGINE or "datalab").strip().lower()
     started = dt.datetime.now()
     _progress_set(
         run_id,
@@ -343,6 +344,7 @@ def add_pdf(
             "engine": requested,
             "page": 0,
             "pages_total": 0,
+            "percent": 0,
             "started_at": started.isoformat(timespec="seconds"),
             "elapsed": 0,
             "stage": "starting",
@@ -357,24 +359,26 @@ def add_pdf(
                 "engine": update.get("engine", requested),
                 "page": update.get("page", 0),
                 "pages_total": update.get("pages_total", 0),
+                "percent": update.get("percent"),
                 "page_seconds": update.get("seconds"),
                 "started_at": started.isoformat(timespec="seconds"),
                 "elapsed": round((dt.datetime.now() - started).total_seconds(), 1),
-                "stage": "reading",
+                "stage": update.get("stage", "reading"),
             },
         )
 
     try:
         masters_obj = masters()
-        documents, ocr_errors = ocr.ocr_variants(pdf_path, requested, progress=progress)
-        results = {
-            engine_name: extract(document, masters_obj)
-            for engine_name, document in documents.items()
-        }
-        chosen_engine, result, comparison = compare.merge(results, requested)
-        document = result.ocr
+        pipeline_result = pipeline.run(pdf_path, progress=progress)
+        document = pipeline_result.document
+        result = extract_from_pipeline(
+            document,
+            pipeline_result.data,
+            masters_obj,
+            pipeline_meta=pipeline_result.meta(),
+        )
         _progress_set(run_id, name, None)
-        _archive(run_id, result, requested, results, ocr_errors, comparison)
+        _archive(run_id, result, requested, pipeline_result.raw())
     except Exception as error:
         _progress_set(run_id, name, None)
         pdf_path.unlink(missing_ok=True)
@@ -399,32 +403,31 @@ def add_pdf(
         "source_pdf": name,
         "stored_pdf": f"uploads/{name}",
         "sha256": digest,
-        "pages": len(document.pages),
+        "pages": result.pipeline.get("pages") or len(document.pages),
         "ocr_confidence": document.mean_conf,
         "ocr_confidence_source": document.confidence_source,
         "ocr_engine": result.ocr.engine,
+        "ocr_mode": pipeline_result.extraction_mode or config.DATALAB_MODE,
+        "extraction_mode": pipeline_result.extraction_mode,
+        "pipeline": pipeline_result.meta(),
         "ocr_requested_engine": requested,
         "ocr_variants": {
-            variant: {
-                "confidence": variant_result.ocr.mean_conf,
-                "confidence_source": variant_result.ocr.confidence_source,
-                "pages": len(variant_result.ocr.pages),
-                "found_fields": _quality(variant_result)[0],
-                "flags": -_quality(variant_result)[1],
-                "selected": variant == chosen_engine,
+            result.ocr.engine: {
+                "confidence": result.ocr.mean_conf,
+                "confidence_source": result.ocr.confidence_source,
+                "pages": len(result.ocr.pages),
+                "found_fields": _quality(result)[0],
+                "flags": -_quality(result)[1],
+                "selected": True,
             }
-            for variant, variant_result in results.items()
-        }
-        | {
-            variant: {"error": error}
-            for variant, error in ocr_errors.items()
         },
-        "ocr_comparison": comparison,
-        "ocr_errors": ocr_errors,
+        "ocr_comparison": {},
+        "ocr_errors": {},
         "extracted_at": dt.datetime.now().isoformat(timespec="seconds"),
         "fields": result.report()["fields"],
         "values": values,
         "extracted_values": extracted,
+        "extras": result.extras,
         "lookup": lookup_result,
         "plazas": result.plazas,
     }
@@ -457,28 +460,28 @@ def _archive(
     run_id: str,
     result: Extraction,
     requested: str | None = None,
-    variants: dict[str, Extraction] | None = None,
-    errors: dict[str, str] | None = None,
-    comparison: dict | None = None,
+    raw_pipeline: dict | None = None,
 ) -> None:
     target = run_dir(run_id) / "ocr" / f"{result.source.stem}.json"
     payload = {
         "source_pdf": result.source.name,
         "engine": result.ocr.engine,
         "engine_requested": requested or result.ocr.engine,
-        "engine_errors": errors or {},
+        "mode": result.pipeline.get("extraction_mode") or config.DATALAB_MODE,
+        "pipeline": result.pipeline,
+        "page_count": result.pipeline.get("pages"),
+        "engine_errors": {},
         "engines": {
-            name: {
-                "confidence": extraction.ocr.mean_conf,
-                "confidence_source": extraction.ocr.confidence_source,
-                "pages": len(extraction.ocr.pages),
-                "found_fields": _quality(extraction)[0],
-                "flags": -_quality(extraction)[1],
-                "selected": name == result.ocr.engine,
+            result.ocr.engine: {
+                "confidence": result.ocr.mean_conf,
+                "confidence_source": result.ocr.confidence_source,
+                "pages": len(result.ocr.pages),
+                "found_fields": _quality(result)[0],
+                "flags": -_quality(result)[1],
+                "selected": True,
             }
-            for name, extraction in (variants or {}).items()
         },
-        "comparison": comparison or {},
+        "comparison": {},
         "ocr": {
             "mean_confidence": result.ocr.mean_conf,
             "pages": [
@@ -494,6 +497,15 @@ def _archive(
         "extraction": result.report(),
     }
     target.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    if raw_pipeline:
+        pipeline_dir = run_dir(run_id) / "pipeline"
+        pipeline_dir.mkdir(parents=True, exist_ok=True)
+        raw_target = pipeline_dir / f"{result.source.stem}.json"
+        raw_target.write_text(
+            json.dumps(raw_pipeline, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
 
 # --- review helpers ------------------------------------------------------

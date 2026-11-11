@@ -2,13 +2,15 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from openpyxl import load_workbook
 
-from bgauto import auth, config, excel, register, store
+from bgauto import auth, config, excel, pipeline, register, store
 from bgauto.extract import HEADERS
+from bgauto.ocr import DocumentOCR, PageOCR
 from bgauto.web import api, runs
 from support import TempDatabase
 
@@ -114,11 +116,107 @@ class WebTests(TempDatabase):
         self.assertFalse(probe.json()["authenticated"])
         self.assertIsNone(probe.json()["user"])
 
-    def test_health_reports_indra_engine(self):
+    def test_health_reports_datalab_configuration(self):
         client = TestClient(api.app)
-        with patch.object(api.ocr, "indra_available", return_value=True):
+        with patch.object(api.ocr, "datalab_available", return_value=True):
             payload = client.get("/api/health").json()
-        self.assertTrue(payload["ocr_engines"]["indra"])
+        self.assertEqual(payload["status"], "ok")
+        self.assertTrue(payload["datalab"]["configured"])
+        self.assertEqual(payload["ocr_engine"], "datalab")
+        self.assertEqual(payload["ocr_mode"], config.DATALAB_MODE)
+        self.assertEqual(payload["pipeline"]["id"], config.DATALAB_PIPELINE_ID)
+        self.assertEqual(
+            payload["pipeline"]["version"], config.DATALAB_PIPELINE_VERSION
+        )
+        self.assertEqual(
+            payload["pipeline"]["extraction_mode"],
+            config.DATALAB_EXTRACTION_MODE,
+        )
+
+    def _pipeline_result(self) -> pipeline.PipelineResult:
+        document = DocumentOCR(
+            source=Path("upload.pdf"),
+            pages=[PageOCR(number=1, width=0, height=0, text="BANK GUARANTEE")],
+        )
+        return pipeline.PipelineResult(
+            document=document,
+            data={
+                "company_name": "NHIT Southern Projects Private Limited",
+                "bg_no": "1234AB12345678901",
+                "bg_amount": 1000,
+                "from_date": "01-04-2025",
+                "to_date": "31-03-2026",
+                "authorized_signatories": [
+                    {"name": "A. Signatory", "sol_id": "880919"}
+                ],
+            },
+            execution_id="pex_TEST",
+            pipeline_id="pl_TEST",
+            pipeline_version=3,
+            extraction_mode="turbo",
+            page_count=3,
+            raw_convert={"page_count": 3},
+            raw_extract={"success": True},
+        )
+
+    def test_upload_runs_the_pipeline_and_archives_both_steps(self):
+        uploader = self.client(UPLOADER)
+        manifest = runs.create_run(self.uploader)
+        run_id = manifest["run_id"]
+        result = self._pipeline_result()
+        with (
+            patch.object(runs.pipeline, "run", return_value=result),
+            patch.object(runs.lookup, "lookup_entry", return_value={}),
+        ):
+            response = uploader.post(
+                f"/api/runs/{run_id}/upload",
+                files={
+                    "file": (
+                        "upload.pdf",
+                        b"%PDF-1.4\n% test pdf\n",
+                        "application/pdf",
+                    )
+                },
+            )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        payload = response.json()
+        self.assertFalse(payload["duplicate"])
+        self.assertEqual(payload["pages"], 3)
+        self.assertEqual(payload["fields"]["BG No"]["value"], "1234AB12345678901")
+        self.assertEqual(
+            payload["extras"]["authorized_signatories"][0]["name"], "A. Signatory"
+        )
+        self.assertEqual(payload["pipeline"]["version"], 3)
+        self.assertEqual(payload["pipeline"]["execution_id"], "pex_TEST")
+
+        run_path = config.RUNS_DIR / run_id
+        self.assertTrue((run_path / "ocr" / "upload.json").is_file())
+        raw = run_path / "pipeline" / "upload.json"
+        self.assertTrue(raw.is_file())
+        self.assertIn("convert", raw.read_text(encoding="utf-8"))
+
+    def test_failed_pipeline_upload_is_rejected_and_removes_the_pdf(self):
+        uploader = self.client(UPLOADER)
+        manifest = runs.create_run(self.uploader)
+        run_id = manifest["run_id"]
+        with patch.object(
+            runs.pipeline, "run", side_effect=RuntimeError("pipeline down")
+        ):
+            response = uploader.post(
+                f"/api/runs/{run_id}/upload",
+                files={
+                    "file": (
+                        "broken.pdf",
+                        b"%PDF-1.4\n% test pdf\n",
+                        "application/pdf",
+                    )
+                },
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("pipeline down", response.json()["detail"])
+        self.assertFalse((config.RUNS_DIR / run_id / "uploads" / "broken.pdf").exists())
 
     def test_wrong_password_is_refused(self):
         client = TestClient(api.app)

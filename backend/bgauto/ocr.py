@@ -1,16 +1,19 @@
-"""PDF OCR adapters for local engines and Azure Document Intelligence."""
+"""PDF OCR through the Datalab API.
+
+Datalab converts the PDF to a page-aware JSON/Markdown tree. This adapter turns
+that output into the small ``DocumentOCR`` model the extractor already uses, so
+field rules and the review UI stay unchanged.
+"""
 from __future__ import annotations
 
-import io
+import html as html_lib
+import json
 import logging
-import os
+import re
 from dataclasses import dataclass, field
 from functools import lru_cache
+from html.parser import HTMLParser
 from pathlib import Path
-
-import pymupdf
-from PIL import Image, ImageOps
-import pytesseract
 
 from . import config
 
@@ -58,7 +61,7 @@ class PageOCR:
 class DocumentOCR:
     source: Path
     pages: list[PageOCR]
-    engine: str = "tesseract"
+    engine: str = "datalab"
 
     @property
     def text(self) -> str:
@@ -73,410 +76,407 @@ class DocumentOCR:
     @property
     def confidence_source(self) -> str:
         """Source of page confidence values, when available."""
-        return self.pages[0].confidence_source if self.pages else "ocr"
+        return self.pages[0].confidence_source if self.pages else "none"
 
     def page_texts(self) -> list[str]:
         return [p.text for p in self.pages]
 
 
-def _render(pdf_path: Path, dpi: int) -> list[Image.Image]:
-    images: list[Image.Image] = []
-    with pymupdf.open(pdf_path) as doc:
-        for page in doc:
-            pix = page.get_pixmap(dpi=dpi)
-            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-            images.append(img)
-    return images
+# --- Datalab client ------------------------------------------------------
 
 
-def _binarise(img: Image.Image, threshold: int = 150) -> Image.Image:
-    gray = ImageOps.autocontrast(ImageOps.grayscale(img))
-    return gray.point(lambda px: 0 if px < threshold else 255)
+def _saved_login_path() -> Path:
+    return Path.home() / ".config" / "datalab" / "config.json"
 
 
-def _ocr_image(img: Image.Image, psm: int) -> PageOCR:
-    data = pytesseract.image_to_data(
-        img,
-        lang="eng",
-        config=f"--psm {psm}",
-        output_type=pytesseract.Output.DICT,
+def _sdk_installed() -> bool:
+    try:
+        import datalab_sdk  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def datalab_available() -> bool:
+    """True when the SDK is installed and a key or saved login exists.
+
+    This is a local configuration check; it deliberately does not spend an API
+    call, so the health endpoint and Docker healthcheck stay free.
+    """
+    return _sdk_installed() and (
+        bool(config.DATALAB_API_KEY) or _saved_login_path().is_file()
     )
-    words: list[Word] = []
-    lines: dict[tuple[int, int, int], list[str]] = {}
-    for i, raw in enumerate(data["text"]):
-        text = (raw or "").strip()
-        if not text:
-            continue
-        try:
-            conf = float(data["conf"][i])
-        except (TypeError, ValueError):
-            conf = -1.0
-        words.append(
-            Word(
-                text=text,
-                conf=conf,
-                left=int(data["left"][i]),
-                top=int(data["top"][i]),
-                width=int(data["width"][i]),
-                height=int(data["height"][i]),
-            )
-        )
-        key = (data["block_num"][i], data["par_num"][i], data["line_num"][i])
-        lines.setdefault(key, []).append(text)
-
-    text = "\n".join(" ".join(parts) for _, parts in sorted(lines.items()))
-    return PageOCR(
-        number=0,
-        width=img.width,
-        height=img.height,
-        text=text,
-        words=words,
-    )
-
-
-def _tesseract_pdf(
-    pdf_path: Path, dpi: int | None = None, psm: int | None = None
-) -> DocumentOCR:
-    """OCR every page with Tesseract and keep the better of two passes."""
-    configure()
-    dpi = dpi or config.OCR_DPI
-    psm = psm or config.OCR_PSM
-    pages: list[PageOCR] = []
-    for number, image in enumerate(_render(pdf_path, dpi), start=1):
-        plain = _ocr_image(image, psm)
-        clean = _ocr_image(_binarise(image), psm)
-        best = clean if clean.mean_conf > plain.mean_conf else plain
-        best.number = number
-        pages.append(best)
-    return DocumentOCR(source=pdf_path, pages=pages, engine="tesseract")
 
 
 @lru_cache(maxsize=1)
-def _indra_converter():
+def _client():
     try:
-        from indra_ocr import load
-    except ImportError as error:
-        raise RuntimeError("Indra OCR is not installed; install backend/requirements.txt") from error
-    return load(threads=config.INDRA_THREADS, mode=config.INDRA_MODE)
-
-
-def indra_available() -> bool:
-    try:
-        from indra_ocr import load  # noqa: F401
-        return True
-    except ImportError:
-        return False
-
-
-def _indra_pdf(pdf_path: Path, progress=None) -> DocumentOCR:
-    """Read every page locally with Indra; no PDF is sent to a service."""
-    converter = _indra_converter()
-    pages: list[PageOCR] = []
-    try:
-        converted = converter.convert(str(pdf_path))
-        for number, (_, page) in enumerate(converted, start=1):
-            text = str(getattr(page, "markdown", "") or getattr(page, "text", "") or "")
-            words: list[Word] = []
-            for line in getattr(page, "lines", []) or []:
-                line_text = str(getattr(line, "text", "") or "").strip()
-                if not line_text:
-                    continue
-                box = getattr(line, "box", None) or (0, 0, 0, 0)
-                try:
-                    left, top, right, bottom = (int(float(v)) for v in box[:4])
-                except (TypeError, ValueError):
-                    left = top = right = bottom = 0
-                confidence = getattr(line, "conf", None)
-                try:
-                    score = float(confidence) if confidence is not None else -1.0
-                    if 0 <= score <= 1:
-                        score *= 100
-                except (TypeError, ValueError):
-                    score = -1.0
-                words.append(Word(line_text, score, left, top, max(0, right-left), max(0, bottom-top)))
-            width = int(getattr(page, "width", 0) or 0)
-            height = int(getattr(page, "height", 0) or 0)
-            pages.append(PageOCR(number, width, height, text, words, confidence_source="ocr"))
-            if progress:
-                progress({"engine": "indra", "page": number, "pages_done": number, "pages_total": None})
-    except Exception as error:
-        raise RuntimeError(f"Indra failed to read {pdf_path.name}: {error}") from error
-    if not pages:
-        raise RuntimeError("Indra returned no pages for the PDF")
-    return DocumentOCR(source=pdf_path, pages=pages, engine="indra")
-
-
-@lru_cache(maxsize=2)
-def _azure_client(key: str):
-    if not config.AZURE_DI_ENDPOINT or not key:
-        raise RuntimeError(
-            "Azure Document Intelligence is not configured; set AZURE_DI_ENDPOINT and AZURE_DI_KEY"
-        )
-    try:
-        from azure.ai.documentintelligence import DocumentIntelligenceClient
-        from azure.core.credentials import AzureKeyCredential
+        from datalab_sdk import DatalabClient
     except ImportError as error:
         raise RuntimeError(
-            "Azure Document Intelligence SDK is not installed; rebuild the app image"
+            "The Datalab SDK is not installed; install backend/requirements.txt"
         ) from error
-    return DocumentIntelligenceClient(
-        endpoint=config.AZURE_DI_ENDPOINT,
-        credential=AzureKeyCredential(key),
+    options = {
+        "base_url": config.DATALAB_BASE_URL,
+        "timeout": config.DATALAB_TIMEOUT,
+    }
+    if config.DATALAB_API_KEY:
+        options["api_key"] = config.DATALAB_API_KEY
+    return DatalabClient(**options)
+
+
+def _describe(error: Exception) -> str:
+    status = getattr(error, "status_code", None)
+    if status == 402:
+        return (
+            "Datalab allowance is exhausted. Add a card at "
+            "https://www.datalab.to/app/subscription before retrying."
+        )
+    data = getattr(error, "response_data", None)
+    detail = ""
+    if isinstance(data, dict):
+        detail = str(data.get("error") or data.get("detail") or "")
+    text = detail or str(error)
+    return " ".join(text.split())[:400] or error.__class__.__name__
+
+
+def _percent(value) -> float | None:
+    """Normalise a progress callback value to 0-100."""
+    if isinstance(value, dict):
+        value = (
+            value.get("progress_percent")
+            or value.get("percent")
+            or value.get("progress")
+        )
+    if isinstance(value, str):
+        value = value.strip().rstrip("%")
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return max(0.0, min(100.0, number))
+
+
+# --- Datalab JSON -> page text ------------------------------------------
+
+
+_PAGE_DELIMITERS = re.compile(r"\n\n(\d+)\n-{48}\n\n")
+
+
+class _HtmlLines(HTMLParser):
+    """Turn Datalab's block HTML into one line per paragraph or table row."""
+
+    _BLOCK_TAGS = {
+        "p", "div", "h1", "h2", "h3", "h4", "h5", "h6",
+        "li", "ul", "ol", "pre", "blockquote", "section", "article",
+    }
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.lines: list[str] = []
+        self._buffer: list[str] = []
+        self._in_cell = False
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        tag = tag.lower()
+        if tag == "tr":
+            self._flush()
+        elif tag == "br":
+            if self._in_cell:
+                self._buffer.append(" ")
+            else:
+                self._flush()
+        elif tag in {"td", "th"}:
+            self._in_cell = True
+        elif tag in self._BLOCK_TAGS:
+            if self._in_cell:
+                self._buffer.append(" ")
+            else:
+                self._flush()
+
+    def handle_startendtag(self, tag: str, attrs) -> None:
+        self.handle_starttag(tag, attrs)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag in {"td", "th"}:
+            self._buffer.append("  ")
+            self._in_cell = False
+        elif tag == "tr":
+            self._flush()
+        elif tag in self._BLOCK_TAGS:
+            if self._in_cell:
+                self._buffer.append(" ")
+            else:
+                self._flush()
+
+    def handle_data(self, data: str) -> None:
+        self._buffer.append(data)
+
+    def _flush(self) -> None:
+        text = " ".join("".join(self._buffer).split())
+        if text:
+            self.lines.append(text)
+        self._buffer = []
+
+    def finish(self) -> list[str]:
+        self._flush()
+        return self.lines
+
+
+def _html_lines(value: str) -> list[str]:
+    if not value:
+        return []
+    parser = _HtmlLines()
+    try:
+        parser.feed(value)
+        return parser.finish()
+    except Exception:
+        text = re.sub(r"<[^>]+>", " ", value)
+        return [" ".join(line.split()) for line in html_lib.unescape(text).splitlines() if line.strip()]
+
+
+def _block_lines(blocks) -> list[str]:
+    lines: list[str] = []
+    for block in blocks or []:
+        if not isinstance(block, dict):
+            continue
+        children = block.get("children") or []
+        if children:
+            lines.extend(_block_lines(children))
+            continue
+        for key in ("html", "text", "content", "markdown"):
+            value = block.get(key)
+            if not value:
+                continue
+            if key == "html":
+                lines.extend(_html_lines(str(value)))
+            else:
+                lines.extend(str(value).splitlines())
+            break
+    return lines
+
+
+def _page_size(block: dict) -> tuple[int, int]:
+    polygon = block.get("polygon") or []
+    try:
+        xs = [float(point[0]) for point in polygon]
+        ys = [float(point[1]) for point in polygon]
+    except (TypeError, ValueError, IndexError):
+        return 0, 0
+    if not xs or not ys:
+        return 0, 0
+    return int(max(xs)), int(max(ys))
+
+
+def _clean_markdown_line(line: str) -> str:
+    text = line.strip()
+    if not text:
+        return ""
+    # Markdown table separator: |---|---|
+    if "|" in text and re.fullmatch(r"\|?[\s:\-|]+\|?", text):
+        return ""
+    if text.startswith("|") and text.endswith("|"):
+        cells = [cell.strip() for cell in text.strip("|").split("|")]
+        text = "  ".join(cell for cell in cells if cell)
+    return text
+
+
+def _markdown_pages(text: str, confidence: float | None) -> list[PageOCR]:
+    parts = _PAGE_DELIMITERS.split(text or "")
+    if len(parts) == 1:
+        chunks = [parts[0]]
+    else:
+        chunks = []
+        if parts[0].strip():
+            chunks.append(parts[0])
+        for index in range(1, len(parts), 2):
+            chunks.append(parts[index + 1] if index + 1 < len(parts) else "")
+    pages: list[PageOCR] = []
+    for number, chunk in enumerate(chunks, start=1):
+        lines = [
+            cleaned
+            for cleaned in (_clean_markdown_line(line) for line in chunk.splitlines())
+            if cleaned
+        ]
+        pages.append(
+            PageOCR(
+                number=number,
+                width=0,
+                height=0,
+                text="\n".join(lines),
+                confidence=confidence,
+                confidence_source="datalab_quality" if confidence is not None else "none",
+            )
+        )
+    return pages
+
+
+def _json_pages(raw, confidence: float | None) -> list[PageOCR]:
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except ValueError:
+            return []
+    if isinstance(raw, dict):
+        # Datalab returns a Document block whose children are Page blocks, but
+        # accept the obvious alternatives so a schema tweak does not blank a run.
+        for key in ("children", "pages", "blocks"):
+            if isinstance(raw.get(key), list):
+                candidates = raw[key]
+                break
+        else:
+            candidates = [raw]
+    elif isinstance(raw, list):
+        candidates = raw
+    else:
+        return []
+
+    pages: list[PageOCR] = []
+    for block in candidates:
+        if not isinstance(block, dict):
+            continue
+        block_type = block.get("block_type")
+        if block_type not in (None, "Page"):
+            children = [block]
+        else:
+            children = block.get("children") or []
+            if not children and block.get("html"):
+                children = [block]
+        width, height = _page_size(block)
+        text = "\n".join(_block_lines(children))
+        pages.append(
+            PageOCR(
+                number=len(pages) + 1,
+                width=width,
+                height=height,
+                text=text,
+                confidence=confidence,
+                confidence_source="datalab_quality" if confidence is not None else "none",
+            )
+        )
+    return pages
+
+
+def _quality_value(score) -> float | None:
+    """Normalise Datalab's 0-5 parse-quality score to 0-1."""
+    try:
+        value = float(score)
+    except (TypeError, ValueError):
+        return None
+    if value <= 0:
+        return None
+    return max(0.0, min(1.0, value / 5.0))
+
+
+def _quality(result) -> float | None:
+    return _quality_value(getattr(result, "parse_quality_score", None))
+
+
+def _pages_from_result(result) -> list[PageOCR]:
+    confidence = _quality(result)
+    pages = _json_pages(getattr(result, "json", None), confidence)
+    if pages:
+        return pages
+    return _markdown_pages(getattr(result, "markdown", "") or "", confidence)
+
+
+def document_from_payload(
+    source: Path,
+    json_payload=None,
+    markdown: str = "",
+    quality=None,
+    engine: str = "datalab",
+) -> DocumentOCR:
+    """Build ``DocumentOCR`` from a pipeline convert step result.
+
+    Pipeline steps return plain dictionaries rather than a ``ConversionResult``,
+    so the same JSON/Markdown readers are exposed here for the pipeline adapter.
+    """
+    confidence = _quality_value(quality)
+    pages = _json_pages(json_payload, confidence)
+    if not pages:
+        pages = _markdown_pages(markdown or "", confidence)
+    if not pages:
+        raise RuntimeError("Datalab returned no pages for the PDF")
+    return DocumentOCR(source=source, pages=pages, engine=engine)
+
+
+
+# --- public entry point --------------------------------------------------
+
+
+def _options(mode: str):
+    try:
+        from datalab_sdk import ConvertOptions
+    except ImportError as error:
+        raise RuntimeError(
+            "The Datalab SDK is not installed; install backend/requirements.txt"
+        ) from error
+    return ConvertOptions(
+        output_format="json",
+        mode=mode,
+        disable_image_extraction=True,
+        disable_image_captions=True,
     )
 
 
-def azure_available() -> bool:
-    if not config.AZURE_DI_ENDPOINT or not (config.AZURE_DI_KEY or config.AZURE_DI_KEY_2):
-        return False
-    try:
-        from azure.ai.documentintelligence import DocumentIntelligenceClient  # noqa: F401
-        from azure.core.credentials import AzureKeyCredential  # noqa: F401
-        return True
-    except ImportError:
-        return False
-
-
-def _azure_pdf(pdf_path: Path, progress=None) -> DocumentOCR:
-    """Analyze a PDF remotely with Azure Document Intelligence (prebuilt-layout)."""
-    keys = list(dict.fromkeys(key for key in (config.AZURE_DI_KEY, config.AZURE_DI_KEY_2) if key))
-    if not keys or not config.AZURE_DI_ENDPOINT:
-        raise RuntimeError(
-            "Azure Document Intelligence is not configured; set AZURE_DI_ENDPOINT and an AZURE_DI_KEY"
-        )
-    batch_size = max(1, config.AZURE_DI_PAGE_BATCH_SIZE)
-    max_bytes = max(1, config.AZURE_DI_MAX_BYTES)
-    pages: list[PageOCR] = []
-    with pymupdf.open(pdf_path) as source:
-        total_pages = len(source)
-        if not total_pages:
-            raise RuntimeError("Azure Document Intelligence received a PDF with no pages")
-        first_page = 0
-        while first_page < total_pages:
-            last_page = min(first_page + batch_size, total_pages)
-            while True:
-                chunk = pymupdf.open()
-                chunk.insert_pdf(source, from_page=first_page, to_page=last_page - 1)
-                chunk_bytes = chunk.tobytes(garbage=4, deflate=True)
-                chunk.close()
-                if len(chunk_bytes) <= max_bytes:
-                    break
-                if last_page - first_page == 1:
-                    raise RuntimeError(
-                        f"Azure's configured {max_bytes // (1024 * 1024)} MB per-request limit "
-                        f"is smaller than page {first_page + 1}; use a local OCR engine or raise AZURE_DI_MAX_BYTES for S0"
-                    )
-                last_page = first_page + max(1, (last_page - first_page) // 2)
-
-            result = None
-            last_error = None
-            for key_index, key in enumerate(keys):
-                try:
-                    client = _azure_client(key)
-                    poller = client.begin_analyze_document(
-                        config.AZURE_DI_MODEL,
-                        body=io.BytesIO(chunk_bytes),
-                        content_type="application/pdf",
-                        features=["keyValuePairs"],
-                        output_content_format="markdown",
-                    )
-                    result = poller.result()
-                    break
-                except Exception as error:
-                    last_error = error
-                    if key_index + 1 >= len(keys) or getattr(error, "status_code", None) not in (401, 403):
-                        raise
-                    log.info("Azure OCR primary key was rejected; retrying with the configured secondary key")
-            if result is None:
-                raise RuntimeError(f"Azure analysis returned no result: {last_error}")
-
-            result_content = str(getattr(result, "content", "") or "")
-            pairs_by_page: dict[int, list[tuple[str, str, float | None]]] = {}
-            for pair in getattr(result, "key_value_pairs", []) or []:
-                key_element = getattr(pair, "key", None)
-                value_element = getattr(pair, "value", None)
-                key_text = str(getattr(key_element, "content", "") or "").strip()
-                value_text = str(getattr(value_element, "content", "") or "").strip()
-                if not key_text or not value_text:
-                    continue
-                confidence = getattr(pair, "confidence", None)
-                try:
-                    pair_confidence = float(confidence) if confidence is not None else None
-                except (TypeError, ValueError):
-                    pair_confidence = None
-                regions = (
-                    getattr(key_element, "bounding_regions", None)
-                    or getattr(value_element, "bounding_regions", None)
-                    or []
-                )
-                try:
-                    relative_page = int(regions[0].page_number)
-                except (IndexError, AttributeError, TypeError, ValueError):
-                    relative_page = 1
-                pairs_by_page.setdefault(relative_page, []).append(
-                    (key_text, value_text, pair_confidence)
-                )
-
-            for offset, page in enumerate(getattr(result, "pages", []) or []):
-                number = first_page + offset + 1
-                lines = getattr(page, "lines", []) or []
-                spans = getattr(page, "spans", []) or []
-                text_parts = []
-                for span in spans:
-                    try:
-                        start = int(span.offset)
-                        end = start + int(span.length)
-                        text_parts.append(result_content[start:end])
-                    except (AttributeError, TypeError, ValueError):
-                        continue
-                text = "\n".join(part for part in text_parts if part.strip())
-                if not text:
-                    text = "\n".join(
-                        str(getattr(line, "content", "") or "").strip()
-                        for line in lines
-                        if str(getattr(line, "content", "") or "").strip()
-                    )
-                scale = 1000
-                words: list[Word] = []
-                for word in getattr(page, "words", []) or []:
-                    content = str(getattr(word, "content", "") or "").strip()
-                    if not content:
-                        continue
-                    confidence = getattr(word, "confidence", None)
-                    try:
-                        score = float(confidence) * 100 if confidence is not None else -1.0
-                    except (TypeError, ValueError):
-                        score = -1.0
-                    polygon = getattr(word, "polygon", None) or []
-                    try:
-                        xs = [float(polygon[index]) for index in range(0, len(polygon), 2)]
-                        ys = [float(polygon[index]) for index in range(1, len(polygon), 2)]
-                        left = int(min(xs) * scale) if xs else 0
-                        top = int(min(ys) * scale) if ys else 0
-                        width = int((max(xs) - min(xs)) * scale) if xs else 0
-                        height = int((max(ys) - min(ys)) * scale) if ys else 0
-                    except (TypeError, ValueError):
-                        left = top = width = height = 0
-                    words.append(Word(content, score, left, top, width, height))
-
-                page_width = int(float(getattr(page, "width", 0) or 0) * scale)
-                page_height = int(float(getattr(page, "height", 0) or 0) * scale)
-                pages.append(
-                    PageOCR(
-                        number,
-                        page_width,
-                        page_height,
-                        text,
-                        words,
-                        confidence_source="ocr",
-                        key_values=pairs_by_page.get(offset + 1, []),
-                    )
-                )
-                if progress:
-                    progress({
-                        "engine": "azure",
-                        "page": number,
-                        "pages_done": number,
-                        "pages_total": total_pages,
-                    })
-            first_page = last_page
-
-    if not pages:
-        raise RuntimeError("Azure Document Intelligence returned no pages for the PDF")
-    return DocumentOCR(source=pdf_path, pages=pages, engine="azure")
-
-
-def ocr_variants(
+def convert_pdf(
     pdf_path: Path,
-    engine: str | None = None,
-    dpi: int | None = None,
-    psm: int | None = None,
+    mode: str | None = None,
     progress=None,
-) -> tuple[dict[str, DocumentOCR], dict[str, str]]:
-    """OCR with the requested engine(s).
-
-    Returns ``({engine: DocumentOCR}, {engine: error})``. A requested engine
-    failure falls back to Tesseract when no requested engine produced text.
-    """
-    requested = (engine or config.OCR_ENGINE or "indra").strip().lower()
-    if requested not in config.OCR_ENGINES:
-        raise ValueError(
-            f"unknown OCR engine {requested!r}; use one of {', '.join(config.OCR_ENGINES)}"
-        )
-    wanted = {
-        "both": ["tesseract", "indra"],
-        "all": ["tesseract", "indra", "azure"],
-    }.get(requested, [requested])
-
-    documents: dict[str, DocumentOCR] = {}
-    errors: dict[str, str] = {}
-    for name in wanted:
-        if name == "tesseract":
-            try:
-                documents["tesseract"] = _tesseract_pdf(pdf_path, dpi=dpi, psm=psm)
-            except Exception as error:
-                errors["tesseract"] = " ".join(str(error).split())[:300]
-                log.warning(
-                    "Tesseract OCR failed for %s: %s", pdf_path.name, errors["tesseract"]
-                )
-        elif name == "indra":
-            try:
-                documents["indra"] = _indra_pdf(pdf_path, progress=progress)
-            except Exception as error:
-                errors["indra"] = " ".join(str(error).split())[:300]
-                log.warning("Indra OCR failed for %s: %s", pdf_path.name, errors["indra"])
-        elif name == "azure":
-            try:
-                documents["azure"] = _azure_pdf(pdf_path, progress=progress)
-            except Exception as error:
-                errors["azure"] = " ".join(str(error).split())[:300]
-                log.warning("Azure OCR failed for %s: %s", pdf_path.name, errors["azure"])
-    if not documents and requested != "tesseract" and "tesseract" not in errors:
-        try:
-            documents["tesseract"] = _tesseract_pdf(pdf_path, dpi=dpi, psm=psm)
-            log.info("%s unavailable for %s; used Tesseract instead", requested, pdf_path.name)
-        except Exception as error:
-            errors["tesseract"] = str(error)
-
-    if not documents:
-        detail = "; ".join(f"{name}: {text}" for name, text in errors.items())
-        raise ValueError(f"no OCR engine produced text ({detail})")
-    return documents, errors
-
-
-def ocr_pdf(
-    pdf_path: Path,
-    dpi: int | None = None,
-    psm: int | None = None,
-    engine: str | None = None,
 ) -> DocumentOCR:
-    """Backwards-compatible single-document entry point.
+    """Convert one PDF with Datalab and return page-level text."""
+    selected = (mode or config.DATALAB_MODE or "fast").strip().lower()
+    if selected not in config.DATALAB_MODES:
+        raise ValueError(
+            f"unknown Datalab mode {selected!r}; use one of "
+            f"{', '.join(config.DATALAB_MODES)}"
+        )
 
-    ``engine="both"`` keeps the result with the higher mean confidence; the
-    upload path uses :func:`ocr_variants` so it can score the extractions too.
-    """
-    documents, _ = ocr_variants(pdf_path, engine=engine, dpi=dpi, psm=psm)
-    if len(documents) == 1:
-        return next(iter(documents.values()))
-    return max(documents.values(), key=lambda document: document.mean_conf)
+    options = _options(selected)
+
+    def on_progress(value) -> None:
+        if not progress:
+            return
+        progress(
+            {
+                "engine": "datalab",
+                "page": 0,
+                "pages_total": 0,
+                "percent": _percent(value),
+            }
+        )
+
+    if progress:
+        progress({"engine": "datalab", "page": 0, "pages_total": 0, "percent": 0})
+
+    try:
+        client = _client()
+        result = client.convert(
+            str(pdf_path),
+            options=options,
+            max_polls=config.DATALAB_MAX_POLLS,
+            poll_interval=config.DATALAB_POLL_INTERVAL,
+            on_progress=on_progress,
+        )
+    except Exception as error:
+        raise RuntimeError(
+            f"Datalab failed to read {pdf_path.name}: {_describe(error)}"
+        ) from error
+
+    if not getattr(result, "success", True):
+        message = str(getattr(result, "error", "") or "conversion failed")
+        raise RuntimeError(f"Datalab could not read {pdf_path.name}: {message}")
+
+    pages = _pages_from_result(result)
+    if not pages:
+        raise RuntimeError("Datalab returned no pages for the PDF")
+    if progress:
+        progress({"engine": "datalab", "page": 0, "pages_total": 0, "percent": 100})
+    return DocumentOCR(source=pdf_path, pages=pages, engine="datalab")
 
 
-_configured = False
-
-
-def configure() -> None:
-    """Point pytesseract at the local Tesseract and language data.
-
-    Called from every entry point (CLI, web startup, ``ocr_pdf``) so no caller
-    can forget it; subsequent calls are a no-op.
-    """
-    global _configured
-    if _configured:
-        return
-    cmd = config.find_tesseract()
-    pytesseract.pytesseract.tesseract_cmd = str(cmd)
-    tessdata = config.find_tessdata(cmd)
-    if tessdata:
-        import os
-
-        os.environ.setdefault("TESSDATA_PREFIX", str(tessdata))
-    _configured = True
+def ocr_pdf(pdf_path: Path, mode: str | None = None) -> DocumentOCR:
+    """Backwards-compatible single-document entry point."""
+    return convert_pdf(pdf_path, mode=mode)

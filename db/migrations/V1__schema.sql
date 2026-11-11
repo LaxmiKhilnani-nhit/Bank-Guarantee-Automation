@@ -155,8 +155,8 @@ CREATE TABLE IF NOT EXISTS ocr_results (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   bg_id            UUID REFERENCES bg_records(id) ON DELETE SET NULL,
   source_pdf       TEXT NOT NULL,
-  di_model         TEXT NOT NULL,              -- e.g. prebuilt-layout / custom-bg-extractor
-  raw_json         JSONB NOT NULL,             -- full Azure DI response for audit/retrain
+  di_model         TEXT NOT NULL,              -- Datalab processing mode, e.g. fast / accurate
+  raw_json         JSONB NOT NULL,             -- Datalab page tree for audit/retrain
   extracted_fields JSONB NOT NULL DEFAULT '{}'::jsonb,
   avg_confidence   NUMERIC(5,4) CHECK (avg_confidence IS NULL OR (avg_confidence >= 0 AND avg_confidence <= 1)),
   status           TEXT NOT NULL DEFAULT 'needs_review'
@@ -257,5 +257,5 @@ LEFT JOIN users u         ON u.id = b.created_by;
 COMMENT ON TABLE bg_records IS 'One row per BG; dedupe on bg_no; supersedes_bg_id chains extensions (ST007). Excel Sr is not stored.';
 COMMENT ON COLUMN bg_records.extended_date IS 'Excel Extended held dates + one Yes; Yes migrates to status=Extended with NULL date.';
 COMMENT ON TABLE loa_records IS 'Parent for 1 LOA:M BGs; revised BG against same LOA inserts new bg_records row.';
-COMMENT ON TABLE ocr_results IS 'Every Azure DI attempt incl. raw_json; low-confidence rows stay needs_review/failed and are never auto-written (ST008).';
+COMMENT ON TABLE ocr_results IS 'Every Datalab attempt incl. raw_json; low-confidence rows stay needs_review/failed and are never auto-written (ST008).';
 COMMENT ON TABLE reminders IS 'T-7 SMTP log; UNIQUE(bg_id, scheduled_for) prevents double-send.';

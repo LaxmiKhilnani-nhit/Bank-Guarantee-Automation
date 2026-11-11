@@ -2,8 +2,8 @@
 id: PLAN-LOG
 title: Decision and Change Log
 status: active
-last_updated: 2026-11-02
-version: 7
+last_updated: 2026-11-10
+version: 11
 inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx", "BG_UseCase_Story_Tracking.xlsx", "plan/"]
 outputs: ["plan/00-log.md"]
 ---
@@ -19,6 +19,74 @@ current state. Newest entries are first.
 Format for each entry: date, author, what changed, why, files affected.
 
 ## 2. Log (newest first)
+
+### 2026-11-10 — Team — Datalab convert → extract pipeline replaces text-rule extraction
+
+- What: uploads and CLI ingestion now run the published Datalab pipeline
+  `pl_INVNggnY7MaE` (development pipeline; production deploys the same schema on
+  a fresh account as version 1): `convert` for page text, then structured
+  `extract` in `turbo` mode. The extract JSON is authoritative; local code only
+  normalises values and resolves company/project/plaza/nature/contractor/bank
+  against the masters. There is no OCR-text rule fallback: a missing or invalid
+  value becomes a blank cell with a flag.
+- Schema: production schema **v1** (18 fields), maintained manually in the
+  Datalab UI as pipeline `BG_Fields_Extraction_dev`; the fresh production
+  account will publish it as version 1 (`v3` was only an internal working label
+  on the development account). No schema file or sync script is executed by the
+  app; the v1 field contract is mirrored for readers in
+  `plan/04-ocr-extraction.md` §3.1. The exact schema and the full pipeline
+  definition are preserved as reference snapshots in
+  `docs/datalab-schema-v1.json` and `docs/datalab-pipeline-v1.json`; the original
+  field wish-list and its coverage table live in
+  `docs/Fields To Capture From BG Through D.md`. The pipeline version is pinned
+  with `BG_DATALAB_PIPELINE_VERSION` (default `1`); the extraction mode is
+  informational via `BG_DATALAB_EXTRACTION_MODE`.
+- Extras: authorised signatories, stamp-duty certificates, amount in words,
+  type wording and the printed project name are kept in
+  `Extraction.extras`, the run archive and a read-only **Document extras**
+  section in the review card. No DB or workbook columns were added.
+- Results: both raw step payloads are archived immediately under
+  `out/web/<run>/pipeline/`; Datalab expires them after about a day. The adapter
+  sets `skip_cache=true` because a cached convert checkpoint has no downloadable
+  step result.
+- Confidence: turbo returns no citations or per-field scores. The UI shows a
+  document-level `parse_quality_score` when present and otherwise no confidence
+  (never 0%). Failed extract steps fail the upload; there is no blank-row
+  fallback.
+- Files: `backend/bgauto/{pipeline,extract,ocr,normalize,config,cli}.py`,
+  `backend/bgauto/web/{api,runs,index.html}`, `.env.example`,
+  `docker-compose.yml`, `backend/tests/{test_pipeline,test_extract,test_web,test_config}.py`,
+  `backend/README.md`, `plan/04-ocr-extraction.md`, `docs/datalab-schema-v1.json`,
+  `docs/datalab-pipeline-v1.json`, `docs/Fields To Capture From BG Through D.md`.
+
+### 2026-11-04 — Team — Datalab replaces Tesseract, Indra and Azure OCR
+
+- What: removed the Tesseract, Indra and Azure Document Intelligence adapters
+  and their dependencies. OCR now goes through the Datalab API using
+  `datalab-python-sdk` with a single fixed mode (`fast` by default,
+  `BG_DATALAB_MODE`). The upload UI no longer has an engine selector; Datalab is
+  the only engine. `bgauto/compare.py` and its tests are kept for reference but
+  the upload flow no longer runs or displays an engine comparison.
+- Confidence: Datalab's `parse_quality_score` (0–5), when provided, is mapped
+  to `score / 5` with source `datalab_quality`. `fast` often omits it, so the UI
+  and CLI simply show no confidence instead of 0%. Image extraction and captions
+  are disabled.
+- Health: `GET /api/health` is now a local configuration check (SDK installed
+  plus key or saved login); it never spends an API call.
+- Privacy: the PDF leaves the machine for Datalab. The register, workbook and
+  archive stay local; the optional Firecrawl lookup still sends only the OCR'd
+  names and IFSC codes.
+- Config: `DATALAB_API_KEY`, `BG_DATALAB_MODE`, `BG_DATALAB_BASE_URL`,
+  `BG_DATALAB_TIMEOUT`, `BG_DATALAB_MAX_POLLS`, `BG_DATALAB_POLL_INTERVAL`.
+  The key lives only in the git-ignored `.env` (or the SDK's saved login).
+  `config.py` now applies that `.env` for local runs as well as Compose; a real
+  environment variable still wins.
+- Files: `backend/bgauto/{ocr,config,cli}.py`,
+  `backend/bgauto/web/{api,runs,index.html,__main__}.py`,
+  `backend/tests/{test_ocr,test_web,test_config}.py`, `backend/requirements.txt`,
+  `Dockerfile`, `docker-compose.yml`, `.env.example`, `backend/README.md`,
+  `db/migrations/V1__schema.sql`, `plan/01-architecture.md`,
+  `plan/04-ocr-extraction.md`, `plan/05-flows.md`.
 
 ### 2026-11-02 — Team — Optional Azure Document Intelligence OCR test engine
 
@@ -366,7 +434,7 @@ Format for each entry: date, author, what changed, why, files affected.
 | # | Decision needed | Owner | Status |
 |---|----------------|-------|--------|
 | 1 | SMTP mailbox, Finance DL, User Team DL, template sign-off | TBD | Open |
-| 2 | Azure DI S0 resource group in Central India + cost-alert owner | TBD | Open |
+| 2 | Datalab plan/quota owner and cost-alert contact | TBD | Open |
 | 3 | Confirm `To` (not Claim Period) as the T-7 anchor | TBD | Open |
 
 ## References

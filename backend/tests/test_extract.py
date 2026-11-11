@@ -14,7 +14,7 @@ import datetime as dt
 import unittest
 from pathlib import Path
 
-from bgauto.extract import _bg_no, _flatten, _loa, _po, extract
+from bgauto.extract import _bg_no, _flatten, _loa, _po, extract, extract_from_pipeline
 from bgauto.masters import Masters
 from bgauto.normalize import (
     amount_in_words_to_number,
@@ -504,6 +504,160 @@ class CompanyNameTests(unittest.TestCase):
         field = extract(doc, self.masters).fields["Company Name"]
         self.assertIsNone(field.value)
         self.assertIn("company_not_found", field.flags)
+
+
+class PipelineExtractionTests(unittest.TestCase):
+    """Datalab supplies the values; local code only normalises and resolves."""
+
+    masters = ProjectAndPlazaTests.masters
+    today = dt.date(2025, 1, 1)
+
+    data = {
+        "company_name": "NHIT Southern Projects Private Limited",
+        "project_name": "Bareilly-Sitapur",
+        "toll_plaza_names": ["Faridpur", "Maigalganj"],
+        "bg_type": "PBG",
+        "bg_type_wording": "Performance Security",
+        "nature_of_service": "Incident Management",
+        "contractor_name": "Example Infra Limited",
+        "bg_no": "1234AB12345678901",
+        "bg_amount": 4078080,
+        "bg_amount_in_words": (
+            "Rupees Forty Lakh Seventy Eight Thousand Eighty Only"
+        ),
+        "from_date": "15-11-2025",
+        "to_date": "06-04-2026",
+        "claim_expiry_date": "06-04-2026",
+        "bank_name": "HDFC Bank",
+        "loa_or_tender_number": "LOA/WEB/001",
+        "po_number": None,
+        "authorized_signatories": [
+            {"name": "A. Signatory", "sol_id": "880919", "designation": "DM-II"}
+        ],
+        "stamp_duty_certificates": [
+            {
+                "certificate_no": "IN-UP98274247513780Y",
+                "certificate_issued_date": "28-Jul-2026 03:35 PM",
+                "description_of_document": "Article 12 (A) Bank Guarantee",
+                "consideration_price": None,
+                "stamp_duty_amount": 2600,
+            }
+        ],
+    }
+
+    def test_fields_are_mapped_from_the_pipeline_json(self):
+        result = extract_from_pipeline(
+            _doc(["ignored"]), self.data, self.masters, today=self.today
+        )
+
+        self.assertEqual(
+            result.value("Company Name"), "NHIT Southern Projects Private Limited"
+        )
+        self.assertEqual(result.value("Project Name"), "BS")
+        self.assertEqual(result.value("Toll Plaza Name"), "Faridpur")
+        self.assertIn("also_covers: Maigalganj", result.fields["Toll Plaza Name"].notes)
+        self.assertEqual(result.value("Types of BG"), "PBG")
+        self.assertEqual(result.value("Nature of Service"), "Incident Management")
+        self.assertEqual(result.value("Name of Contractor"), "Example Infra Limited")
+        self.assertEqual(result.value("BG No"), "1234AB12345678901")
+        self.assertEqual(result.value("BG Amount"), 4078080.0)
+        self.assertEqual(result.value("From"), dt.date(2025, 11, 15))
+        self.assertEqual(result.value("To"), dt.date(2026, 4, 6))
+        self.assertEqual(result.value("Claim Period"), dt.date(2026, 4, 6))
+        self.assertEqual(result.value("Bank Name"), "HDFC Bank")
+        self.assertEqual(result.value("LOA Number"), "LOA/WEB/001")
+        self.assertIsNone(result.value("PO Number"))
+        self.assertIn("po_not_found", result.fields["PO Number"].flags)
+        self.assertEqual(result.value("Status"), "Active")
+
+    def test_extras_are_kept_for_the_archive_and_review_card(self):
+        result = extract_from_pipeline(
+            _doc(["ignored"]), self.data, self.masters, today=self.today
+        )
+
+        self.assertEqual(
+            result.extras["authorized_signatories"][0]["name"], "A. Signatory"
+        )
+        stamp = result.extras["stamp_duty_certificates"][0]
+        self.assertEqual(stamp["stamp_duty_amount"], 2600)
+        self.assertNotIn("consideration_price", stamp)
+        self.assertEqual(
+            result.extras["bg_amount_in_words"],
+            "Rupees Forty Lakh Seventy Eight Thousand Eighty Only",
+        )
+        self.assertEqual(result.extras["bg_type_wording"], "Performance Security")
+        report = result.report()
+        self.assertEqual(report["extras"]["authorized_signatories"][0]["sol_id"], "880919")
+
+    def test_missing_values_are_blank_with_flags(self):
+        result = extract_from_pipeline(
+            _doc(["ignored"]), {}, self.masters, today=self.today
+        )
+
+        for column, flag in {
+            "Company Name": "company_not_found",
+            "Types of BG": "bg_type_not_found",
+            "Nature of Service": "nature_not_found",
+            "Name of Contractor": "contractor_not_found",
+            "BG No": "bg_no_not_found",
+            "BG Amount": "amount_not_found",
+            "From": "from_not_found",
+            "To": "to_not_found",
+            "Claim Period": "claim_not_found",
+            "Bank Name": "bank_not_matched",
+            "LOA Number": "loa_not_found",
+            "PO Number": "po_not_found",
+        }.items():
+            with self.subTest(column=column):
+                field = result.fields[column]
+                self.assertIsNone(field.value)
+                self.assertIn(flag, field.flags)
+
+    def test_amount_and_words_disagree_is_flagged(self):
+        data = dict(self.data, bg_amount=1000)
+        field = extract_from_pipeline(
+            _doc(["ignored"]), data, self.masters, today=self.today
+        ).fields["BG Amount"]
+        self.assertEqual(field.value, 1000.0)
+        self.assertIn("amount_vs_words_mismatch", field.flags)
+
+    def test_unparsed_date_is_blank_and_noted(self):
+        data = dict(self.data, from_date="sometime in 2025")
+        field = extract_from_pipeline(
+            _doc(["ignored"]), data, self.masters, today=self.today
+        ).fields["From"]
+        self.assertIsNone(field.value)
+        self.assertIn("from_not_found", field.flags)
+        self.assertTrue(any(note.startswith("unparsed_date:") for note in field.notes))
+
+    def test_bg_number_differs_from_filename_is_flagged(self):
+        data = dict(self.data, bg_no="9999ZZ99999999999")
+        field = extract_from_pipeline(
+            _doc(["ignored"]), data, self.masters, today=self.today
+        ).fields["BG No"]
+        self.assertEqual(field.value, "9999ZZ99999999999")
+        self.assertIn("bg_no_differs_from_filename", field.flags)
+
+    def test_plaza_sets_the_project_when_no_project_is_printed(self):
+        data = dict(self.data, project_name="")
+        result = extract_from_pipeline(
+            _doc(["ignored"]), data, self.masters, today=self.today
+        )
+        self.assertEqual(result.value("Project Name"), "BS")
+        self.assertIn("derived_from_plaza", result.fields["Project Name"].notes)
+
+    def test_unknown_project_is_blank_and_not_guessed(self):
+        data = dict(
+            self.data,
+            project_name="Some Other Corridor",
+            toll_plaza_names=["Nowhere Plaza"],
+        )
+        result = extract_from_pipeline(
+            _doc(["ignored"]), data, self.masters, today=self.today
+        )
+        self.assertIsNone(result.value("Project Name"))
+        self.assertIsNone(result.value("Toll Plaza Name"))
+        self.assertIn("plaza_not_found", result.fields["Toll Plaza Name"].notes)
 
 
 if __name__ == "__main__":

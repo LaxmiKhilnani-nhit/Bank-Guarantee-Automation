@@ -1,57 +1,46 @@
-"""Runtime configuration for the local BG ingestion pipeline.
+"""Runtime configuration for the BG ingestion pipeline.
 
-Everything is environment-driven so the same code can later run on the VM
-(where Tesseract will be installed system-wide) without edits.
+Everything is environment-driven so the same code can run locally or in the
+container without edits.
 """
 from __future__ import annotations
 
 import datetime as dt
 import os
-import shutil
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-# --- Tesseract discovery -------------------------------------------------
 
-def _candidates() -> list[Path]:
-    env = os.environ.get("TESSERACT_CMD")
-    if env:
-        return [Path(env)]
-    local = os.environ.get("LOCALAPPDATA", "")
-    out = [Path(local) / "bgauto" / "tesseract" / "Library" / "bin" / "tesseract.exe"]
-    out.append(Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"))
-    out.append(Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"))
-    which = shutil.which("tesseract")
-    if which:
-        out.append(Path(which))
-    return out
+def _load_dotenv(path: Path) -> None:
+    """Apply a local ``.env`` file without overriding real environment vars.
+
+    Docker Compose reads the same file for ``${VARIABLES}``; this loader makes
+    ``python -m bgauto.web`` and the CLI see it too. Values already present in
+    the process environment always win. The file is git-ignored and is the
+    documented home for ``DATALAB_API_KEY``.
+    """
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        if line.startswith("export "):
+            line = line[len("export "):].lstrip()
+        key, _, value = line.partition("=")
+        key = key.strip()
+        if not key or key in os.environ:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+            value = value[1:-1]
+        os.environ[key] = value
 
 
-def find_tesseract() -> Path:
-    for path in _candidates():
-        if path.is_file():
-            return path
-    raise FileNotFoundError(
-        "tesseract.exe not found. Set TESSERACT_CMD or install Tesseract 5."
-    )
-
-
-def find_tessdata(tesseract_cmd: Path) -> Path | None:
-    env = os.environ.get("TESSDATA_PREFIX")
-    if env:
-        p = Path(env)
-        return p if p.is_dir() else None
-    # conda-forge layout: <prefix>/Library/bin/tesseract.exe + <prefix>/share/tessdata
-    candidate = tesseract_cmd.parents[2] / "share" / "tessdata"
-    if candidate.is_dir():
-        return candidate
-    # installer layout: <dir>/tesseract.exe + <dir>/tessdata
-    candidate = tesseract_cmd.parent / "tessdata"
-    if candidate.is_dir():
-        return candidate
-    return None
-
+_load_dotenv(REPO_ROOT / ".env")
 
 # --- Paths ---------------------------------------------------------------
 
@@ -114,23 +103,43 @@ IST = dt.timezone(dt.timedelta(hours=5, minutes=30), "IST")
 SCHEDULER_TIME = os.environ.get("BG_SCHEDULER_TIME", "09:00")
 INTERNAL_TOKEN = os.environ.get("BG_INTERNAL_TOKEN", "")
 
-# --- OCR settings --------------------------------------------------------
+# --- OCR settings (Datalab) ---------------------------------------------
+# Datalab reads each uploaded PDF in the cloud: the convert step supplies page
+# text, the extract step supplies the field JSON. The API key is read from
+# DATALAB_API_KEY (preferred) or the SDK's saved `datalab login` config.
+OCR_ENGINE = "datalab"
+DATALAB_API_KEY = os.environ.get("DATALAB_API_KEY", "").strip()
+DATALAB_BASE_URL = os.environ.get(
+    "BG_DATALAB_BASE_URL", "https://www.datalab.to"
+).rstrip("/")
+# lite | fast | balanced | accurate. Only used by `ocr.convert_pdf`;
+# pipeline runs take their parse mode from the pipeline's convert step.
+DATALAB_MODE = os.environ.get("BG_DATALAB_MODE", "fast").strip().lower()
+DATALAB_MODES = ("lite", "fast", "balanced", "accurate")
+DATALAB_TIMEOUT = int(os.environ.get("BG_DATALAB_TIMEOUT", "600"))
+DATALAB_MAX_POLLS = int(os.environ.get("BG_DATALAB_MAX_POLLS", "300"))
+DATALAB_POLL_INTERVAL = float(os.environ.get("BG_DATALAB_POLL_INTERVAL", "2"))
 
-# indra | tesseract | azure | both | all. Azure sends document bytes to the
-# configured Document Intelligence endpoint; local engines stay on this machine.
-OCR_ENGINE = os.environ.get("BG_OCR_ENGINE", "indra").strip().lower()
-OCR_ENGINES = ("indra", "tesseract", "azure", "both", "all")
-OCR_DPI = int(os.environ.get("BG_OCR_DPI", "300"))
-OCR_PSM = int(os.environ.get("BG_OCR_PSM", "3"))
-MIN_CONFIDENCE = float(os.environ.get("BG_MIN_CONFIDENCE", "0.75"))
-INDRA_THREADS = int(os.environ.get("BG_INDRA_THREADS", str(max(1, (os.cpu_count() or 4) - 1))))
-INDRA_MODE = os.environ.get("BG_INDRA_MODE", "auto").strip().lower()
-AZURE_DI_ENDPOINT = os.environ.get("AZURE_DI_ENDPOINT", "").strip().rstrip("/")
-AZURE_DI_KEY = os.environ.get("AZURE_DI_KEY", "").strip()
-AZURE_DI_KEY_2 = os.environ.get("AZURE_DI_KEY_2", "").strip()
-AZURE_DI_MODEL = os.environ.get("AZURE_DI_MODEL", "prebuilt-layout").strip()
-AZURE_DI_PAGE_BATCH_SIZE = int(os.environ.get("AZURE_DI_PAGE_BATCH_SIZE", "2"))
-AZURE_DI_MAX_BYTES = int(os.environ.get("AZURE_DI_MAX_BYTES", "3800000"))
+# --- Pipeline (convert -> extract) ---------------------------------------
+# The pipeline owns the convert/extract settings and the extraction schema.
+# The production pipeline is deployed on a fresh account, so its first
+# published version is 1. Pin that version so a manual edit in Datalab cannot
+# silently change results; leave BG_DATALAB_PIPELINE_VERSION empty to always
+# run the active published version.
+DATALAB_PIPELINE_ID = os.environ.get(
+    "BG_DATALAB_PIPELINE_ID", "pl_INVNggnY7MaE"
+).strip()
+_pipeline_version = os.environ.get("BG_DATALAB_PIPELINE_VERSION", "1").strip()
+DATALAB_PIPELINE_VERSION = (
+    int(_pipeline_version) if _pipeline_version.isdigit() else None
+)
+DATALAB_PIPELINE_MODES = ("turbo", "fast", "balanced", "accurate")
+# Informational: the extract step's mode is stored in the Datalab pipeline, not
+# sent per run. This value is only reported by ``/api/health`` so an operator can
+# confirm which pipeline release is pinned.
+DATALAB_EXTRACTION_MODE = (
+    os.environ.get("BG_DATALAB_EXTRACTION_MODE", "turbo").strip().lower()
+)
 
 # --- Official-name lookup (Firecrawl agent) ------------------------------
 # Optional. Without a key the app stays fully local and keeps the OCR reads.
