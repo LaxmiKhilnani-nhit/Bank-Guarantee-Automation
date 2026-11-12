@@ -7,7 +7,7 @@
 #   docker compose build
 #   docker compose up -d          -> http://127.0.0.1:8000
 #
-# The layout mirrors the repo (/app/backend, /app/db/sqlite, /app/BG Tracker.xlsx)
+# The layout mirrors the repo (/app/backend, /app/db, /app/docs, /app/BG Tracker.xlsx)
 # because bgauto/config.py resolves its default paths from the package location.
 ARG BG_BASE_IMAGE=python:3.13-slim
 FROM ${BG_BASE_IMAGE}
@@ -24,15 +24,23 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Dependencies first: this layer is reused until requirements.txt changes.
+# postgresql-client rides along in the same layer for `pg_dump`, which the
+# backup archive uses; the apt lists are dropped again to keep it lean.
 COPY backend/requirements.txt backend/requirements.txt
-RUN pip install --no-cache-dir -r backend/requirements.txt
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends postgresql-client \
+ && rm -rf /var/lib/apt/lists/* \
+ && pip install --no-cache-dir -r backend/requirements.txt
 
 COPY backend/ backend/
 COPY ["BG Tracker.xlsx", "BG Tracker.xlsx"]
-COPY db/sqlite/ db/sqlite/
+COPY db/ db/
+# Master data of record: the one-shot migrate service seeds the dropdowns from
+# it, and `python -m bgauto.cli import-masters` re-reads it on updates.
+COPY docs/ docs/
 
 # Non-root runtime user. The app only ever writes under out/ (review workbooks,
-# runs, OCR archive under data/) and, when the schema is behind, the database.
+# runs, OCR archive under data/); the database lives in Postgres.
 RUN if ! id -u bgauto >/dev/null 2>&1; then useradd --create-home --uid 10001 bgauto; fi \
  && mkdir -p out data \
  && chown -R bgauto:bgauto /app/out /app/data /app/db
@@ -40,9 +48,9 @@ USER bgauto
 
 EXPOSE 8000
 
-# Health is a configuration check (SDK installed + key present), not an API
-# call, so this probe stays free.
+# Readiness: the API serves and the database answers. `degraded` means the OCR
+# key is absent, which is a configuration state, not a dead process.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-  CMD python -c "import json,sys,urllib.request; sys.exit(0 if json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=8)).get('status') == 'ok' else 1)"
+  CMD python -c "import json,sys,urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=8)); db=(h.get('database') or {}).get('version'); sys.exit(0 if h.get('status') in ('ok','degraded') and db else 1)"
 
 CMD ["python", "-m", "bgauto.web"]

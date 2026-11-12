@@ -66,15 +66,15 @@ class WebTests(TempDatabase):
             auth.create_user(conn, *VIEWER[:1], VIEWER[1], "viewer")
             self.admin = auth.get_user(
                 conn,
-                conn.execute("SELECT id FROM users WHERE username='admin'").fetchone()[0],
+                conn.execute("SELECT id FROM users WHERE username='admin'").fetchone()["id"],
             )
             self.uploader = auth.get_user(
                 conn,
-                conn.execute("SELECT id FROM users WHERE username='asha'").fetchone()[0],
+                conn.execute("SELECT id FROM users WHERE username='asha'").fetchone()["id"],
             )
             self.viewer = auth.get_user(
                 conn,
-                conn.execute("SELECT id FROM users WHERE username='vik'").fetchone()[0],
+                conn.execute("SELECT id FROM users WHERE username='vik'").fetchone()["id"],
             )
 
     def client(self, credentials=ADMIN) -> TestClient:
@@ -244,7 +244,7 @@ class WebTests(TempDatabase):
                 "SELECT failed_attempts, locked_until FROM users WHERE username='admin'"
             ).fetchone()
             actions = [
-                item[0]
+                item["action"]
                 for item in conn.execute("SELECT action FROM audit_logs ORDER BY id")
             ]
         self.assertEqual(row["failed_attempts"], auth.MAX_FAILED_ATTEMPTS)
@@ -269,7 +269,9 @@ class WebTests(TempDatabase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(config.WORKBOOK_PATH.exists())
         with store.connect() as conn:
-            self.assertEqual(conn.execute("SELECT COUNT(*) FROM bg_records").fetchone()[0], 1)
+            self.assertEqual(
+                conn.execute("SELECT COUNT(*) AS n FROM bg_records").fetchone()["n"], 1
+            )
 
     def test_viewer_is_read_only(self):
         viewer = self.client(VIEWER)
@@ -314,7 +316,7 @@ class WebTests(TempDatabase):
             self.assertIsNotNone(row)
             self.assertEqual(row["created_by"], "admin")
             actions = [
-                item[0]
+                item["action"]
                 for item in conn.execute("SELECT action FROM audit_logs ORDER BY id")
             ]
             self.assertIn("confirm", actions)
@@ -334,7 +336,9 @@ class WebTests(TempDatabase):
         self.assertEqual(again.json()["not_written"][0]["reason"], "duplicate")
         self.assertEqual(again.json()["not_written"][0]["existing"]["BG No"], "WEB001")
         with store.connect() as conn:
-            self.assertEqual(conn.execute("SELECT COUNT(*) FROM bg_records").fetchone()[0], 1)
+            self.assertEqual(
+                conn.execute("SELECT COUNT(*) AS n FROM bg_records").fetchone()["n"], 1
+            )
 
     def test_multi_plaza_bg_adds_one_workbook_row_per_plaza(self):
         admin = self.client(ADMIN)
@@ -359,8 +363,8 @@ class WebTests(TempDatabase):
         with store.connect() as conn:
             self.assertEqual(
                 conn.execute(
-                    "SELECT COUNT(*) FROM bg_records WHERE bg_no = 'WEB002'"
-                ).fetchone()[0],
+                    "SELECT COUNT(*) AS n FROM bg_records WHERE bg_no = 'WEB002'"
+                ).fetchone()["n"],
                 1,
             )
 
@@ -465,7 +469,7 @@ class WebTests(TempDatabase):
         self.assertEqual(close.status_code, 200, close.text)
         self.assertEqual(close.json()["row"]["Status"], "Closed")
         with store.connect() as conn:
-            actions = [item[0] for item in conn.execute("SELECT action FROM audit_logs ORDER BY id")]
+            actions = [item["action"] for item in conn.execute("SELECT action FROM audit_logs ORDER BY id")]
         self.assertIn("export", actions)
         self.assertIn("close", actions)
         sheet = load_workbook(config.WORKBOOK_PATH).active
@@ -504,7 +508,9 @@ class WebTests(TempDatabase):
         self.assertEqual(promoted.json()["user"]["role"], "uploader")
 
         with store.connect() as conn:
-            admin_id = conn.execute("SELECT id FROM users WHERE username='admin'").fetchone()[0]
+            admin_id = conn.execute(
+                "SELECT id FROM users WHERE username='admin'"
+            ).fetchone()["id"]
         guard = admin.patch(f"/api/users/{admin_id}", json={"is_active": False})
         self.assertEqual(guard.status_code, 400)
         self.assertIn("last active admin", guard.json()["detail"])

@@ -19,17 +19,17 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
-import sqlite3
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
+import psycopg
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
-from .. import auth, config, lookup, ocr, register, schema, scheduler, store
+from .. import auth, config, lookup, ocr, register, scheduler, store
 from ..auth import AuthError, User
 from ..extract import HEADERS
 from ..mailer import MailSender
@@ -50,9 +50,9 @@ MUTATING = {"POST", "PUT", "PATCH", "DELETE"}
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     try:
-        schema.ensure_schema()
-    except (OSError, sqlite3.Error):
-        log.warning("schema top-up skipped (database unavailable)")
+        store.require_schema()
+    except (psycopg.Error, RuntimeError) as error:
+        log.warning("schema check skipped: %s", error)
     try:
         with store.connect() as conn:
             created = auth.ensure_bootstrap_admin(conn)
@@ -65,7 +65,7 @@ async def lifespan(_: FastAPI):
                 )
             elif created:
                 log.info("Created bootstrap admin %r from BG_BOOTSTRAP_ADMIN_PASS", created["user"])
-    except (OSError, sqlite3.Error, AuthError) as error:
+    except (psycopg.Error, RuntimeError, AuthError) as error:
         log.error("could not prepare accounts: %s", error)
     scheduler.start()
     try:
@@ -228,7 +228,10 @@ def health() -> dict:
             "version": config.DATALAB_PIPELINE_VERSION,
             "extraction_mode": config.DATALAB_EXTRACTION_MODE,
         },
-        "database": str(config.DB_PATH) if config.DB_PATH.exists() else None,
+        "database": {
+            "configured": bool(config.DATABASE_URL),
+            "version": store.server_version(),
+        },
         "template": str(config.TRACKER_PATH) if config.TRACKER_PATH.exists() else None,
         "workbook": str(config.WORKBOOK_PATH),
         "scheduler": config.SCHEDULER_ENABLED,
@@ -306,7 +309,7 @@ def change_password(
     user: User = Depends(security.current_user),
 ) -> JSONResponse:
     with store.connect() as conn:
-        row = conn.execute("SELECT password_hash FROM users WHERE id = ?", (user.id,)).fetchone()
+        row = conn.execute("SELECT password_hash FROM users WHERE id = %s", (user.id,)).fetchone()
         if row is None or not auth.verify_password(payload.current_password, row["password_hash"]):
             raise HTTPException(status_code=400, detail="The current password is incorrect.")
         try:
@@ -779,9 +782,9 @@ def create_user(
 
 def _active_admins(conn) -> int:
     return conn.execute(
-        "SELECT COUNT(*) FROM users u JOIN user_roles ur ON ur.user_id = u.id "
-        "JOIN roles r ON r.id = ur.role_id WHERE r.name = 'admin' AND u.is_active = 1"
-    ).fetchone()[0]
+        "SELECT COUNT(*) AS n FROM users u JOIN user_roles ur ON ur.user_id = u.id "
+        "JOIN roles r ON r.id = ur.role_id WHERE r.name = 'admin' AND u.is_active"
+    ).fetchone()["n"]
 
 
 @app.patch("/api/users/{user_id}")
@@ -854,13 +857,13 @@ def get_audit(
     limit: int = Query(200, ge=1, le=1000),
     _: User = Depends(security.require("admin")),
 ) -> dict:
-    where = " WHERE a.action = ?" if action else ""
+    where = " WHERE a.action = %s" if action else ""
     params: tuple = (action, limit) if action else (limit,)
     with store.connect() as conn:
         rows = conn.execute(
             "SELECT a.id, a.ts, a.action, a.bg_no, a.old_data, a.new_data, a.ip, "
             "       u.username FROM audit_logs a LEFT JOIN users u ON u.id = a.user_id"
-            f"{where} ORDER BY a.id DESC LIMIT ?",
+            f"{where} ORDER BY a.id DESC LIMIT %s",
             params,
         ).fetchall()
     return {
@@ -872,8 +875,8 @@ def get_audit(
                 "bg_no": row["bg_no"],
                 "user": row["username"] or "",
                 "ip": row["ip"],
-                "old": json.loads(row["old_data"]) if row["old_data"] else None,
-                "new": json.loads(row["new_data"]) if row["new_data"] else None,
+                "old": row["old_data"],
+                "new": row["new_data"],
             }
             for row in rows
         ]

@@ -97,13 +97,20 @@ def _next_row(ws: Worksheet) -> int:
     return ws.max_row + 1
 
 
+def _naive(value: dt.datetime) -> dt.datetime:
+    """openpyxl refuses timezone-aware datetimes; store UTC without a tzinfo."""
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(dt.timezone.utc).replace(tzinfo=None)
+
+
 def append_row(ws: Worksheet, row: dict) -> int:
     target = _next_row(ws)
     for col, name in enumerate(HEADERS, start=1):
         value = row.get(name)
         cell = ws.cell(row=target, column=col)
         if isinstance(value, dt.datetime):
-            cell.value = value
+            cell.value = _naive(value)
             cell.number_format = DATETIME_FORMAT
         elif isinstance(value, dt.date):
             cell.value = value
@@ -140,7 +147,7 @@ def update_row_by_bg_no(ws: Worksheet, bg_no, changes: dict) -> int | None:
             continue
         cell = ws.cell(row=target, column=HEADERS.index(name) + 1)
         if isinstance(value, dt.datetime):
-            cell.value = value
+            cell.value = _naive(value)
             cell.number_format = DATETIME_FORMAT
         elif isinstance(value, dt.date):
             cell.value = value

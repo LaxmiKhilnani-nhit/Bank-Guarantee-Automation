@@ -19,11 +19,13 @@ import datetime as dt
 import hashlib
 import hmac
 import secrets
-import sqlite3
 from dataclasses import dataclass, field
 
+import psycopg
+from psycopg import Connection
+
 from . import config
-from .store import audit, iso, utcnow
+from .store import audit, iso, naive_utc, utcnow
 
 ROLE_ORDER = ("admin", "uploader", "viewer")
 MAX_FAILED_ATTEMPTS = 5
@@ -135,13 +137,13 @@ def _strong_password() -> str:
 # --- users ---------------------------------------------------------------
 
 
-def _roles(conn: sqlite3.Connection, user_id: str) -> list[str]:
+def _roles(conn: Connection, user_id: str) -> list[str]:
     rows = conn.execute(
         "SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id "
-        "WHERE ur.user_id = ? ORDER BY r.id",
+        "WHERE ur.user_id = %s ORDER BY r.id",
         (user_id,),
     ).fetchall()
-    return [row[0] for row in rows]
+    return [row["name"] for row in rows]
 
 
 def _effective(roles: list[str]) -> str:
@@ -151,9 +153,9 @@ def _effective(roles: list[str]) -> str:
     return "viewer"
 
 
-def _to_user(row: sqlite3.Row, roles: list[str]) -> User:
+def _to_user(row: Row, roles: list[str]) -> User:
     return User(
-        id=row["id"],
+        id=str(row["id"]),
         username=row["username"],
         role=_effective(roles),
         roles=roles,
@@ -163,19 +165,21 @@ def _to_user(row: sqlite3.Row, roles: list[str]) -> User:
     )
 
 
-def ensure_roles(conn: sqlite3.Connection) -> None:
+def ensure_roles(conn: Connection) -> None:
     for name in ROLE_ORDER:
-        conn.execute("INSERT OR IGNORE INTO roles (name) VALUES (?)", (name,))
+        conn.execute(
+            "INSERT INTO roles (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (name,)
+        )
 
 
-def ensure_bootstrap_admin(conn: sqlite3.Connection) -> dict | None:
+def ensure_bootstrap_admin(conn: Connection) -> dict | None:
     """Create the first admin when the users table is empty.
 
     The password comes from ``BG_BOOTSTRAP_ADMIN_PASS``; when that is unset a
     random one is generated and printed once to the log (local pilot only).
     """
     ensure_roles(conn)
-    count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    count = conn.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
     if count:
         return None
     password = config.BOOTSTRAP_ADMIN_PASS or _strong_password()
@@ -196,7 +200,7 @@ def ensure_bootstrap_admin(conn: sqlite3.Connection) -> dict | None:
 
 
 def create_user(
-    conn: sqlite3.Connection,
+    conn: Connection,
     username: str,
     password: str,
     role: str,
@@ -216,33 +220,33 @@ def create_user(
         user_id = secrets.token_hex(16)
         conn.execute(
             "INSERT INTO users (id, username, email, full_name, password_hash) "
-            "VALUES (?, ?, ?, ?, ?)",
+            "VALUES (%s, %s, %s, %s, %s)",
             (user_id, username, (email or None), (full_name or None), hash_password(password)),
         )
         conn.execute(
             "INSERT INTO user_roles (user_id, role_id) "
-            "SELECT ?, id FROM roles WHERE name = ?",
+            "SELECT %s, id FROM roles WHERE name = %s",
             (user_id, role),
         )
-    except sqlite3.IntegrityError as error:
+    except psycopg.errors.UniqueViolation as error:
         raise AuthError("That username or email is already taken.", "duplicate") from error
     return get_user(conn, user_id)
 
 
-def get_user(conn: sqlite3.Connection, user_id: str) -> User:
-    row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+def get_user(conn: Connection, user_id: str) -> User:
+    row = conn.execute("SELECT * FROM users WHERE id = %s", (user_id,)).fetchone()
     if row is None:
         raise AuthError("User not found.", "not_found")
     return _to_user(row, _roles(conn, user_id))
 
 
-def list_users(conn: sqlite3.Connection) -> list[User]:
+def list_users(conn: Connection) -> list[User]:
     rows = conn.execute("SELECT * FROM users ORDER BY username").fetchall()
     return [_to_user(row, _roles(conn, row["id"])) for row in rows]
 
 
 def update_user(
-    conn: sqlite3.Connection,
+    conn: Connection,
     user_id: str,
     *,
     role: str | None = None,
@@ -255,50 +259,51 @@ def update_user(
             raise AuthError(f"Unknown role: {role}", "bad_request")
     fields: dict[str, object] = {}
     if is_active is not None:
-        fields["is_active"] = 1 if is_active else 0
+        fields["is_active"] = bool(is_active)
     if full_name is not None:
         fields["full_name"] = full_name.strip() or None
     if email is not None:
         fields["email"] = email.strip() or None
     if fields:
-        columns = ", ".join(f"{name} = ?" for name in fields)
+        columns = ", ".join(f"{name} = %s" for name in fields)
         conn.execute(
-            f"UPDATE users SET {columns}, updated_at = datetime('now') WHERE id = ?",
+            f"UPDATE users SET {columns}, updated_at = now() WHERE id = %s",
             (*fields.values(), user_id),
         )
     if role is not None:
-        conn.execute("DELETE FROM user_roles WHERE user_id = ?", (user_id,))
+        conn.execute("DELETE FROM user_roles WHERE user_id = %s", (user_id,))
         conn.execute(
-            "INSERT INTO user_roles (user_id, role_id) SELECT ?, id FROM roles WHERE name = ?",
+            "INSERT INTO user_roles (user_id, role_id) SELECT %s, id FROM roles WHERE name = %s",
             (user_id, role),
         )
     user = get_user(conn, user_id)
     if is_active is False:
-        conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+        conn.execute("DELETE FROM sessions WHERE user_id = %s", (user_id,))
     return user
 
 
-def set_password(conn: sqlite3.Connection, user_id: str, password: str) -> None:
+def set_password(conn: Connection, user_id: str, password: str) -> None:
     problems = password_problems(password)
     if problems:
         raise AuthError("Password must contain " + ", ".join(problems), "weak_password")
     conn.execute(
-        "UPDATE users SET password_hash = ?, failed_attempts = 0, locked_until = NULL, "
-        "updated_at = datetime('now') WHERE id = ?",
+        "UPDATE users SET password_hash = %s, failed_attempts = 0, locked_until = NULL, "
+        "updated_at = now() WHERE id = %s",
         (hash_password(password), user_id),
     )
-    conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM sessions WHERE user_id = %s", (user_id,))
 
 
 def authenticate(
-    conn: sqlite3.Connection,
+    conn: Connection,
     username: str,
     password: str,
     *,
     ip: str | None = None,
 ) -> User:
     row = conn.execute(
-        "SELECT * FROM users WHERE username = ? COLLATE NOCASE", ((username or "").strip(),)
+        "SELECT * FROM users WHERE lower(username) = lower(%s)",
+        ((username or "").strip(),),
     ).fetchone()
     if row is None:
         audit(conn, "login_failed", ip=ip, new={"username": username})
@@ -308,23 +313,19 @@ def authenticate(
         raise AuthError("This account is disabled.", "inactive")
 
     now = utcnow()
-    locked_until = row["locked_until"]
-    if locked_until:
-        try:
-            if utcnow() < dt.datetime.fromisoformat(str(locked_until)):
-                audit(conn, "login_failed", user_id=row["id"], ip=ip, new={"reason": "locked"})
-                raise AuthError("Too many failed attempts. Try again in 15 minutes.", "locked")
-        except ValueError:
-            pass
+    locked_until = naive_utc(row["locked_until"])
+    if locked_until and now < locked_until:
+        audit(conn, "login_failed", user_id=row["id"], ip=ip, new={"reason": "locked"})
+        raise AuthError("Too many failed attempts. Try again in 15 minutes.", "locked")
 
     if not verify_password(password, row["password_hash"]):
         failed = (row["failed_attempts"] or 0) + 1
         locked = failed >= MAX_FAILED_ATTEMPTS
         conn.execute(
-            "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?",
+            "UPDATE users SET failed_attempts = %s, locked_until = %s WHERE id = %s",
             (
                 failed,
-                iso(now + dt.timedelta(minutes=LOCK_MINUTES)) if locked else None,
+                now + dt.timedelta(minutes=LOCK_MINUTES) if locked else None,
                 row["id"],
             ),
         )
@@ -334,9 +335,9 @@ def authenticate(
         raise AuthError("Incorrect username or password.", "invalid")
 
     conn.execute(
-        "UPDATE users SET failed_attempts = 0, locked_until = NULL, last_login = ?, "
-        "updated_at = datetime('now') WHERE id = ?",
-        (iso(now), row["id"]),
+        "UPDATE users SET failed_attempts = 0, locked_until = NULL, last_login = %s, "
+        "updated_at = now() WHERE id = %s",
+        (now, row["id"]),
     )
     audit(conn, "login", user_id=row["id"], ip=ip)
     return _to_user(row, _roles(conn, row["id"]))
@@ -352,7 +353,7 @@ def _token_hash(token: str) -> str:
 
 
 def create_session(
-    conn: sqlite3.Connection,
+    conn: Connection,
     user_id: str,
     *,
     ip: str | None = None,
@@ -362,54 +363,50 @@ def create_session(
     token = secrets.token_urlsafe(32)
     now = utcnow()
     expires = now + dt.timedelta(minutes=minutes or config.SESSION_MINUTES)
-    conn.execute("DELETE FROM sessions WHERE expires_at <= ?", (iso(now),))
+    conn.execute("DELETE FROM sessions WHERE expires_at <= %s", (now,))
     conn.execute(
         "INSERT INTO sessions (token_hash, user_id, created_at, expires_at, last_seen, ip, user_agent) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (_token_hash(token), user_id, iso(now), iso(expires), iso(now), ip, (user_agent or "")[:200]),
+        "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+        (_token_hash(token), user_id, now, expires, now, ip, (user_agent or "")[:200]),
     )
     return token
 
 
-def session_user(conn: sqlite3.Connection, token: str | None) -> User | None:
+def session_user(conn: Connection, token: str | None) -> User | None:
     if not token:
         return None
     row = conn.execute(
         "SELECT s.token_hash, s.expires_at, s.last_seen, u.* FROM sessions s "
-        "JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?",
+        "JOIN users u ON u.id = s.user_id WHERE s.token_hash = %s",
         (_token_hash(token),),
     ).fetchone()
     if row is None:
         return None
     now = utcnow()
-    try:
-        expired = dt.datetime.fromisoformat(row["expires_at"]) <= now
-    except ValueError:
-        expired = True
+    expires_at = naive_utc(row["expires_at"])
+    expired = expires_at is None or expires_at <= now
     if expired or not row["is_active"]:
-        conn.execute("DELETE FROM sessions WHERE token_hash = ?", (row["token_hash"],))
+        conn.execute("DELETE FROM sessions WHERE token_hash = %s", (row["token_hash"],))
         return None
     # Sliding expiry, refreshed at most once a minute so every request is not a write.
-    try:
-        stale = (now - dt.datetime.fromisoformat(row["last_seen"] or row["expires_at"])).total_seconds() > 60
-    except ValueError:
-        stale = True
+    seen = naive_utc(row["last_seen"]) or expires_at
+    stale = (now - seen).total_seconds() > 60
     if stale:
         conn.execute(
-            "UPDATE sessions SET last_seen = ?, expires_at = ? WHERE token_hash = ?",
+            "UPDATE sessions SET last_seen = %s, expires_at = %s WHERE token_hash = %s",
             (
-                iso(now),
-                iso(now + dt.timedelta(minutes=config.SESSION_MINUTES)),
+                now,
+                now + dt.timedelta(minutes=config.SESSION_MINUTES),
                 row["token_hash"],
             ),
         )
     return _to_user(row, _roles(conn, row["id"]))
 
 
-def destroy_session(conn: sqlite3.Connection, token: str | None) -> None:
+def destroy_session(conn: Connection, token: str | None) -> None:
     if token:
-        conn.execute("DELETE FROM sessions WHERE token_hash = ?", (_token_hash(token),))
+        conn.execute("DELETE FROM sessions WHERE token_hash = %s", (_token_hash(token),))
 
 
-def audit_login(conn: sqlite3.Connection, user_id: str, action: str, ip: str | None = None) -> None:
+def audit_login(conn: Connection, user_id: str, action: str, ip: str | None = None) -> None:
     audit(conn, action, user_id=user_id, ip=ip)

@@ -16,21 +16,23 @@ Design rules (see ``plan/00-log.md``, 2026-10-30):
   in the dropdown together with ``as read: <OCR>``.
 * A failure, timeout or empty answer never blocks the upload: the OCR value
   stays and the field is left as it was.
-* Answers are cached in SQLite by the exact ``(field, raw text + codes)`` so
-  re-reading the same wording does not bill twice. This is a cache of answers,
-  not a local matcher.
+* Answers are cached in PostgreSQL by the exact ``(field, raw text + codes)``
+  so re-reading the same wording does not bill twice. This is a cache of
+  answers, not a local matcher.
 """
 from __future__ import annotations
 
 import json
 import logging
 import re
-import sqlite3
 import time
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
+
+import psycopg
+from psycopg.types.json import Jsonb
 
 from . import config, store
 
@@ -339,48 +341,33 @@ def parse_matches(data, limit: int | None = None) -> list[dict]:
 
 # --- cache ---------------------------------------------------------------
 
-_CACHE_DDL = """
-CREATE TABLE IF NOT EXISTS lookup_cache (
-  field      TEXT NOT NULL,
-  query      TEXT NOT NULL,
-  payload    TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  PRIMARY KEY (field, query)
-)
-"""
-
 
 def _cache_get(field: str, query: str) -> dict | None:
     try:
         with store.connect() as conn:
-            conn.executescript(_CACHE_DDL)
             row = conn.execute(
-                "SELECT payload FROM lookup_cache WHERE field = ? AND query = ? "
-                "AND created_at >= datetime('now', ?)",
-                (field, query, f"-{max(0, config.LOOKUP_TTL_DAYS)} days"),
+                "SELECT payload FROM lookup_cache WHERE field = %s AND query = %s "
+                "AND created_at >= now() - make_interval(days => %s)",
+                (field, query, max(0, config.LOOKUP_TTL_DAYS)),
             ).fetchone()
-    except sqlite3.Error:
+    except (psycopg.Error, RuntimeError):
         return None
     if row is None:
         return None
-    try:
-        payload = json.loads(row["payload"])
-    except (ValueError, TypeError):
-        return None
+    payload = row["payload"]
     return payload if isinstance(payload, dict) else None
 
 
 def _cache_put(field: str, query: str, payload: dict) -> None:
     try:
         with store.connect() as conn:
-            conn.executescript(_CACHE_DDL)
             conn.execute(
-                "INSERT INTO lookup_cache (field, query, payload) VALUES (?, ?, ?) "
-                "ON CONFLICT(field, query) DO UPDATE SET payload = excluded.payload, "
-                "created_at = datetime('now')",
-                (field, query, json.dumps(payload, ensure_ascii=False)),
+                "INSERT INTO lookup_cache (field, query, payload) VALUES (%s, %s, %s) "
+                "ON CONFLICT (field, query) DO UPDATE SET payload = EXCLUDED.payload, "
+                "created_at = now()",
+                (field, query, Jsonb(payload)),
             )
-    except sqlite3.Error:
+    except (psycopg.Error, RuntimeError):
         log.warning("could not cache the %s lookup", field, exc_info=True)
 
 

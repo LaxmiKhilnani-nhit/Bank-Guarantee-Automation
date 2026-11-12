@@ -3,10 +3,63 @@
 #   docker compose build
 #   docker compose up -d            -> http://127.0.0.1:8000
 #   docker compose logs -f app
+#   docker compose run --rm migrate # re-apply migrations + seed masters
+#
+# Three services: db (Postgres 16, volume bg_pgdata), migrate (one-shot
+# db/bootstrap.py) and app. The app never opens a port to the database; it talks
+# to db over the compose network with DATABASE_URL.
 #
 # The host port is loopback-only on purpose (same promise as running the script
 # by hand). Change it with BG_WEB_PORT, e.g. $env:BG_WEB_PORT="8010".
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: bg-automation-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bg_automation}
+      POSTGRES_USER: ${POSTGRES_USER:-bg_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bg_app_local_pw}
+    # No published port by default: only the app needs the database, and it
+    # reaches db over the compose network. To poke at it from the host during
+    # development, add a dev-only mapping such as
+    #   ports: ["127.0.0.1:${POSTGRES_PORT:-5432}:5432"]
+    volumes:
+      - bg_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Exec form (no shell): compose substitutes the .env overrides before the
+      # container is created, so nothing has to be $-escaped for the shell.
+      test:
+        - CMD
+        - pg_isready
+        - -U
+        - ${POSTGRES_USER:-bg_app}
+        - -d
+        - ${POSTGRES_DB:-bg_automation}
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # One-shot: applies db/migrations/V1-V3 and seeds the masters from
+  # docs/master-data.md. Idempotent; run it again after a document update.
+  migrate:
+    build:
+      context: .
+      args:
+        BG_BASE_IMAGE: ${BG_BASE_IMAGE:-python:3.13-slim}
+    image: bg-automation:local
+    container_name: bg-automation-migrate
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-bg_app}:${POSTGRES_PASSWORD:-bg_app_local_pw}@db:5432/${POSTGRES_DB:-bg_automation}}
+      POSTGRES_DB: ${POSTGRES_DB:-bg_automation}
+      POSTGRES_USER: ${POSTGRES_USER:-bg_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bg_app_local_pw}
+    command: python db/bootstrap.py
+
   app:
     build:
       context: .
@@ -18,6 +71,12 @@ services:
     ports:
       - "127.0.0.1:${BG_WEB_PORT:-8000}:8000"
     environment:
+      # PostgreSQL. Compose points these at the db service; override
+      # DATABASE_URL to use a database outside this stack.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-bg_app}:${POSTGRES_PASSWORD:-bg_app_local_pw}@db:5432/${POSTGRES_DB:-bg_automation}}
+      POSTGRES_DB: ${POSTGRES_DB:-bg_automation}
+      POSTGRES_USER: ${POSTGRES_USER:-bg_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bg_app_local_pw}
       BG_WEB_HOST: 0.0.0.0
       BG_WEB_PORT: "8000"
       # Accounts and sessions. A random bootstrap password is logged once when
@@ -63,20 +122,34 @@ services:
       BG_DATALAB_PIPELINE_VERSION: ${BG_DATALAB_PIPELINE_VERSION:-1}
       BG_DATALAB_EXTRACTION_MODE: ${BG_DATALAB_EXTRACTION_MODE:-turbo}
     volumes:
-      # Outputs, OCR archive and the masters database stay on the host, so the
-      # files a reviewer checks are the same ones the local run produces.
+      # Outputs and the OCR archive stay on the host, so the files a reviewer
+      # checks are the same ones the local run produces. The database itself
+      # lives in the bg_pgdata volume, not in a file under db/.
       - ./out:/app/out
       - ./data:/app/data
-      - ./db/sqlite:/app/db/sqlite
       # Template of record: readable, never writable, inside the container.
       - "./BG Tracker.xlsx:/app/BG Tracker.xlsx:ro"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
+      # Healthy means "the API is serving and the database is reachable".
+      # /api/health reports `degraded` while DATALAB_API_KEY is empty, which is
+      # a configuration state, not a liveness failure (the UI shows it), so
+      # accept `degraded` but require a database version.
       test:
         - CMD
         - python
         - -c
-        - "import json,sys,urllib.request; sys.exit(0 if json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=15)).get('status') == 'ok' else 1)"
+        - "import json,sys,urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=15)); db=(h.get('database') or {}).get('version'); sys.exit(0 if h.get('status') in ('ok','degraded') and db else 1)"
       interval: 30s
       timeout: 20s
       start_period: 20s
       retries: 3
+
+volumes:
+  # Postgres data. It is not a bind mount: back it up with pg_dump
+  # (postgresql-client is in the image) or `docker compose exec db pg_dump`.
+  bg_pgdata:

@@ -12,7 +12,6 @@ Scheduler (shared-secret header) and as an admin-only button in the UI.
 from __future__ import annotations
 
 import datetime as dt
-import json
 import logging
 import threading
 from typing import Callable
@@ -32,22 +31,19 @@ def list_reminders(conn, *, status: str | None = None, limit: int = 200) -> list
     clauses = []
     params: list = []
     if status:
-        clauses.append("m.status = ?")
+        clauses.append("m.status = %s")
         params.append(status)
     where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
     rows = conn.execute(
         "SELECT m.id, m.bg_id, m.scheduled_for, m.sent_at, m.recipients, m.subject, "
         "       m.status, m.error, m.created_at, r.bg_no, r.to_date "
         "FROM reminders m JOIN bg_records r ON r.id = m.bg_id"
-        f"{where} ORDER BY m.created_at DESC, m.id DESC LIMIT ?",
+        f"{where} ORDER BY m.created_at DESC, m.id DESC LIMIT %s",
         (*params, max(1, min(int(limit), 500))),
     ).fetchall()
     result = []
     for row in rows:
-        try:
-            to = json.loads(row["recipients"])
-        except (TypeError, ValueError):
-            to = []
+        to = list(row["recipients"] or [])
         result.append(
             {
                 "id": row["id"],
@@ -71,45 +67,36 @@ def list_reminders(conn, *, status: str | None = None, limit: int = 200) -> list
 
 def _upsert(conn, bg_id: str, scheduled_for: str, message: Message) -> str:
     row = conn.execute(
-        "SELECT id FROM reminders WHERE bg_id = ? AND scheduled_for = ?",
+        "SELECT id FROM reminders WHERE bg_id = %s AND scheduled_for = %s",
         (bg_id, scheduled_for),
     ).fetchone()
-    payload = (
-        json.dumps(message.recipients),
-        message.subject,
-        message.body,
-    )
     if row:
         conn.execute(
-            "UPDATE reminders SET recipients = ?, subject = ?, body = ?, status = 'pending', "
-            "error = NULL WHERE id = ?",
-            (*payload, row["id"]),
+            "UPDATE reminders SET recipients = %s, subject = %s, body = %s, "
+            "status = 'pending', error = NULL WHERE id = %s",
+            (list(message.recipients), message.subject, message.body, row["id"]),
         )
         return str(row["id"])
-    cursor = conn.execute(
+    inserted = conn.execute(
         "INSERT INTO reminders (bg_id, scheduled_for, recipients, subject, body, status) "
-        "VALUES (?, ?, ?, ?, ?, 'pending')",
-        (bg_id, scheduled_for, *payload),
-    )
-    return str(
-        conn.execute(
-            "SELECT id FROM reminders WHERE rowid = ?", (cursor.lastrowid,)
-        ).fetchone()[0]
-    )
+        "VALUES (%s, %s, %s, %s, %s, 'pending') RETURNING id",
+        (bg_id, scheduled_for, list(message.recipients), message.subject, message.body),
+    ).fetchone()
+    return str(inserted["id"])
 
 
 def _mark_sent(conn, reminder_id: str, bg_id: str, when: dt.datetime, provider: str) -> None:
     conn.execute(
-        "UPDATE reminders SET sent_at = ?, status = 'sent', provider_msg_id = ?, error = NULL "
-        "WHERE id = ?",
-        (store.iso(when), provider, reminder_id),
+        "UPDATE reminders SET sent_at = %s, status = 'sent', provider_msg_id = %s, error = NULL "
+        "WHERE id = %s",
+        (when, provider, reminder_id),
     )
     register.mark_reminder_sent(conn, bg_id, when)
 
 
 def _mark_failed(conn, reminder_id: str, error: str) -> None:
     conn.execute(
-        "UPDATE reminders SET status = 'failed', error = ? WHERE id = ?",
+        "UPDATE reminders SET status = 'failed', error = %s WHERE id = %s",
         (error[:500], reminder_id),
     )
 
@@ -130,7 +117,7 @@ def _send_one(
     scheduled_for = (to_date - dt.timedelta(days=days)).isoformat()
 
     existing = conn.execute(
-        "SELECT id, status FROM reminders WHERE bg_id = ? AND scheduled_for = ?",
+        "SELECT id, status FROM reminders WHERE bg_id = %s AND scheduled_for = %s",
         (bg_id, scheduled_for),
     ).fetchone()
     if existing and existing["status"] == "sent" and not force:
@@ -185,7 +172,6 @@ def run_daily(
     days: int | None = None,
     today: dt.date | None = None,
     sender: MailSender | None = None,
-    db_path=None,
     user_id: str | None = None,
     now: dt.datetime | None = None,
 ) -> dict:
@@ -194,7 +180,7 @@ def run_daily(
     sender = sender or MailSender()
     now = now or store.utcnow()
     results: list[dict] = []
-    with store.connect(db_path) as conn:
+    with store.connect() as conn:
         due = register.due_rows(conn, days, today)
         for row in due:
             results.append(_send_one(conn, row, days=days, sender=sender, now=now, user_id=user_id))
@@ -225,14 +211,13 @@ def resend(
     bg_id: str,
     *,
     sender: MailSender | None = None,
-    db_path=None,
     user_id: str | None = None,
     now: dt.datetime | None = None,
 ) -> dict:
     """Admin action: send the T-7 mail again for one BG (``plan/03`` matrix)."""
     sender = sender or MailSender()
     now = now or store.utcnow()
-    with store.connect(db_path) as conn:
+    with store.connect() as conn:
         row = register.find_existing_by_id(conn, bg_id)
         if row is None:
             raise LookupError("BG not found")

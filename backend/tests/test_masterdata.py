@@ -5,14 +5,12 @@ its escaped numbering and the "Toll Mananger" typo. No real staff names are used
 """
 from __future__ import annotations
 
-import sqlite3
-import tempfile
 import unittest
-from pathlib import Path
 
+from bgauto import store
 from bgauto.masterdata import import_master_data, parse_master_markdown
 from bgauto.masters import Masters
-from bgauto.schema import ensure_schema
+from support import TempDatabase
 
 DOC = """\
 ### Example Eastern Projects Private Limited
@@ -119,35 +117,32 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(self.parsed.plaza_count(), 3)
 
 
-class ImportTests(unittest.TestCase):
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
-        self.db = Path(self.tmp.name) / "masters.sqlite3"
-        schema_sql = Path(__file__).resolve().parents[2] / "db" / "sqlite" / "schema.sql"
-        if not schema_sql.exists():
-            self.skipTest("db/sqlite/schema.sql not present")
-        conn = sqlite3.connect(self.db)
-        conn.executescript(schema_sql.read_text(encoding="utf-8"))
-        conn.close()
-        self.doc = Path(self.tmp.name) / "master-data.md"
+class ImportTests(TempDatabase):
+    # A clean schema: V2 already seeds the canonical AB corridor, and this test
+    # imports its own synthetic document.
+    canonical_seed = False
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.doc = self.root / "master-data.md"
         self.doc.write_text(DOC, encoding="utf-8")
 
     def test_schema_is_already_current(self):
-        self.assertEqual(ensure_schema(self.db), [])
+        with store.connect() as conn:
+            self.assertEqual(store.schema_problems(conn), [])
 
     def test_import_creates_and_is_idempotent(self):
-        first = import_master_data(self.doc, self.db)
+        first = import_master_data(self.doc)
         self.assertEqual(len(first["companies"]["created"]), 2)
         self.assertEqual(sorted(first["projects"]["created"]), ["AB", "EZ", "GD"])
         self.assertEqual(len(first["plazas"]["created"]), 3)
 
-        second = import_master_data(self.doc, self.db)
+        second = import_master_data(self.doc)
         for group in ("companies", "projects", "plazas"):
             for key, value in second[group].items():
                 self.assertEqual(value, [], f"{group}.{key} changed on re-import")
 
-        masters = Masters.load(self.db)
+        masters = Masters.load()
         self.assertIn("AB", masters.projects)
         self.assertIn(
             {"project": "AB", "name": "First Plaza", "chainage": "62.6"},
@@ -158,46 +153,22 @@ class ImportTests(unittest.TestCase):
         self.assertEqual(option["company"], "Example Eastern Projects Private Limited")
 
     def test_missing_projects_are_deactivated_not_deleted(self):
-        import_master_data(self.doc, self.db)
-        smaller = Path(self.tmp.name) / "smaller.md"
+        import_master_data(self.doc)
+        smaller = self.root / "smaller.md"
         smaller.write_text(DOC_WITHOUT_AB, encoding="utf-8")
-        report = import_master_data(smaller, self.db)
+        report = import_master_data(smaller)
         self.assertIn("AB", report["projects"]["deactivated"])
         self.assertIn("EZ", report["projects"]["deactivated"])
 
-        masters = Masters.load(self.db)
+        masters = Masters.load()
         self.assertNotIn("AB", masters.projects)
         self.assertIn("GD", masters.projects)
         self.assertNotIn("First Plaza", [p["name"] for p in masters.toll_plazas])
 
     def test_dry_run_changes_nothing(self):
-        import_master_data(self.doc, self.db, dry_run=True)
-        masters = Masters.load(self.db)
+        import_master_data(self.doc, dry_run=True)
+        masters = Masters.load()
         self.assertNotIn("AB", masters.projects)
-
-
-class SchemaMigrationTests(unittest.TestCase):
-    def test_old_tables_get_the_new_columns_once(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            db = Path(tmp) / "old.sqlite3"
-            conn = sqlite3.connect(db)
-            conn.executescript(
-                """
-                CREATE TABLE company (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
-                CREATE TABLE project (
-                  id INTEGER PRIMARY KEY, company_id INTEGER,
-                  code TEXT NOT NULL UNIQUE, name TEXT
-                );
-                CREATE TABLE toll_plaza (
-                  id INTEGER PRIMARY KEY, project_id INTEGER, name TEXT NOT NULL
-                );
-                """
-            )
-            conn.close()
-            added = ensure_schema(db)
-            self.assertIn("project.is_active", added)
-            self.assertIn("toll_plaza.chainage", added)
-            self.assertEqual(ensure_schema(db), [])
 
 
 if __name__ == "__main__":

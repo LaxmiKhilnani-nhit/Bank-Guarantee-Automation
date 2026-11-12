@@ -1,8 +1,8 @@
 """Project and toll-plaza masters: parse the operations master document, load it.
 
-The source of truth is the operations team's master document (markdown, kept
-outside this repo). It lists SPVs, the corridors under each, and the toll
-plazas on every corridor.
+The source of truth is the operations team's master document at
+``docs/master-data.md`` (override with ``BG_MASTER_DATA``). It lists SPVs, the
+corridors under each, and the toll plazas on every corridor.
 
 The importer is deliberately boring:
 
@@ -14,17 +14,15 @@ The importer is deliberately boring:
 
 Use it from the CLI::
 
-    python -m bgauto.cli import-masters <file.md> [--db ...] [--dry-run]
+    python -m bgauto.cli import-masters docs/master-data.md [--dry-run]
 """
 from __future__ import annotations
 
 import re
-import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import config
-from .schema import ensure_schema
+from . import config, store
 
 _UNESCAPE = re.compile(r"\\([.\[\]()#*_`+>-])")
 _COMPANY = re.compile(r"^###\s+(?!#)(.+?)\s*$")
@@ -161,20 +159,10 @@ def _plaza(text: str) -> Plaza:
     return Plaza(name=name, chainage=chainage.group(1) if chainage else None)
 
 
-def _norm(value: str) -> str:
-    return re.sub(r"[^a-z0-9]+", " ", str(value).casefold()).strip()
-
-
-def import_master_data(
-    source: Path | str,
-    db_path: Path | None = None,
-    dry_run: bool = False,
-) -> dict:
-    """Upsert ``source`` into the masters database and return a change report."""
+def import_master_data(source: Path | str, dry_run: bool = False) -> dict:
+    """Upsert ``source`` into the masters tables and return a change report."""
     source = Path(source)
     parsed = parse_master_markdown(source.read_text(encoding="utf-8"))
-    path = Path(db_path or config.DB_PATH)
-    ensure_schema(path)
 
     report: dict = {
         "source": str(source),
@@ -184,9 +172,7 @@ def import_master_data(
         "plazas": {"created": [], "updated": [], "deactivated": []},
     }
 
-    conn = sqlite3.connect(path)
-    conn.execute("PRAGMA foreign_keys = ON")
-    try:
+    with store.connect() as conn:
         keep_projects: list[int] = []
         for company in parsed.companies:
             company_id = _upsert_company(conn, company, report)
@@ -201,44 +187,37 @@ def import_master_data(
         _deactivate_projects(conn, keep_projects, report)
         if dry_run:
             conn.rollback()
-        else:
-            conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
     return report
 
 
-def _upsert_company(conn: sqlite3.Connection, company: Company, report: dict) -> int:
+def _upsert_company(conn, company: Company, report: dict) -> int:
     row = conn.execute(
-        "SELECT id, source FROM company WHERE lower(name) = lower(?)", (company.name,)
+        "INSERT INTO company (name, source, is_active) VALUES (%s, 'imported', true) "
+        "ON CONFLICT (name) DO NOTHING RETURNING id",
+        (company.name,),
     ).fetchone()
     if row:
-        company_id, source = row
-        if source != "imported":
-            conn.execute(
-                "UPDATE company SET source = 'imported', is_active = 1 WHERE id = ?",
-                (company_id,),
-            )
-            report["companies"]["updated"].append(company.name)
-        return company_id
-    cursor = conn.execute(
-        "INSERT INTO company (name, source, is_active) VALUES (?, 'imported', 1)",
-        (company.name,),
-    )
-    report["companies"]["created"].append(company.name)
-    return int(cursor.lastrowid)
+        report["companies"]["created"].append(company.name)
+        return int(row["id"])
+    row = conn.execute(
+        "SELECT id, source FROM company WHERE lower(name) = lower(%s)", (company.name,)
+    ).fetchone()
+    if row is None:  # unreachable unless a trigger removed the row
+        raise RuntimeError(f"could not resolve company {company.name!r}")
+    if row["source"] != "imported":
+        conn.execute(
+            "UPDATE company SET source = 'imported', is_active = true WHERE id = %s",
+            (row["id"],),
+        )
+        report["companies"]["updated"].append(company.name)
+    return int(row["id"])
 
 
-def _upsert_project(
-    conn: sqlite3.Connection, company_id: int, project: Project, report: dict
-) -> int:
+def _upsert_project(conn, company_id: int, project: Project, report: dict) -> int:
     code = project.code or project.name
     row = conn.execute(
-        "SELECT id, name, company_id, state, \"round\", project_manager FROM project "
-        "WHERE lower(code) = lower(?)",
+        "SELECT id, name, company_id, state, \"round\", project_manager, source, is_active "
+        "FROM project WHERE lower(code) = lower(%s)",
         (code,),
     ).fetchone()
     wanted = (
@@ -249,34 +228,39 @@ def _upsert_project(
         project.project_manager,
     )
     if row:
-        project_id = row[0]
-        current = tuple(row[1:])
+        project_id = row["id"]
+        current = (
+            row["name"], row["company_id"], row["state"], row["round"],
+            row["project_manager"],
+        )
         if current != wanted:
             conn.execute(
-                "UPDATE project SET name = ?, company_id = ?, state = ?, \"round\" = ?, "
-                "project_manager = ?, source = 'imported', is_active = 1 WHERE id = ?",
+                "UPDATE project SET name = %s, company_id = %s, state = %s, "
+                "\"round\" = %s, project_manager = %s, source = 'imported', "
+                "is_active = true WHERE id = %s",
                 (*wanted, project_id),
             )
             report["projects"]["updated"].append(code)
-        elif not _is_active(conn, "project", project_id):
-            conn.execute("UPDATE project SET is_active = 1 WHERE id = ?", (project_id,))
+        elif not row["is_active"]:
+            conn.execute(
+                "UPDATE project SET is_active = true WHERE id = %s", (project_id,)
+            )
             report["projects"]["updated"].append(code)
-        return project_id
-    cursor = conn.execute(
-        "INSERT INTO project (code, name, company_id, state, \"round\", project_manager, "
-        "source, is_active) VALUES (?, ?, ?, ?, ?, ?, 'imported', 1)",
-        (code, *wanted),
-    )
-    report["projects"]["created"].append(code)
-    return int(cursor.lastrowid)
-
-
-def _upsert_plaza(
-    conn: sqlite3.Connection, project_id: int, plaza: Plaza, report: dict
-) -> int:
+        return int(project_id)
     row = conn.execute(
-        "SELECT id, chainage, toll_manager, maintenance_manager, corridor_manager "
-        "FROM toll_plaza WHERE project_id = ? AND lower(trim(name)) = lower(?)",
+        "INSERT INTO project (code, name, company_id, state, \"round\", "
+        "project_manager, source, is_active) "
+        "VALUES (%s, %s, %s, %s, %s, %s, 'imported', true) RETURNING id",
+        (code, *wanted),
+    ).fetchone()
+    report["projects"]["created"].append(code)
+    return int(row["id"])
+
+
+def _upsert_plaza(conn, project_id: int, plaza: Plaza, report: dict) -> int:
+    row = conn.execute(
+        "SELECT id, chainage, toll_manager, maintenance_manager, corridor_manager, is_active "
+        "FROM toll_plaza WHERE project_id = %s AND lower(trim(name)) = lower(%s)",
         (project_id, plaza.name),
     ).fetchone()
     wanted = (
@@ -286,68 +270,62 @@ def _upsert_plaza(
         plaza.corridor_manager,
     )
     if row:
-        plaza_id = row[0]
-        if tuple(row[1:]) != wanted:
+        plaza_id = row["id"]
+        current = (
+            row["chainage"], row["toll_manager"], row["maintenance_manager"],
+            row["corridor_manager"],
+        )
+        if current != wanted:
             conn.execute(
-                "UPDATE toll_plaza SET chainage = ?, toll_manager = ?, "
-                "maintenance_manager = ?, corridor_manager = ?, source = 'imported', "
-                "is_active = 1 WHERE id = ?",
+                "UPDATE toll_plaza SET chainage = %s, toll_manager = %s, "
+                "maintenance_manager = %s, corridor_manager = %s, "
+                "source = 'imported', is_active = true WHERE id = %s",
                 (*wanted, plaza_id),
             )
             report["plazas"]["updated"].append(plaza.name)
-        elif not _is_active(conn, "toll_plaza", plaza_id):
-            conn.execute("UPDATE toll_plaza SET is_active = 1 WHERE id = ?", (plaza_id,))
+        elif not row["is_active"]:
+            conn.execute(
+                "UPDATE toll_plaza SET is_active = true WHERE id = %s", (plaza_id,)
+            )
             report["plazas"]["updated"].append(plaza.name)
-        return plaza_id
-    cursor = conn.execute(
+        return int(plaza_id)
+    row = conn.execute(
         "INSERT INTO toll_plaza (project_id, name, chainage, toll_manager, "
         "maintenance_manager, corridor_manager, source, is_active) "
-        "VALUES (?, ?, ?, ?, ?, ?, 'imported', 1)",
+        "VALUES (%s, %s, %s, %s, %s, %s, 'imported', true) RETURNING id",
         (project_id, plaza.name, *wanted),
-    )
+    ).fetchone()
     report["plazas"]["created"].append(plaza.name)
-    return int(cursor.lastrowid)
+    return int(row["id"])
 
 
-def _is_active(conn: sqlite3.Connection, table: str, row_id: int) -> bool:
-    row = conn.execute(f"SELECT is_active FROM {table} WHERE id = ?", (row_id,)).fetchone()
-    return bool(row and row[0])
-
-
-def _deactivate_plazas(
-    conn: sqlite3.Connection, project_id: int, keep: list[int], report: dict
-) -> None:
-    placeholders = ",".join("?" for _ in keep) or "NULL"
+def _deactivate_plazas(conn, project_id: int, keep: list[int], report: dict) -> None:
     stale = conn.execute(
-        "SELECT id, name FROM toll_plaza WHERE project_id = ? AND is_active = 1 "
-        f"AND id NOT IN ({placeholders})",
-        (project_id, *keep),
+        "SELECT id, name FROM toll_plaza WHERE project_id = %s AND is_active "
+        "AND id <> ALL(%s::int[]) AND (source IS NULL OR source <> 'manual')",
+        (project_id, keep),
     ).fetchall()
     if not stale:
         return
     conn.execute(
-        "UPDATE toll_plaza SET is_active = 0 "
-        f"WHERE project_id = ? AND id NOT IN ({placeholders})",
-        (project_id, *keep),
+        "UPDATE toll_plaza SET is_active = false WHERE project_id = %s "
+        "AND id <> ALL(%s::int[]) AND (source IS NULL OR source <> 'manual')",
+        (project_id, keep),
     )
-    report["plazas"]["deactivated"].extend(name for _, name in stale)
+    report["plazas"]["deactivated"].extend(row["name"] for row in stale)
 
 
-def _deactivate_projects(conn: sqlite3.Connection, keep: list[int], report: dict) -> None:
-    placeholders = ",".join("?" for _ in keep) or "NULL"
-    stale = [
-        row[0]
-        for row in conn.execute(
-            f"SELECT code FROM project WHERE is_active = 1 AND id NOT IN ({placeholders}) "
-            "AND (source IS NULL OR source != 'manual')",
-            tuple(keep),
-        )
-    ]
+def _deactivate_projects(conn, keep: list[int], report: dict) -> None:
+    stale = conn.execute(
+        "SELECT code FROM project WHERE is_active AND id <> ALL(%s::int[]) "
+        "AND (source IS NULL OR source <> 'manual')",
+        (keep,),
+    ).fetchall()
     if not stale:
         return
     conn.execute(
-        "UPDATE project SET is_active = 0 "
-        f"WHERE id NOT IN ({placeholders}) AND (source IS NULL OR source != 'manual')",
-        tuple(keep),
+        "UPDATE project SET is_active = false WHERE id <> ALL(%s::int[]) "
+        "AND (source IS NULL OR source <> 'manual')",
+        (keep,),
     )
-    report["projects"]["deactivated"].extend(stale)
+    report["projects"]["deactivated"].extend(row["code"] for row in stale)

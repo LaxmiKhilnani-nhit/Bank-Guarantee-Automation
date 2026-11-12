@@ -17,7 +17,7 @@ class ReminderTests(TempDatabase):
         with store.connect() as conn:
             self.admin_id = conn.execute(
                 "SELECT id FROM users WHERE username='admin'"
-            ).fetchone()[0]
+            ).fetchone()["id"]
         self.today = dt.date(2026, 6, 1)
         self.sender = MailSender(dry_run=True, mail_dir=self.root / "mail")
 
@@ -92,9 +92,9 @@ class ReminderTests(TempDatabase):
             self.assertEqual(len(stored), 1)
             self.assertEqual(stored[0]["status"], "sent")
             self.assertIsNotNone(stored[0]["sent_at"])
-            self.assertEqual(json.loads(stored[0]["recipients"]), ["finance@example.test", "users@example.test"])
+            self.assertEqual(list(stored[0]["recipients"]), ["finance@example.test", "users@example.test"])
             self.assertIsNotNone(register.find_existing_by_id(conn, bg_id)["reminder_sent_at"])
-            actions = [r[0] for r in conn.execute("SELECT action FROM audit_logs")]
+            actions = [r["action"] for r in conn.execute("SELECT action FROM audit_logs")]
             self.assertIn("reminder_sent", actions)
 
         # Re-running on the same day (or later) does not send again.
@@ -119,7 +119,7 @@ class ReminderTests(TempDatabase):
             self.assertEqual(reminder["status"], "failed")
             self.assertIn("smtp down", reminder["error"])
             self.assertIsNone(register.find_existing_by_id(conn, bg_id)["reminder_sent_at"])
-            self.assertIn("remind", [r[0] for r in conn.execute("SELECT action FROM audit_logs")])
+            self.assertIn("remind", [r["action"] for r in conn.execute("SELECT action FROM audit_logs")])
 
     def test_missing_recipients_is_a_failure_not_a_silent_send(self):
         self.add_bg()
@@ -140,7 +140,7 @@ class ReminderTests(TempDatabase):
             rows = conn.execute("SELECT status, sent_at FROM reminders").fetchall()
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0]["status"], "sent")
-            actions = [r[0] for r in conn.execute("SELECT action FROM audit_logs")]
+            actions = [r["action"] for r in conn.execute("SELECT action FROM audit_logs")]
             self.assertIn("reminder_resend", actions)
 
     def test_list_reminders_returns_recipients_and_subject(self):

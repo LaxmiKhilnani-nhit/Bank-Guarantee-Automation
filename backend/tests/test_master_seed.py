@@ -13,8 +13,6 @@ Run from the repo root:
 """
 from __future__ import annotations
 
-import sqlite3
-import tempfile
 import unittest
 from collections import Counter
 from pathlib import Path
@@ -22,10 +20,7 @@ from pathlib import Path
 from bgauto.extract import extract
 from bgauto.masters import Masters
 from bgauto.ocr import DocumentOCR, PageOCR
-
-ROOT = Path(__file__).resolve().parents[2]
-SCHEMA = ROOT / "db" / "sqlite" / "schema.sql"
-SEED = ROOT / "db" / "sqlite" / "seed.sql"
+from support import TempDatabase
 
 EASTERN = "NHIT Eastern Projects Private Limited"
 SOUTHERN = "NHIT Southern Projects Private Limited"
@@ -128,23 +123,10 @@ def _doc(*lines: str) -> DocumentOCR:
     )
 
 
-class SeedMasterTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        if not SCHEMA.exists() or not SEED.exists():
-            raise unittest.SkipTest("db/sqlite schema or seed not present")
-        cls._tmp = tempfile.TemporaryDirectory()
-        cls.db = Path(cls._tmp.name) / "seed.sqlite3"
-        conn = sqlite3.connect(cls.db)
-        conn.execute("PRAGMA foreign_keys = ON")
-        conn.executescript(SCHEMA.read_text(encoding="utf-8"))
-        conn.executescript(SEED.read_text(encoding="utf-8"))
-        conn.close()
-        cls.masters = Masters.load(cls.db)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls._tmp.cleanup()
+class SeedMasterTests(TempDatabase):
+    def setUp(self):
+        super().setUp()
+        self.masters = Masters.load()
 
     def test_exactly_the_canonical_projects(self):
         self.assertEqual(sorted(self.masters.projects), sorted(EXPECTED))

@@ -14,7 +14,6 @@ import argparse
 import csv
 import glob
 import json
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -22,7 +21,6 @@ from . import config, excel, pipeline
 from .extract import HEADERS, Extraction, extract_from_pipeline
 from .masters import Masters
 from .normalize import normalise_key
-from .schema import ensure_schema
 
 CSV_COLUMNS = [
     "source_pdf", "BG No", "BG Amount", "From", "To", "Claim Period",
@@ -125,12 +123,7 @@ def cmd_ingest(args: argparse.Namespace) -> int:
         print("No PDF files matched.", file=sys.stderr)
         return 2
 
-    db_path = Path(args.db) if args.db else None
-    try:
-        ensure_schema(db_path)
-    except sqlite3.Error:
-        pass  # keep going with whatever the database already has
-    masters = Masters.load(db_path)
+    masters = Masters.load()
 
     out_path = Path(args.out)
     template = Path(args.tracker)
@@ -213,17 +206,12 @@ def cmd_ingest(args: argparse.Namespace) -> int:
 
 def cmd_import_masters(args) -> int:
     from .masterdata import import_master_data
-    from .schema import ensure_schema
 
     source = Path(args.file)
     if not source.is_file():
         print(f"ERROR: {source} not found")
         return 2
-    db = Path(args.db) if args.db else None
-    added = ensure_schema(db)
-    if added:
-        print(f"schema+: {', '.join(added)}")
-    report = import_master_data(source, db, dry_run=args.dry_run)
+    report = import_master_data(source, dry_run=args.dry_run)
     for group in ("companies", "projects", "plazas"):
         counts = {
             key: len(value)
@@ -238,7 +226,7 @@ def cmd_import_masters(args) -> int:
     if args.dry_run:
         print("dry run: nothing committed")
     else:
-        print(f"masters now: {db or config.DB_PATH}")
+        print("masters now: PostgreSQL (DATABASE_URL)")
     return 0
 
 
@@ -248,6 +236,9 @@ def cmd_backup(args) -> int:
     try:
         report = create_backup(backup_dir=Path(args.dir) if args.dir else None, keep=args.keep)
     except FileNotFoundError as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        return 2
+    except RuntimeError as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 2
     print(f"backup : {report['archive']}")
@@ -270,14 +261,12 @@ def build_parser() -> argparse.ArgumentParser:
     ingest.add_argument("--report", default="out/review", help="directory for JSON/CSV review files")
     ingest.add_argument("--tracker", default=str(config.TRACKER_PATH), help="tracker template")
     ingest.add_argument("--archive-dir", default=str(config.OCR_ARCHIVE_DIR), help="pipeline JSON archive")
-    ingest.add_argument("--db", default=None, help="SQLite masters database")
     ingest.set_defaults(func=cmd_ingest)
 
     masters = sub.add_parser(
         "import-masters", help="Load project and toll-plaza masters from the markdown doc"
     )
     masters.add_argument("file", help="master document (markdown)")
-    masters.add_argument("--db", default=None, help="SQLite masters database")
     masters.add_argument("--dry-run", action="store_true", help="report changes without writing")
     masters.set_defaults(func=cmd_import_masters)
 
@@ -289,9 +278,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from . import store
+
     parser = build_parser()
     args = parser.parse_args(argv)
-    return args.func(args)
+    try:
+        return args.func(args)
+    finally:
+        # Close the pool explicitly: leaving it to __del__ makes the interpreter
+        # print a PythonFinalizationError traceback on exit (Python 3.13+).
+        store.reset_pool()
 
 
 if __name__ == "__main__":

@@ -4,13 +4,30 @@ title: SQLite to PostgreSQL Migration
 status: active
 owner: Team
 last_updated: 2026-11-12
-version: 1
+version: 2
 inputs: ["docs/master-data.md", "db/migrations/V1__schema.sql", "db/migrations/V2__seed.sql", "db/sqlite/bg_automation.sqlite3", "plan/02-data-model.md", "backend/bgauto/"]
 outputs: ["V3 schema parity migration", "PostgreSQL bootstrap and master seed", "one-shot SQLite data import", "psycopg-backed store", "PostgreSQL test fixture"]
 related: ["PLAN-01", "PLAN-02", "PLAN-LOG"]
 ---
 
 # 07 — SQLite to PostgreSQL Migration
+
+> **Status 2026-11-12 (cutover done).** Phases 1–7 are complete. The deployment
+> stack now runs PostgreSQL (`bg_automation-db`, volume
+> `bank-guarantee-automation_bg_pgdata`) and the live rows were imported from the
+> SQLite file (3 users / 3 roles / 1 LOA / 1 BG / 46 audit rows; password hashes
+> identical). `db/apply.py --verify-only` passes on the live database, a
+> post-cutover `pg_dump` is in `data/backups/`, and the suite passes against the
+> Postgres test container (190 tests). The rollback window is open: the previous
+> image is tagged `bg-automation:pre-postgres` and
+> `data/backups/bg_automation.pre-postgres.sqlite3` is the untouched source.
+> Remaining: Phase 8 cleanup after the window closes.
+>
+> Note: `/api/health` reports `degraded` (not `ok`) while `DATALAB_API_KEY` is
+> empty — the UI shows "Datalab not configured". The compose healthcheck now
+> treats `degraded` as healthy but requires a database version, so it measures
+> "serving + database reachable" instead of "OCR key present". Set the key in
+> `.env` for `ok` and working extraction.
 
 ## 1. Purpose
 
@@ -395,15 +412,27 @@ shift by a day.
    image tagged.
 3. `docker compose up -d db`; wait for healthy.
 4. `docker compose run --rm migrate` (V1–V3 + master seed).
-5. `docker compose run --rm app python db/import_sqlite.py --dry-run`, then run
-   it for real.
+5. Import the legacy rows. `db/sqlite/` is excluded from the image on purpose,
+   so mount the file read-only and point `--source` at it (dry run first, then
+   `--apply`, which writes in one transaction):
+
+   ```powershell
+   docker compose run --rm --no-deps -v "${PWD}\db\sqlite:/legacy:ro" app `
+     python db/import_sqlite.py --source /legacy/bg_automation.sqlite3
+   docker compose run --rm --no-deps -v "${PWD}\db\sqlite:/legacy:ro" app `
+     python db/import_sqlite.py --source /legacy/bg_automation.sqlite3 --apply
+   ```
+
+   `--no-deps` keeps `migrate` from running a second time; `db` is already up.
+
+   The importer opens the file read-only and fails if its size or mtime changes.
 6. Start the app with `DATABASE_URL`.
 7. Smoke test:
    - sign in as `admin` with the existing password;
    - Register shows `0024NDLG00226526` and the canonical dropdowns;
    - export the register;
    - run a reminder dry run;
-   - Audit shows 45 rows;
+   - Audit shows the 46 imported rows (45 at plan time plus one later login);
    - upload one sample PDF through to review.
 8. `python db/apply.py --verify-only` and the full test suite.
 
@@ -411,6 +440,59 @@ shift by a day.
 
 Stop the app and start the previous image with the SQLite mount. The SQLite file
 was only read, never modified. No reverse data migration is needed.
+
+### 12.3 Cutover record (2026-11-12)
+
+Executed on the deployment host in this order:
+
+| Step | Result |
+|---|---|
+| `docker tag bg-automation:local bg-automation:pre-postgres` | rollback image `954e9a7abed8` |
+| Copy SQLite file to `data/backups/bg_automation.pre-postgres.sqlite3` | SHA-256 `9276012C…1DB9D598` matches the source |
+| `docker compose up -d db` | fresh volume `bank-guarantee-automation_bg_pgdata`, healthy |
+| `docker compose run --rm migrate` | V1–V3 applied, 3/28/46 masters seeded, `VERIFY PASSED` |
+| importer dry run (mount `/legacy:ro`) | 0 failures, 9/9 foreign keys resolved |
+| importer `--apply` | 3 users, 3 roles, 1 LOA, 1 BG, 46 audit rows; bank + contractor created with `source='migrated'` |
+| `docker compose up -d app` | `bg-automation-app` serving on `127.0.0.1:8000` |
+| `db/apply.py --verify-only` (live DB) | `VERIFY PASSED` |
+| password-hash comparison, SQLite vs Postgres | `admin`/`uploader`/`viewer` digests identical |
+| `pg_dump --format=custom --no-owner` to `/app/data/backups/` | `bg_automation.post-cutover.dump`, 168 TOC entries |
+
+Follow-up fixes from the wiring audit:
+
+- `DATABASE_URL` now interpolates `${POSTGRES_USER}`/`${POSTGRES_PASSWORD}`/
+  `${POSTGRES_DB}` instead of hardcoding them, so changing the password in
+  `.env` cannot desynchronise the app from the database.
+- The image's own `HEALTHCHECK` was aligned with the compose one (accept `ok` or
+  `degraded`, require a database version).
+
+Live confirmation after the cutover: an `admin` sign-in at 22:20 IST produced
+audit row 47 and a server-side session, so authentication and the write path work
+against the migrated data. The 46 imported audit rows are untouched (ids 1–46).
+
+Smoke checks: `GET /` → 200 (login page), `GET /api/health` → 200 (`degraded`,
+OCR key absent), `GET /api/me` and `GET /api/register` → 401 unauthenticated;
+`bg_records` carries `0024NDLG00226526` with company `NHIT Southern Projects
+Private Limited`, project `SB`, plaza `Bhojpuri`, nature `Manpower`, contractor
+`ARYA OMNITALK WIRELESS SOLUTIONS PVT LTD`, bank `ICICI Bank Limited`, LOA
+`NSPPL/TMS/2025/01`.
+
+Sign in as `admin` with the existing password and click through Register, export,
+reminders and Audit to complete the human check.
+
+Rollback until the window closes. The previous compose file is saved next to
+the backup, so nothing depends on the working tree:
+
+```powershell
+docker compose stop app
+# point the `local` tag back at the SQLite image
+docker tag bg-automation:pre-postgres bg-automation:local
+Copy-Item data\backups\docker-compose.pre-postgres.yml docker-compose.sqlite.yml
+docker compose -f docker-compose.sqlite.yml up -d
+```
+
+The Postgres volume is left in place (it is the source for a second attempt);
+stop or remove it only once the window has closed.
 
 ## 13. Phase 8 — Cleanup
 
@@ -422,25 +504,34 @@ After the rollback window:
   `Dockerfile`, `.dockerignore` and `.env.example`;
 - rewrite `plan/02-data-model.md` to the real normalised model;
 - update `plan/01-architecture.md` (Postgres instead of SQLite);
-- add a `plan/00-log.md` entry;
+- add a `plan/00-log.md` entry (done 2026-11-12, before the window closed);
 - keep `docs/master-data.md` as the master source and
   `python -m bgauto.cli import-masters` as the update path.
 
 ## 14. Acceptance criteria
 
-- [ ] `V3__schema.sql` closes every gap listed in Phase 1.
-- [ ] `python db/apply.py --verify-only` passes on a clean database.
-- [ ] A fresh database has 3 companies, 28 active projects and 46 active plazas
+- [x] `V3__schema.sql` closes every gap listed in Phase 1.
+- [x] `python db/apply.py --verify-only` passes on a clean database.
+- [x] A fresh database has 3 companies, 28 active projects and 46 active plazas
       with state, round, project manager, chainage and all three managers.
-- [ ] The master-data parity test passes and the importer is idempotent.
-- [ ] The three users, their roles, the LOA, the one BG and the 45 audit rows
-      are present and correct after migration.
-- [ ] The admin can sign in with the existing password.
-- [ ] Register, search, filters, export, reminders, audit and health work.
-- [ ] No `sqlite3` import remains in `backend/bgauto`.
-- [ ] The full test suite passes against Postgres.
-- [ ] A `pg_dump` backup and restore have been tested.
-- [ ] Rollback to SQLite is documented and the old file is untouched.
+- [x] The master-data parity test passes and the importer is idempotent.
+- [x] The three users, their roles, the LOA, the one BG and the 46 audit rows
+      are present and correct after migration (verified on a scratch database
+      and again on the live database after cutover).
+- [x] The admin can sign in with the existing password (scratch database, and
+      the live password hashes match the SQLite ones byte-for-byte).
+- [x] Register, search, filters, export, reminders, audit and health work.
+- [x] No `sqlite3` import remains in `backend/bgauto`.
+- [x] The full test suite passes against Postgres (190 tests).
+- [x] A `pg_dump` backup and a `pg_restore` into a scratch database have been
+      tested (custom format, `--no-owner`; the password stays in `PGPASSWORD`),
+      and a post-cutover dump is in `data/backups/`.
+- [x] Rollback to SQLite is documented and the old file is untouched (the
+      importer opens it read-only and fails if its size or mtime changes). The
+      previous image and compose file are kept for the window.
+- [x] Cutover executed on the deployment host (2026-11-12) — see §12.3.
+- [ ] Phase 8 cleanup, after the rollback window.
+
 
 ## 15. Risks
 
