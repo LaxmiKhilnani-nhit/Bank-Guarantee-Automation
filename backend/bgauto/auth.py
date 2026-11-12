@@ -3,7 +3,7 @@
 Design notes (deviations from ``plan/03`` are deliberate and logged):
 
 * ``hashlib.scrypt`` instead of bcrypt - no native build, no extra wheel.
-* opaque session tokens in SQLite instead of a JWT - logout is immediate and
+* opaque session tokens in PostgreSQL instead of a JWT - logout is immediate and
   nothing is stored in browser storage.
 * the cookie is ``httpOnly`` + ``SameSite=Lax``; ``Secure`` is off by default
   because the pilot runs on loopback over plain HTTP (set ``BG_COOKIE_SECURE=1``

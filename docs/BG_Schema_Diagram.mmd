@@ -1,6 +1,6 @@
-%% BG Automation — Logical Schema Diagram (full columns, SQLite types)
-%% Source of truth: db/sqlite/schema.sql. Render: docs/BG_Database_Diagrams.html
-%% PK = primary key, FK = foreign key, UK = unique. Dates stored as TEXT 'YYYY-MM-DD'.
+%% BG Automation — Logical Schema Diagram (full columns, PostgreSQL types)
+%% Source of truth: db/migrations/V1__schema.sql + V3__schema.sql. Render: docs/BG_Database_Diagrams.html
+%% PK = primary key, FK = foreign key, UK = unique. Dates are DATE; instants are TIMESTAMPTZ (UTC).
 erDiagram
     COMPANY ||--o{ PROJECT : company_id
     PROJECT ||--o{ TOLL_PLAZA : project_id
@@ -22,127 +22,163 @@ erDiagram
     USERS ||--o{ OCR_RESULTS : created_by
     USERS ||--o{ AUDIT_LOGS : user_id
     USERS ||--o{ USER_ROLES : user_id
+    USERS ||--o{ SESSIONS : user_id
     ROLES ||--o{ USER_ROLES : role_id
 
     COMPANY {
-        INTEGER id PK
+        SMALLINT id PK
         TEXT name UK "e.g. NSPPL"
+        TEXT source "NULL, imported, manual or migrated"
+        BOOLEAN is_active
     }
     PROJECT {
-        INTEGER id PK
-        INTEGER company_id FK
+        SMALLINT id PK
+        SMALLINT company_id FK
         TEXT code UK "e.g. SB, MH"
         TEXT name
+        TEXT state
+        INTEGER round
+        TEXT project_manager
+        TEXT source
+        BOOLEAN is_active
     }
     TOLL_PLAZA {
         INTEGER id PK
-        INTEGER project_id FK
+        SMALLINT project_id FK
         TEXT name "UNIQUE per project"
+        TEXT chainage
+        TEXT toll_manager
+        TEXT maintenance_manager
+        TEXT corridor_manager
+        TEXT source
+        BOOLEAN is_active
     }
     BANK {
-        INTEGER id PK
-        TEXT name UK "7 banks"
+        SMALLINT id PK
+        TEXT name UK "created by the first BG"
+        TEXT source
     }
     CONTRACTOR {
         INTEGER id PK
-        TEXT name UK "31 contractors"
+        TEXT name UK "created by the first BG"
+        TEXT source
     }
     BG_TYPE {
         TEXT code PK "PBG, ABG"
+        INTEGER sort_order
     }
     NATURE_OF_SERVICE {
-        INTEGER id PK
-        TEXT name UK "25 natures"
+        SMALLINT id PK
+        TEXT name UK "27 master values"
     }
     BG_STATUS {
         TEXT code PK "Draft..Closed"
+        INTEGER sort_order
     }
     ROLES {
-        INTEGER id PK
-        TEXT name UK "admin,uploader,viewer"
+        SMALLINT id PK
+        TEXT name UK "admin, uploader, viewer"
     }
     USERS {
-        TEXT id PK "uuid hex"
-        TEXT username UK "NOCASE"
-        TEXT email UK "NOCASE, nullable"
+        UUID id PK
+        CITEXT username UK "case-insensitive"
+        CITEXT email UK "case-insensitive, nullable"
         TEXT full_name
-        TEXT password_hash
-        INTEGER is_active "0/1"
-        TEXT last_login
-        TEXT created_at
-        TEXT updated_at
+        TEXT password_hash "scrypt"
+        BOOLEAN is_active
+        TIMESTAMPTZ last_login
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+        INTEGER failed_attempts "lockout after 5"
+        TIMESTAMPTZ locked_until
     }
     USER_ROLES {
-        TEXT user_id PK, FK
-        INTEGER role_id PK, FK
+        UUID user_id PK, FK
+        SMALLINT role_id PK, FK
+    }
+    SESSIONS {
+        TEXT token_hash PK "hash of the cookie token"
+        UUID user_id FK "ON DELETE CASCADE"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ expires_at
+        TIMESTAMPTZ last_seen
+        TEXT ip
+        TEXT user_agent
+    }
+    LOOKUP_CACHE {
+        TEXT field PK
+        TEXT query PK
+        JSONB payload
+        TIMESTAMPTZ created_at
     }
     LOA_RECORDS {
-        TEXT id PK "uuid hex"
+        UUID id PK
         TEXT loa_po_number UK "1 LOA : M BGs"
         TEXT description
-        TEXT created_by FK
-        TEXT created_at
-        TEXT updated_at
+        UUID created_by FK
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
     }
     BG_RECORDS {
-        TEXT id PK "uuid hex"
+        UUID id PK
         TEXT bg_no UK "dedupe key UC003"
-        INTEGER company_id FK
-        INTEGER project_id FK
+        SMALLINT company_id FK
+        SMALLINT project_id FK
         INTEGER toll_plaza_id FK
         TEXT bg_type FK
-        INTEGER nature_id FK
+        SMALLINT nature_id FK
         INTEGER contractor_id FK
-        INTEGER bank_id FK
-        TEXT loa_id FK
+        SMALLINT bank_id FK
+        UUID loa_id FK
+        TEXT po_number
         NUMERIC bg_amount "CHECK > 0"
-        TEXT from_date "YYYY-MM-DD"
-        TEXT to_date "YYYY-MM-DD, T-7 anchor"
-        TEXT claim_period ">= to_date"
-        TEXT extended_date "date or NULL"
+        DATE from_date
+        DATE to_date "T-7 anchor"
+        DATE claim_period "NULL or >= to_date"
+        DATE extended_date "NULL until extended"
         TEXT status FK "default Draft"
         TEXT remarks
         TEXT source_pdf
-        TEXT created_by FK
-        TEXT created_at
-        TEXT updated_at
-        TEXT reminder_sent_at
-        TEXT supersedes_bg_id FK "ST007 chain"
+        UUID created_by FK
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+        TIMESTAMPTZ reminder_sent_at
+        UUID supersedes_bg_id FK "ST007 chain"
     }
     OCR_RESULTS {
-        TEXT id PK "uuid hex"
-        TEXT bg_id FK "nullable pre-confirm"
+        UUID id PK
+        UUID bg_id FK "nullable pre-confirm"
         TEXT source_pdf
-        TEXT di_model
-        TEXT raw_json "DI JSON, json_valid"
-        TEXT extracted_fields "JSON, json_valid"
+        TEXT di_model "Datalab mode"
+        JSONB raw_json
+        JSONB extracted_fields
         NUMERIC avg_confidence "0..1"
         TEXT status "queued/success/needs_review/failed"
         TEXT error
-        TEXT created_by FK
-        TEXT created_at
+        UUID created_by FK
+        TIMESTAMPTZ created_at
     }
     REMINDERS {
-        TEXT id PK "uuid hex"
-        TEXT bg_id FK "ON DELETE CASCADE"
-        TEXT scheduled_for "to_date - 7"
-        TEXT sent_at
-        TEXT recipients "JSON array string"
+        UUID id PK
+        UUID bg_id FK "ON DELETE CASCADE"
+        DATE scheduled_for "to_date - 7"
+        TIMESTAMPTZ sent_at
+        TEXT recipients "Postgres TEXT[]"
         TEXT subject
         TEXT body
         TEXT provider_msg_id
         TEXT status "pending/sent/failed/skipped"
         TEXT error
-        TEXT created_at
+        TIMESTAMPTZ created_at
     }
     AUDIT_LOGS {
-        INTEGER id PK "autoincrement"
-        TEXT ts
-        TEXT user_id FK
+        BIGINT id PK "identity"
+        TIMESTAMPTZ ts
+        UUID user_id FK
         TEXT action "upload/extract/confirm/..."
-        TEXT bg_id FK
+        UUID bg_id FK
         TEXT bg_no
-        TEXT old_data "JSON or NULL"
-        TEXT new_data "JSON or NULL"
-        TEXT ip
+        JSONB old_data
+        JSONB new_data
+        TEXT ip "text, not INET"
     }

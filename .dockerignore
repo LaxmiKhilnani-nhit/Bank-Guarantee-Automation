@@ -11,9 +11,8 @@ __pycache__
 out
 data
 
-# The retired SQLite database: Postgres is the database of record now and the
+# Never ship a database file: PostgreSQL is the database of record and the
 # one-shot migrate service rebuilds the schema from db/migrations/.
-db/sqlite
 *.sqlite3
 
 # Secrets and editor/agent files

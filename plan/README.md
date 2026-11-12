@@ -52,7 +52,7 @@ tables for anything comparable, Mermaid for every flow.
 | PLAN-04 | `04-ocr-extraction.md` | How do we turn a PDF into structured fields? |
 | PLAN-05 | `05-flows.md` | What happens step by step in each scenario? |
 | PLAN-06 | `06-email-scheduler-hosting.md` | How do reminders send and where is the app hosted? |
-| PLAN-07 | `07-postgres-migration.md` | How do we retire SQLite and move to PostgreSQL? |
+| PLAN-07 | `07-postgres-migration.md` | How did we retire SQLite and move to PostgreSQL? (completed 2026-11-13) |
 
 ## 4. Global conventions
 

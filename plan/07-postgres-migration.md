@@ -1,33 +1,32 @@
 ---
 id: PLAN-07
 title: SQLite to PostgreSQL Migration
-status: active
+status: completed
 owner: Team
-last_updated: 2026-11-12
-version: 2
-inputs: ["docs/master-data.md", "db/migrations/V1__schema.sql", "db/migrations/V2__seed.sql", "db/sqlite/bg_automation.sqlite3", "plan/02-data-model.md", "backend/bgauto/"]
-outputs: ["V3 schema parity migration", "PostgreSQL bootstrap and master seed", "one-shot SQLite data import", "psycopg-backed store", "PostgreSQL test fixture"]
+last_updated: 2026-11-13
+version: 3
+inputs: ["docs/master-data.md", "db/migrations/V1__schema.sql", "db/migrations/V2__seed.sql", "plan/02-data-model.md", "backend/bgauto/"]
+outputs: ["V3 schema parity migration", "PostgreSQL bootstrap and master seed", "one-shot SQLite data import", "psycopg-backed store", "PostgreSQL test fixture", "SQLite retired from the repository"]
 related: ["PLAN-01", "PLAN-02", "PLAN-LOG"]
 ---
 
 # 07 — SQLite to PostgreSQL Migration
 
-> **Status 2026-11-12 (cutover done).** Phases 1–7 are complete. The deployment
-> stack now runs PostgreSQL (`bg_automation-db`, volume
-> `bank-guarantee-automation_bg_pgdata`) and the live rows were imported from the
-> SQLite file (3 users / 3 roles / 1 LOA / 1 BG / 46 audit rows; password hashes
-> identical). `db/apply.py --verify-only` passes on the live database, a
-> post-cutover `pg_dump` is in `data/backups/`, and the suite passes against the
-> Postgres test container (190 tests). The rollback window is open: the previous
-> image is tagged `bg-automation:pre-postgres` and
-> `data/backups/bg_automation.pre-postgres.sqlite3` is the untouched source.
-> Remaining: Phase 8 cleanup after the window closes.
+> **Status 2026-11-13 (complete).** All eight phases are done. The deployment
+> stack runs PostgreSQL (`bg_automation-db`, volume
+> `bank-guarantee-automation_bg_pgdata`) and PostgreSQL is the only database of
+> record: the live rows were imported from the retired SQLite file (3 users /
+> 3 roles / 1 LOA / 1 BG / 46 audit rows; password hashes identical), the
+> rollback window has closed, and `db/sqlite/`, the `bg-automation:pre-postgres`
+> image and the two pre-cutover backup artifacts are deleted.
+> `db/apply.py --verify-only` passes on the live database, a post-cutover
+> `pg_dump` is in `data/backups/`, and the suite passes against the Postgres
+> test container (190 tests).
 >
-> Note: `/api/health` reports `degraded` (not `ok`) while `DATALAB_API_KEY` is
-> empty — the UI shows "Datalab not configured". The compose healthcheck now
-> treats `degraded` as healthy but requires a database version, so it measures
-> "serving + database reachable" instead of "OCR key present". Set the key in
-> `.env` for `ok` and working extraction.
+> `/api/health` reports `ok` now that `DATALAB_API_KEY` is set; the compose and
+> image healthchecks still treat `degraded` as healthy but require a database
+> version, so they measure "serving + database reachable" instead of "OCR key
+> present".
 
 ## 1. Purpose
 
@@ -58,9 +57,12 @@ must move, the code that must change, and the cutover and rollback steps.
   `docs/master-data.md`. No table, column, dropdown or screen uses them, so
   they are not seeded. Adding them later is a separate change.
 
-## 3. Current state
+## 3. Starting state (2026-11-11, before cutover)
 
-| Item | Today |
+Kept as the migration record. PostgreSQL replaced every row below on
+2026-11-12; nothing in this table describes the current tree.
+
+| Item | Before cutover |
 |---|---|
 | Live database | SQLite at `db/sqlite/bg_automation.sqlite3`, committed to git |
 | Access layer | Raw `sqlite3` in `backend/bgauto/store.py` and five modules |
@@ -131,7 +133,7 @@ flowchart LR
 ```
 
 - One root `docker-compose.yml` runs `db`, `migrate` and `app`.
-- `db/sqlite/` is deleted after the rollback window.
+- `db/sqlite/` was deleted once the rollback window closed (2026-11-13).
 - The Excel tracker, review workbook, run manifests and PDF archive do not move.
 
 ## 6. Phase 1 — Schema parity (`V3__schema.sql`)
@@ -405,6 +407,9 @@ shift by a day.
 
 ## 12. Phase 7 — Cutover and rollback
 
+Executed 2026-11-12; the steps below are the runbook that was followed (see
+§12.3 for the record). The rollback half closed on 2026-11-13.
+
 ### 12.1 Cutover
 
 1. Announce the maintenance window; stop the app.
@@ -436,10 +441,19 @@ shift by a day.
    - upload one sample PDF through to review.
 8. `python db/apply.py --verify-only` and the full test suite.
 
-### 12.2 Rollback
+### 12.2 Rollback (window closed 2026-11-13)
 
-Stop the app and start the previous image with the SQLite mount. The SQLite file
-was only read, never modified. No reverse data migration is needed.
+The window stayed open from the cutover on 2026-11-12 until 2026-11-13. During
+that time the rollback was: stop the app, start `bg-automation:pre-postgres` with
+the SQLite mount and the saved compose file, and leave the Postgres volume in
+place for a second attempt. No reverse data migration was ever needed because
+the importer opened the SQLite file read-only.
+
+The window is closed. The `pre-postgres` image,
+`data/backups/bg_automation.pre-postgres.sqlite3` and
+`data/backups/docker-compose.pre-postgres.yml` are deleted, so **there is no
+rollback to SQLite**. Recovery is now `pg_restore` from
+`data/backups/bg_automation.post-cutover.dump` (or a newer dump).
 
 ### 12.3 Cutover record (2026-11-12)
 
@@ -477,36 +491,41 @@ Private Limited`, project `SB`, plaza `Bhojpuri`, nature `Manpower`, contractor
 `ARYA OMNITALK WIRELESS SOLUTIONS PVT LTD`, bank `ICICI Bank Limited`, LOA
 `NSPPL/TMS/2025/01`.
 
-Sign in as `admin` with the existing password and click through Register, export,
-reminders and Audit to complete the human check.
+Human check (2026-11-13): `admin` signed in and walked Register, export,
+reminders and Audit; a real PDF was uploaded and reviewed. The dev also
+confirmed `/api/health` reports `ok` with the OCR key present.
 
-Rollback until the window closes. The previous compose file is saved next to
-the backup, so nothing depends on the working tree:
+Window closed (2026-11-13): the `pre-postgres` image and both pre-cutover backup
+artifacts were deleted after the smoke checks passed, so the deployment has a
+single database of record. `data/backups/bg_automation.post-cutover.dump` is the
+only remaining backup.
 
-```powershell
-docker compose stop app
-# point the `local` tag back at the SQLite image
-docker tag bg-automation:pre-postgres bg-automation:local
-Copy-Item data\backups\docker-compose.pre-postgres.yml docker-compose.sqlite.yml
-docker compose -f docker-compose.sqlite.yml up -d
-```
+## 13. Phase 8 — Cleanup (done 2026-11-13)
 
-The Postgres volume is left in place (it is the source for a second attempt);
-stop or remove it only once the window has closed.
+Executed once the rollback window closed:
 
-## 13. Phase 8 — Cleanup
-
-After the rollback window:
-
-- delete `db/sqlite/` and `db/sqlite/apply.py`;
-- delete `backend/bgauto/schema.py` if nothing else uses it;
-- remove SQLite references from `backend/README.md`, `db/README.md`,
-  `Dockerfile`, `.dockerignore` and `.env.example`;
-- rewrite `plan/02-data-model.md` to the real normalised model;
-- update `plan/01-architecture.md` (Postgres instead of SQLite);
-- add a `plan/00-log.md` entry (done 2026-11-12, before the window closed);
-- keep `docs/master-data.md` as the master source and
-  `python -m bgauto.cli import-masters` as the update path.
+- [x] Deleted `db/sqlite/` (`apply.py`, `schema.sql`, `seed.sql` and the
+      `bg_automation.sqlite3` file).
+- [x] `backend/bgauto/schema.py` was already removed with the psycopg rewrite;
+      nothing references it.
+- [x] Removed the SQLite paths and wording from `backend/README.md`,
+      `db/README.md`, `Dockerfile`, `.dockerignore` and `.env.example`.
+- [x] Regenerated `docs/BG_ER_Diagram.mmd`, `docs/BG_Schema_Diagram.mmd` and
+      `docs/BG_Database_Diagrams.html` for the Postgres types and tables, and
+      dropped the SQLite prose from the `auth.py`, `web/security.py`,
+      `store.py` and test docstrings.
+- [x] Rewrote `plan/02-data-model.md` to the real normalised Postgres model.
+- [x] Updated `plan/01-architecture.md` and `BG_Automation_Plan.md`
+      (PostgreSQL instead of SQLite).
+- [x] Added `plan/00-log.md` entries: the cutover (2026-11-12) and this cleanup
+      (2026-11-13).
+- [x] Deleted `bg-automation:pre-postgres`,
+      `data/backups/bg_automation.pre-postgres.sqlite3` and
+      `data/backups/docker-compose.pre-postgres.yml`.
+- [x] Kept `docs/master-data.md` as the master source and
+      `python -m bgauto.cli import-masters` as the update path.
+- [x] Kept `db/import_sqlite.py` for the record; `--source` is now required,
+      so it can no longer point at the deleted default path.
 
 ## 14. Acceptance criteria
 
@@ -526,11 +545,12 @@ After the rollback window:
 - [x] A `pg_dump` backup and a `pg_restore` into a scratch database have been
       tested (custom format, `--no-owner`; the password stays in `PGPASSWORD`),
       and a post-cutover dump is in `data/backups/`.
-- [x] Rollback to SQLite is documented and the old file is untouched (the
-      importer opens it read-only and fails if its size or mtime changes). The
-      previous image and compose file are kept for the window.
+- [x] Rollback to SQLite was documented and the old file was untouched (the
+      importer opened it read-only and failed if its size or mtime changed). The
+      window closed on 2026-11-13 and the image, file and compose copy are
+      deleted.
 - [x] Cutover executed on the deployment host (2026-11-12) — see §12.3.
-- [ ] Phase 8 cleanup, after the rollback window.
+- [x] Phase 8 cleanup done (2026-11-13) — see §13.
 
 
 ## 15. Risks
@@ -550,8 +570,7 @@ After the rollback window:
 ## References
 
 - Master data: `../docs/master-data.md`
-- Current schema: `../db/sqlite/schema.sql`
-- Postgres baseline: `../db/migrations/V1__schema.sql`, `../db/migrations/V2__seed.sql`
-- Data model (to be rewritten): `02-data-model.md`
+- Current schema: `../db/migrations/V1__schema.sql`, `../db/migrations/V3__schema.sql`
+- Data model: `02-data-model.md`
 - Architecture: `01-architecture.md`
 - Change log: `00-log.md`

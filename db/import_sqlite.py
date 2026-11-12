@@ -1,10 +1,10 @@
 """One-shot data migration: SQLite -> PostgreSQL (the SQLite file is never written).
 
 Usage:
-    python db/import_sqlite.py [--source PATH] [--apply]
+    python db/import_sqlite.py --source PATH [--apply]
 
-``--source`` defaults to ``db/sqlite/bg_automation.sqlite3`` relative to the repo
-root. DRY RUN is the default: the script reads the SQLite database read-only
+``--source`` is required: pass the path to the legacy SQLite file. DRY RUN is
+the default: the script opens it read-only
 (``file:...?mode=ro``), diffs it against PostgreSQL and prints the plan. Nothing
 is written until ``--apply`` is passed, and ``--apply`` performs the whole
 import in ONE transaction (commit at the end, rollback on any exception, and
@@ -73,9 +73,6 @@ BASE = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE))
 
 from apply import conn_params  # noqa: E402  (needs BASE on sys.path)
-
-REPO_ROOT = BASE.parent
-DEFAULT_SOURCE = REPO_ROOT / "db" / "sqlite" / "bg_automation.sqlite3"
 
 # Tables that move, in insert order (foreign keys first).
 COPIED_TABLES = ("users", "user_roles", "loa_records", "bg_records", "audit_logs")
@@ -1137,7 +1134,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="One-shot SQLite -> PostgreSQL data import "
                     "(dry run by default; --apply writes).")
-    parser.add_argument("--source", default=str(DEFAULT_SOURCE),
+    parser.add_argument("--source", required=True,
                         help="path to the SQLite database (opened read-only)")
     parser.add_argument("--apply", action="store_true",
                         help="perform the import in one transaction "

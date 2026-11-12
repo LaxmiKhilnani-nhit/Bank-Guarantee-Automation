@@ -2,10 +2,10 @@
 id: PLAN-01
 title: System Architecture
 status: active
-last_updated: 2026-11-04
-version: 4
+last_updated: 2026-11-13
+version: 5
 inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx"]
-outputs: ["React dashboard", "FastAPI service", "SQLite DB", "BG Tracker.xlsx updates"]
+outputs: ["React dashboard", "FastAPI service", "PostgreSQL 16 database", "BG Tracker.xlsx updates"]
 related: ["PLAN-02", "PLAN-03", "PLAN-06"]
 ---
 
@@ -37,7 +37,7 @@ flowchart LR
   Viewer["Viewer - Finance / User Team"] -->|HTTPS read and export| API
   API -->|PDF + API key| DL["Datalab API\n(pipeline: convert + extract)"]
   API -->|single writer| XLSX["BG Tracker.xlsx\n(Sheet1, 21 columns)"]
-  API -->|SQL| DB[("SQLite\nusers, jobs, audit, reminders")]
+  API -->|SQL over psycopg| DB[("PostgreSQL 16\nusers, register, audit, reminders")]
   API -->|STARTTLS port 587| SMTP["smtp.office365.com\n(service mailbox)"]
   SMTP -->|T-7 reminder| DLIST["Finance DL + User Team DL"]
   API -->|pipeline results and review archive| STORE["Local run archive"]
@@ -60,7 +60,7 @@ flowchart TB
     Users["Users and Admin"]
   end
   subgraph SVC["Backend - FastAPI"]
-    AuthN["Auth - JWT cookie, role checks"]
+    AuthN["Auth - opaque session cookie, role checks"]
     Jobs["Jobs - upload, fetch, edit, confirm"]
     Extract["Extractor - Datalab convert -> extract pipeline"]
     Track["TrackerStore - append row, dedupe on BG No"]
@@ -93,7 +93,8 @@ flowchart LR
   Internet --> IIS["IIS reverse proxy (HTTPS)"]
   IIS --> FE["Static React build"]
   IIS -->|"/api/*"| SVC["Windows Service\n(uvicorn FastAPI on 127.0.0.1:8000)"]
-  SVC --> DATA["C:/bg-auto/data/\nBG Tracker.xlsx, app.db, pdfs/, pipeline archive, backups/"]
+  SVC --> DATA["C:/bg-auto/data/\nBG Tracker.xlsx, pdfs/, pipeline archive, backups/"]
+  SVC -->|SQL over psycopg| PG[("PostgreSQL 16\nbg_pgdata volume")]
   SVC -->|PDF + API key| DIC["Datalab API\n(remote OCR)"]
   SVC -->|outbound port 587| O365["smtp.office365.com"]
   TS["Task Scheduler - daily 09:00 IST"] -->|calls API| SVC

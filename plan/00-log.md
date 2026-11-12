@@ -2,8 +2,8 @@
 id: PLAN-LOG
 title: Decision and Change Log
 status: active
-last_updated: 2026-11-12
-version: 13
+last_updated: 2026-11-13
+version: 14
 inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx", "BG_UseCase_Story_Tracking.xlsx", "plan/"]
 outputs: ["plan/00-log.md"]
 ---
@@ -19,6 +19,41 @@ current state. Newest entries are first.
 Format for each entry: date, author, what changed, why, files affected.
 
 ## 2. Log (newest first)
+
+### 2026-11-13 — Team — Rollback window closed; SQLite removed from the tree
+
+- What: the rollback window opened at the 2026-11-12 cutover and closed after the
+  smoke checks passed (browser flows, export, reminders, Audit, a real PDF
+  upload through to review). PostgreSQL is now the only database of record.
+- Deleted: `db/sqlite/` (`apply.py`, `schema.sql`, `seed.sql`,
+  `bg_automation.sqlite3`), the `bg-automation:pre-postgres` image,
+  `data/backups/bg_automation.pre-postgres.sqlite3` and
+  `data/backups/docker-compose.pre-postgres.yml`. No rollback path to SQLite
+  remains; recovery is `pg_restore` from
+  `data/backups/bg_automation.post-cutover.dump`.
+- Docs: `plan/07-postgres-migration.md` marked complete (v3, Phase 8 ticked),
+  `plan/02-data-model.md` rewritten to the real Postgres model,
+  `plan/01-architecture.md` and `BG_Automation_Plan.md` describe PostgreSQL,
+  `db/README.md` replaces its rollback section with history, and the
+  `docs/BG_*Diagram.mmd` / `docs/BG_Database_Diagrams.html` diagrams were
+  regenerated with the Postgres types and tables.
+- Code: `db/import_sqlite.py` now requires `--source` (its old default pointed
+  at the deleted `db/sqlite/` file); SQLite prose was removed from the
+  `auth.py`, `web/security.py`, `store.py` and register-test docstrings, and
+  `app.db` was dropped from the data-folder lists in `plan/01` and `plan/06`.
+- Config: `.dockerignore` no longer excludes `db/sqlite`; compose builds
+  `DATABASE_URL` from `${POSTGRES_USER}`/`${POSTGRES_PASSWORD}`/`${POSTGRES_DB}`,
+  and both healthchecks accept `ok`/`degraded` but require a database version.
+- Health: `DATALAB_API_KEY` is set, so `/api/health` reports `ok` and OCR
+  extraction works; `.env` changes need `docker compose up -d app`, not
+  `restart`.
+- Tests: 190 tests pass against the Postgres container on `127.0.0.1:5433`.
+- Files: `db/README.md`, `db/import_sqlite.py`, `.dockerignore`,
+  `plan/01-architecture.md`, `plan/02-data-model.md`,
+  `plan/06-email-scheduler-hosting.md`, `plan/07-postgres-migration.md`,
+  `docs/BG_ER_Diagram.mmd`, `docs/BG_Schema_Diagram.mmd`,
+  `docs/BG_Database_Diagrams.html`, `backend/bgauto/{auth,store,web/security}.py`,
+  `BG_Automation_Plan.md`; `db/sqlite/` removed.
 
 ### 2026-11-12 — Team — Cutover executed; the live stack runs PostgreSQL
 

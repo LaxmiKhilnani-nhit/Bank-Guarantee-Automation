@@ -4,9 +4,9 @@ Engine: **PostgreSQL 15+**. Migrations live in `db/migrations/` and are applied
 by `db/apply.py`; `db/bootstrap.py` additionally seeds the canonical masters from
 `docs/master-data.md` and verifies the result.
 
-SQLite (`db/sqlite/bg_automation.sqlite3`) is the **legacy source** for the
-one-shot data import and the rollback copy until the rollback window closes. The
-application no longer opens it.
+SQLite was retired on 2026-11-12 (cutover) and its rollback window closed on
+2026-11-13. The application, the tests and the deployment only use PostgreSQL;
+`db/sqlite/` no longer exists.
 
 ## Layout
 
@@ -21,7 +21,6 @@ db/
     V1__schema.sql        tables + PKs + FKs + CHECKs + indexes + view
     V2__seed.sql          canonical masters + lookups + roles
     V3__schema.sql        parity gaps (state/round/PM/chainage, lockout, TEXT[])
-  sqlite/                 legacy SQLite development database (rollback source)
 ```
 
 ## Local quickstart
@@ -66,34 +65,33 @@ masters from `docs/master-data.md` through the same importer the CLI uses, then
 runs the verification. Do not seed masters by hand — the document is the single
 source of truth.
 
-## One-shot import from the legacy SQLite file
+## Legacy SQLite import (completed)
 
-`db/import_sqlite.py` copies only the live business rows that reference the
-canonical masters. It is a dry run by default:
+`db/import_sqlite.py` is the one-shot tool that copied the live rows during the
+cutover. The import is done and the SQLite file is gone; the script is kept as
+the record of exactly how the data was mapped (and for any future one-off file,
+always via `--source`). It is a dry run by default:
 
 ```powershell
 $env:DATABASE_URL = "postgresql://bg_app:bg_app_local_pw@127.0.0.1:5432/bg_automation"
-python db/import_sqlite.py             # plan only, writes nothing
-python db/import_sqlite.py --apply     # one transaction, commits at the end
+python db/import_sqlite.py --source path\to\legacy.sqlite3          # plan only
+python db/import_sqlite.py --source path\to\legacy.sqlite3 --apply  # one transaction
 ```
 
-It reads the SQLite file with `mode=ro` and fails if its size or mtime changes,
-so the rollback copy is never touched.
+It reads the SQLite file with `mode=ro` and fails if its size or mtime changes.
 
-Inside the deployment container the file is not baked into the image
-(`.dockerignore` excludes `db/sqlite`). Mount it read-only and pass `--source`:
+Inside the deployment container the file is not baked into the image, so mount it
+read-only and pass `--source`:
 
 ```powershell
-docker compose run --rm --no-deps -v "${PWD}\db\sqlite:/legacy:ro" app `
+docker compose run --rm --no-deps -v "${PWD}\legacy:/legacy:ro" app `
   python db/import_sqlite.py --source /legacy/bg_automation.sqlite3
-docker compose run --rm --no-deps -v "${PWD}\db\sqlite:/legacy:ro" app `
-  python db/import_sqlite.py --source /legacy/bg_automation.sqlite3 --apply
 ```
 
-What moves: `users`, `user_roles`, `loa_records`, `bg_records`, `audit_logs`.
-What is deliberately left behind: the legacy masters, sessions, reminders,
-lookup cache and `ocr_results`. A referenced bank or contractor missing from the
-target is created with `source = 'migrated'`.
+What it copies: `users`, `user_roles`, `loa_records`, `bg_records`,
+`audit_logs`. What it leaves behind: legacy masters, sessions, reminders, lookup
+cache and `ocr_results`. A referenced bank or contractor missing from the target
+is created with `source = 'migrated'`.
 
 The live file resolves to canonical rows as follows (the legacy spellings are
 never re-created):
@@ -142,7 +140,7 @@ Restore overwrites the register, so stop the app first:
 pg_restore --clean --if-exists --no-owner --dbname="$env:DATABASE_URL" data\backups\<dump>
 ```
 
-Back up before the cutover and rehearse the restore into a scratch database.
+Back up before an upgrade and rehearse the restore into a scratch database.
 
 ## Testing
 
@@ -170,21 +168,10 @@ $env:BG_TEST_DATABASE_URL = "postgresql://bg_app:bg_app_local_pw@127.0.0.1:5433/
 - `v_bg_register` and `ocr_results` are kept for V1 compatibility but are not
   used by the application or the import.
 
-## Rollback
+## History
 
-The cutover keeps three artifacts until the rollback window closes:
-
-- `data/backups/bg_automation.pre-postgres.sqlite3` — byte-identical copy of the
-  SQLite file (the importer only ever read the original);
-- `data/backups/docker-compose.pre-postgres.yml` — the SQLite compose file;
-- the `bg-automation:pre-postgres` image tag.
-
-```powershell
-docker compose stop app
-docker tag bg-automation:pre-postgres bg-automation:local
-Copy-Item data\backups\docker-compose.pre-postgres.yml docker-compose.sqlite.yml
-docker compose -f docker-compose.sqlite.yml up -d
-```
-
-The Postgres volume is left in place, so the migration can be retried. The
-import never writes to the SQLite file, so no reverse data migration is needed.
+The application ran on SQLite until 2026-11-12. The cutover imported the live
+rows into PostgreSQL, and the rollback window closed on 2026-11-13: the
+`bg-automation:pre-postgres` image, the SQLite copy and the old compose file have
+been removed. `plan/07-postgres-migration.md` records the run and the mapping.
+PostgreSQL is now the only database of record.

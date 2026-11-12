@@ -61,8 +61,9 @@ Full spec: `plan/02-data-model.md`.
 ## 4. Architecture (summary)
 
 - Frontend: React (Vite) dashboard.
-- Backend: FastAPI on port 8000 → local OCR, SQLite
-  (runs, users, audit) + `BG Tracker.xlsx`, SMTP mailer + daily 09:00 job.
+- Backend: FastAPI on port 8000 → Datalab OCR, PostgreSQL 16
+  (compose `db` service: runs, users, register, audit) + `BG Tracker.xlsx`,
+  SMTP mailer + daily 09:00 job.
 - VM: IIS reverse proxy + Windows Service (API) + Task Scheduler (T-7 check).
 
 Pages (role-gated): Login; Upload and Review (uploader edits and saves own

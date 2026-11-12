@@ -1,4 +1,4 @@
-"""The SQLite register: confirmed rows, masters, extensions, filters, export."""
+"""The register: confirmed rows, masters, extensions, filters, export."""
 from __future__ import annotations
 
 import datetime as dt

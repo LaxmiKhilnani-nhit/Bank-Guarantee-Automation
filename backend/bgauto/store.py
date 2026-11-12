@@ -6,8 +6,8 @@ written by :func:`audit` with the same connection as the change they describe.
 
 The connection pool is process-wide and lazily created from
 ``config.DATABASE_URL``. Rows come back as dictionaries (``dict_row``), so
-``row["column"]`` is the only access form - unlike ``sqlite3.Row``, a psycopg
-tuple has no name-based indexing for free.
+``row["column"]`` is the only access form - unlike a plain tuple row, a psycopg
+row has no name-based indexing for free.
 
 Timezone policy: the session timezone is pinned to UTC so ``now()`` matches the
 old ``datetime('now')`` behaviour. Calendar decisions ("today", overdue, T-7)
@@ -42,7 +42,7 @@ def _json_dumps(value: Any) -> str:
 
 
 def utcnow() -> dt.datetime:
-    """Naive UTC, matching SQLite's ``datetime('now')``."""
+    """Naive UTC, matching the legacy ``datetime('now')`` behaviour."""
     return dt.datetime.now(dt.timezone.utc).replace(tzinfo=None)
 
 

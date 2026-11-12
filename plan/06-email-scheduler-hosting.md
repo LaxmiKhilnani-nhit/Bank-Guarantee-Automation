@@ -63,8 +63,9 @@ scheduler is an acceptable alternative for the pilot.
 - IIS ends HTTPS and serves the static React build. It forwards `/api/*` to
   `127.0.0.1:8000`, where the FastAPI app runs as a Windows Service
   (uvicorn).
-- Data folder: `C:/bg-auto/data/` holds `BG Tracker.xlsx`, `app.db`, `pdfs/`,
-  `ocr-json/`, and `backups/`. The service account owns it.
+- Data folder: `C:/bg-auto/data/` holds `BG Tracker.xlsx`, `pdfs/`,
+  `ocr-json/`, and `backups/`. The service account owns it. The register itself
+  lives in PostgreSQL (compose `db` service), not in a file here.
 - Configuration is 100% environment-driven, so a later move to App Service
   needs no code change.
 
