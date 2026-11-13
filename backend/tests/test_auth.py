@@ -54,8 +54,8 @@ class UserTests(TempDatabase):
     def _hash(self, username: str) -> str:
         with store.connect() as conn:
             return conn.execute(
-                "SELECT password_hash FROM users WHERE username = ?", (username,)
-            ).fetchone()[0]
+                "SELECT password_hash FROM users WHERE username = %s", (username,)
+            ).fetchone()["password_hash"]
 
     def test_roles_and_effective_role(self):
         with store.connect() as conn:
@@ -108,7 +108,7 @@ class UserTests(TempDatabase):
                 auth.authenticate(conn, "admin", "Admin#12345")
             self.assertEqual(locked.exception.code, "locked")
             actions = [
-                r[0]
+                r["action"]
                 for r in conn.execute("SELECT action FROM audit_logs ORDER BY id")
             ]
             self.assertIn("login_failed", actions)
@@ -117,8 +117,8 @@ class UserTests(TempDatabase):
     def test_lock_expires_and_success_resets(self):
         with store.connect() as conn:
             conn.execute(
-                "UPDATE users SET failed_attempts = 4, locked_until = ? WHERE username='admin'",
-                ((store.utcnow() - dt.timedelta(minutes=1)).isoformat(sep=" "),),
+                "UPDATE users SET failed_attempts = 4, locked_until = %s WHERE username='admin'",
+                (store.utcnow() - dt.timedelta(minutes=1),),
             )
             user = auth.authenticate(conn, "admin", "Admin#12345")
             self.assertEqual(user.role, "admin")
@@ -157,7 +157,9 @@ class SessionTests(TempDatabase):
         with store.connect() as conn:
             token = auth.create_session(conn, self.user.id, minutes=-1)
             self.assertIsNone(auth.session_user(conn, token))
-            self.assertEqual(conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0], 0)
+            self.assertEqual(
+                conn.execute("SELECT COUNT(*) AS n FROM sessions").fetchone()["n"], 0
+            )
 
     def test_password_change_revokes_sessions(self):
         with store.connect() as conn:
@@ -168,8 +170,8 @@ class SessionTests(TempDatabase):
                 auth.verify_password(
                     "Changed#12345",
                     conn.execute(
-                        "SELECT password_hash FROM users WHERE id = ?", (self.user.id,)
-                    ).fetchone()[0],
+                        "SELECT password_hash FROM users WHERE id = %s", (self.user.id,)
+                    ).fetchone()["password_hash"],
                 )
             )
 

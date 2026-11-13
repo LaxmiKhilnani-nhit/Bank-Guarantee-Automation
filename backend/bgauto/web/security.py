@@ -1,6 +1,6 @@
 """Request identity and role checks for the FastAPI app.
 
-One dependency reads the opaque session cookie, looks it up in SQLite and
+One dependency reads the opaque session cookie, looks it up in PostgreSQL and
 returns a :class:`~bgauto.auth.User`. Role checks are dependencies too, so an
 endpoint cannot forget one: the check is part of its signature.
 

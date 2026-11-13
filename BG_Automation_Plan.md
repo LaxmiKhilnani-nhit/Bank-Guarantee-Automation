@@ -22,8 +22,8 @@ enterprise OCR → human review → append to the Excel tracker → send a T-7
 expiry mail via SMTP.
 
 **Constraints:** enterprise tools only (no open-source OCR or LLM), SMTP only
-(no Graph yet), local login (no Entra SSO yet), India-only data, Windows
-cloud VM available, Docker optional.
+(no Graph yet), local login (no Entra SSO yet), India-only data, Windows cloud
+VM available, Docker Compose as the production runtime.
 
 ## 1. Inputs in this workspace
 
@@ -61,9 +61,14 @@ Full spec: `plan/02-data-model.md`.
 ## 4. Architecture (summary)
 
 - Frontend: React (Vite) dashboard.
-- Backend: FastAPI on port 8000 → local OCR, SQLite
-  (runs, users, audit) + `BG Tracker.xlsx`, SMTP mailer + daily 09:00 job.
-- VM: IIS reverse proxy + Windows Service (API) + Task Scheduler (T-7 check).
+- Backend: FastAPI on port 8000 → Datalab OCR, PostgreSQL 16
+  (compose `db` service: runs, users, register, audit) + `BG Tracker.xlsx`,
+  SMTP mailer + daily 09:00 job.
+- VM: Docker Compose on the Windows VM — containers `db` (PostgreSQL 16 with
+  the `bg_pgdata` volume), the one-shot `migrate` (schema V1–V3 plus master
+  seed) and `app`; the app publishes only on `127.0.0.1:8000`, TLS is terminated
+  in front of that port, and the T-7 check is an in-process scheduler thread at
+  09:00 IST.
 
 Pages (role-gated): Login; Upload and Review (uploader edits and saves own
 rows); Register (admin/viewer); Workbook (all roles, read-only); Reminders;
@@ -87,7 +92,9 @@ Detail: `plan/04-ocr-extraction.md`.
 - SMTP port 587, STARTTLS, service mailbox from env/Key Vault, sender `BG Automation`.
 - Daily: rows where `To − 7 days = today`, `reminder_sent_at` empty, `Status ≠ Closed`.
 - Subject: `BG {BG No} expiring {To} — {Project}/{Contractor} — extend or close?`
-- On send: set `reminder_sent_at`, write `reminder_log`. Retry 3 times, then dead-letter.
+- On send: append a `reminders` row (`bg_id`, `scheduled_for`, recipients,
+  `sent_at`) and set `bg_records.reminder_sent_at`. Retry 3 times, then
+  dead-letter.
 - Extension: new BG under the same LOA is a new row; old row becomes `Extended = Yes`, `Status = Closed`.
 
 Detail: `plan/06-email-scheduler-hosting.md`.
@@ -116,7 +123,7 @@ Detail: `plan/03-auth.md`. Stories: ST009 + ST011–ST013.
 - **Sprint 1 (UC001–UC004, UC006):** Local OCR setup, upload + review + Excel
   save (21-column format), LOA/PO extraction, 3-role login.
 - **Sprint 2 (UC005, UC007):** SMTP T-7 job, templates, extend/close handling,
-  failed-OCR queue, register filters + export, VM scheduler.
+  failed-OCR queue, register filters + export, in-container 09:00 IST scheduler.
 - **Hardening:** daily backups (xlsx + DB + PDFs), log rotation, runbook,
   1-month parallel UAT with accuracy report.
 

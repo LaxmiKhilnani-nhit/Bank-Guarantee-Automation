@@ -1,52 +1,46 @@
-"""A new BG_DB must start from the approved schema, not an empty file."""
+"""The migrated schema must contain everything the backend reads."""
 from __future__ import annotations
 
-import sqlite3
-import tempfile
 import unittest
-from pathlib import Path
 
-from bgauto import schema
+from bgauto import store
+from support import TempDatabase
 
 
-class FreshDatabase(unittest.TestCase):
-    def test_empty_database_gets_the_baseline_schema(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            db = Path(tmp) / "fresh.sqlite3"
-            applied = schema.ensure_schema(db)
-            self.assertIn("schema:baseline", applied)
+class SchemaParity(TempDatabase):
+    def test_required_tables_and_columns_are_present(self):
+        with store.connect() as conn:
+            self.assertEqual(store.schema_problems(conn), [])
 
-            conn = sqlite3.connect(db)
-            try:
-                tables = {
-                    row[0]
-                    for row in conn.execute(
-                        "SELECT name FROM sqlite_master WHERE type = 'table'"
-                    )
-                }
-                self.assertTrue(
-                    {"users", "roles", "bg_records", "sessions", "reminders",
-                     "audit_logs"} <= tables
-                )
-                user_columns = {row[1] for row in conn.execute("PRAGMA table_info(users)")}
-                self.assertIn("failed_attempts", user_columns)
-                self.assertIn("locked_until", user_columns)
-                bg_columns = {
-                    row[1] for row in conn.execute("PRAGMA table_info(bg_records)")
-                }
-                self.assertIn("updated_at", bg_columns)
-            finally:
-                conn.close()
+    def test_v3_columns_have_the_expected_types(self):
+        with store.connect() as conn:
+            rows = conn.execute(
+                "SELECT table_name, column_name, data_type "
+                "FROM information_schema.columns "
+                "WHERE table_schema = current_schema() "
+                "AND (table_name, column_name) IN ("
+                "  ('audit_logs', 'ip'), ('lookup_cache', 'payload'),"
+                "  ('bg_status', 'sort_order'), ('users', 'failed_attempts'),"
+                "  ('reminders', 'recipients')"
+                ")"
+            ).fetchall()
+        types = {(row["table_name"], row["column_name"]): row["data_type"] for row in rows}
+        self.assertEqual(types[("audit_logs", "ip")], "text")
+        self.assertEqual(types[("lookup_cache", "payload")], "jsonb")
+        self.assertEqual(types[("bg_status", "sort_order")], "integer")
+        self.assertEqual(types[("users", "failed_attempts")], "integer")
+        self.assertEqual(types[("reminders", "recipients")], "ARRAY")
 
-            again = schema.ensure_schema(db)
-            self.assertFalse([item for item in again if item.startswith("schema:baseline")])
-
-    def test_existing_schema_is_not_recreated(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            db = Path(tmp) / "existing.sqlite3"
-            schema.ensure_schema(db)
-            first = schema.ensure_schema(db)
-            self.assertFalse([item for item in first if item.startswith("schema:baseline")])
+    def test_canonical_masters_are_seeded(self):
+        with store.connect() as conn:
+            counts = {
+                table: conn.execute(f"SELECT count(*) AS n FROM {table}").fetchone()["n"]
+                for table in ("company", "project", "toll_plaza", "nature_of_service")
+            }
+        self.assertEqual(counts["company"], 3)
+        self.assertEqual(counts["project"], 28)
+        self.assertEqual(counts["toll_plaza"], 46)
+        self.assertGreaterEqual(counts["nature_of_service"], 27)
 
 
 if __name__ == "__main__":

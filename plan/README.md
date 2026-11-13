@@ -2,10 +2,10 @@
 id: PLAN-INDEX
 title: BG Automation — Plan Index
 status: active
-last_updated: 2026-10-08
-version: 3
-inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx", "BG_UseCase_Story_Tracking.xlsx"]
-outputs: ["plan/00-log.md", "plan/01-architecture.md", "plan/02-data-model.md", "plan/03-auth.md", "plan/04-ocr-extraction.md", "plan/05-flows.md", "plan/06-email-scheduler-hosting.md"]
+last_updated: 2026-11-12
+version: 4
+inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx", "BG_UseCase_Story_Tracking.xlsx", "docs/master-data.md"]
+outputs: ["plan/00-log.md", "plan/01-architecture.md", "plan/02-data-model.md", "plan/03-auth.md", "plan/04-ocr-extraction.md", "plan/05-flows.md", "plan/06-email-scheduler-hosting.md", "plan/07-postgres-migration.md"]
 ---
 
 # BG Automation — Plan Index
@@ -23,6 +23,7 @@ Who should read what:
 - Building auth: read `03`.
 - Building OCR: read `04`.
 - Setting up mail or the VM: read `06`.
+- Moving the database to PostgreSQL: read `07`.
 - Reviewing history: read `00-log.md`.
 
 ## 2. Document standard
@@ -51,6 +52,7 @@ tables for anything comparable, Mermaid for every flow.
 | PLAN-04 | `04-ocr-extraction.md` | How do we turn a PDF into structured fields? |
 | PLAN-05 | `05-flows.md` | What happens step by step in each scenario? |
 | PLAN-06 | `06-email-scheduler-hosting.md` | How do reminders send and where is the app hosted? |
+| PLAN-07 | `07-postgres-migration.md` | How did we retire SQLite and move to PostgreSQL? (completed 2026-11-13) |
 
 ## 4. Global conventions
 

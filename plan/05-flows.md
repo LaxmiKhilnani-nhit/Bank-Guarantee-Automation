@@ -58,9 +58,9 @@ Accept: the old row is never deleted; history is preserved.
 
 ```mermaid
 flowchart TD
-  T["Task Scheduler runs at 09:00"] --> Q["Find rows where To minus 7 days is today, reminder not sent, Status is not Closed"]
+  T["In-app scheduler wakes at 09:00 IST (ReminderScheduler thread in the app container)"] --> Q["Find rows where To minus 7 days is today, reminder not sent, Status is not Closed"]
   Q -->|"rows found"| S["Send one mail per BG via SMTP, retry up to 3 times"]
-  S -->|"sent"| U["Set reminder_sent_at, add reminder_log entry"]
+  S -->|"sent"| U["Write a reminders row (UNIQUE bg_id + scheduled_for) and set reminder_sent_at"]
   S -->|"all retries fail"| DL["Send to manual review queue"]
   Q -->|"no rows"| E["Log a no-op run"]
 ```

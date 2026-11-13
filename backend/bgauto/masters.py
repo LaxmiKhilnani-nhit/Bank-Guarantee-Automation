@@ -1,11 +1,11 @@
-"""Dropdown masters, read from the SQLite database when available."""
+"""Dropdown masters, read from PostgreSQL when available."""
 from __future__ import annotations
 
-import sqlite3
 from dataclasses import dataclass, field
-from pathlib import Path
 
-from . import config
+import psycopg
+
+from . import store
 
 FALLBACK = {
     "banks": [],
@@ -83,59 +83,67 @@ class Masters:
         return None
 
     @classmethod
-    def load(cls, db_path: Path | None = None) -> "Masters":
-        db_path = db_path or config.DB_PATH
-        if not db_path.exists():
-            return cls(**FALLBACK)
-
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    def load(cls) -> "Masters":
         try:
-            def rows(sql: str) -> list[tuple]:
-                try:
-                    return list(conn.execute(sql))
-                except sqlite3.Error:
-                    return []
+            with store.connect() as conn:
+                def rows(sql: str, params: tuple = ()) -> list[dict]:
+                    return conn.execute(sql, params).fetchall()
 
-            def column(sql: str) -> list[str]:
-                return [r[0] for r in rows(sql) if r[0]]
+                def column(sql: str) -> list[str]:
+                    return [r["value"] for r in rows(sql) if r["value"]]
 
-            project_options = [
-                {"code": code, "name": name or code, "company": company or "", "state": state or ""}
-                for code, name, company, state in rows(
-                    "SELECT p.code, p.name, c.name, p.state FROM project p "
-                    "LEFT JOIN company c ON c.id = p.company_id "
-                    "WHERE COALESCE(p.is_active, 1) = 1 ORDER BY p.code"
-                )
-                if code
-            ]
-            loaded = cls(
-                banks=column("SELECT name FROM bank ORDER BY name"),
-                companies=column(
-                    "SELECT name FROM company WHERE COALESCE(is_active, 1) = 1 ORDER BY name"
-                ),
-                projects=column(
-                    "SELECT code FROM project WHERE COALESCE(is_active, 1) = 1 ORDER BY code"
-                ),
-                natures=column("SELECT name FROM nature_of_service ORDER BY name"),
-                contractors=column("SELECT name FROM contractor ORDER BY name"),
-                # bg_status has no id column; rowid keeps the seeded order.
-                statuses=column("SELECT code FROM bg_status ORDER BY rowid"),
-                toll_plazas=[
-                    {"project": project, "name": name, "chainage": chainage or ""}
-                    for project, name, chainage in rows(
-                        "SELECT p.code, t.name, t.chainage FROM toll_plaza t "
-                        "JOIN project p ON p.id = t.project_id "
-                        "WHERE COALESCE(t.is_active, 1) = 1 AND COALESCE(p.is_active, 1) = 1 "
-                        "ORDER BY p.code, t.name"
+                project_options = [
+                    {
+                        "code": row["code"],
+                        "name": row["name"] or row["code"],
+                        "company": row["company"] or "",
+                        "state": row["state"] or "",
+                    }
+                    for row in rows(
+                        "SELECT p.code, p.name, c.name AS company, p.state "
+                        "FROM project p LEFT JOIN company c ON c.id = p.company_id "
+                        "WHERE p.is_active IS NOT FALSE ORDER BY p.code"
                     )
-                    if name
-                ],
-                project_options=project_options,
-            )
-        finally:
-            # The context manager only commits; the handle must be closed or
-            # Windows keeps the file locked (and the API leaks one per reload).
-            conn.close()
+                    if row["code"]
+                ]
+                loaded = cls(
+                    banks=column("SELECT name AS value FROM bank ORDER BY name"),
+                    companies=column(
+                        "SELECT name AS value FROM company "
+                        "WHERE is_active IS NOT FALSE ORDER BY name"
+                    ),
+                    projects=column(
+                        "SELECT code AS value FROM project "
+                        "WHERE is_active IS NOT FALSE ORDER BY code"
+                    ),
+                    natures=column(
+                        "SELECT name AS value FROM nature_of_service ORDER BY name"
+                    ),
+                    contractors=column(
+                        "SELECT name AS value FROM contractor ORDER BY name"
+                    ),
+                    statuses=column(
+                        "SELECT code AS value FROM bg_status "
+                        "ORDER BY sort_order, code"
+                    ),
+                    toll_plazas=[
+                        {
+                            "project": row["project"],
+                            "name": row["name"],
+                            "chainage": row["chainage"] or "",
+                        }
+                        for row in rows(
+                            "SELECT p.code AS project, t.name, t.chainage "
+                            "FROM toll_plaza t JOIN project p ON p.id = t.project_id "
+                            "WHERE t.is_active IS NOT FALSE AND p.is_active IS NOT FALSE "
+                            "ORDER BY p.code, t.name"
+                        )
+                        if row["name"]
+                    ],
+                    project_options=project_options,
+                )
+        except (psycopg.Error, RuntimeError, OSError):
+            return cls(**FALLBACK)
 
         # An empty table should not blank out a working dropdown.
         for name, value in vars(loaded).items():

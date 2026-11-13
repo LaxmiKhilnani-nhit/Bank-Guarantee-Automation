@@ -11,6 +11,10 @@ __pycache__
 out
 data
 
+# Never ship a database file: PostgreSQL is the database of record and the
+# one-shot migrate service rebuilds the schema from db/migrations/.
+*.sqlite3
+
 # Secrets and editor/agent files
 .env
 .env.*

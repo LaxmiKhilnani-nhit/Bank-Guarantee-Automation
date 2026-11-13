@@ -1,5 +1,5 @@
 %% BG Automation — Conceptual ER Diagram (crow's foot)
-%% Source of truth: db/sqlite/schema.sql. Render: docs/BG_Database_Diagrams.html
+%% Source of truth: db/migrations/V1__schema.sql + V3__schema.sql. Render: docs/BG_Database_Diagrams.html
 %% Key attributes only; see BG_Schema_Diagram.mmd for full columns.
 erDiagram
     COMPANY ||--o{ PROJECT : company_id
@@ -22,24 +22,25 @@ erDiagram
     USERS ||--o{ OCR_RESULTS : created_by
     USERS ||--o{ AUDIT_LOGS : user_id
     USERS ||--o{ USER_ROLES : user_id
+    USERS ||--o{ SESSIONS : user_id
     ROLES ||--o{ USER_ROLES : role_id
 
     COMPANY {
-        INTEGER id PK
+        SMALLINT id PK
         TEXT name UK
     }
     PROJECT {
-        INTEGER id PK
-        INTEGER company_id FK
+        SMALLINT id PK
+        SMALLINT company_id FK
         TEXT code UK
     }
     TOLL_PLAZA {
         INTEGER id PK
-        INTEGER project_id FK
+        SMALLINT project_id FK
         TEXT name
     }
     BANK {
-        INTEGER id PK
+        SMALLINT id PK
         TEXT name UK
     }
     CONTRACTOR {
@@ -50,56 +51,61 @@ erDiagram
         TEXT code PK
     }
     NATURE_OF_SERVICE {
-        INTEGER id PK
+        SMALLINT id PK
         TEXT name UK
     }
     BG_STATUS {
         TEXT code PK
     }
     ROLES {
-        INTEGER id PK
+        SMALLINT id PK
         TEXT name UK
     }
     USERS {
-        TEXT id PK
-        TEXT username UK
+        UUID id PK
+        CITEXT username UK
         TEXT password_hash
     }
     USER_ROLES {
-        TEXT user_id PK, FK
-        INTEGER role_id PK, FK
+        UUID user_id PK, FK
+        SMALLINT role_id PK, FK
+    }
+    SESSIONS {
+        TEXT token_hash PK
+        UUID user_id FK
+        TIMESTAMPTZ expires_at
     }
     LOA_RECORDS {
-        TEXT id PK
+        UUID id PK
         TEXT loa_po_number UK
-        TEXT created_by FK
+        UUID created_by FK
     }
     BG_RECORDS {
-        TEXT id PK
+        UUID id PK
         TEXT bg_no UK
-        TEXT loa_id FK
+        UUID loa_id FK
         NUMERIC bg_amount
-        TEXT from_date
-        TEXT to_date
+        DATE from_date
+        DATE to_date
         TEXT status FK
         TEXT source_pdf
-        TEXT supersedes_bg_id FK
+        UUID supersedes_bg_id FK
     }
     OCR_RESULTS {
-        TEXT id PK
-        TEXT bg_id FK
+        UUID id PK
+        UUID bg_id FK
         TEXT source_pdf
         TEXT status
     }
     REMINDERS {
-        TEXT id PK
-        TEXT bg_id FK
-        TEXT scheduled_for
+        UUID id PK
+        UUID bg_id FK
+        DATE scheduled_for
         TEXT status
     }
     AUDIT_LOGS {
-        INTEGER id PK
-        TEXT user_id FK
+        BIGINT id PK
+        UUID user_id FK
         TEXT action
-        TEXT bg_id FK
+        UUID bg_id FK
     }

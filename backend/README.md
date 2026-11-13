@@ -23,10 +23,20 @@ Sample_Bank_Guarantees/*.pdf
 ## Prerequisites
 
 - Python 3.11+ (Docker uses Python 3.13) with the venv at `.venv`
+- PostgreSQL 15+ (Docker Compose starts one; a local server works too)
 - A Datalab API key (https://www.datalab.to/app/keys) or a saved `datalab login`
 
 ```powershell
 .venv\Scripts\python.exe -m pip install -r backend/requirements.txt
+```
+
+The app reads `DATABASE_URL`, e.g.
+`postgresql://bg_app:bg_app_local_pw@127.0.0.1:5432/bg_automation`. Create the
+schema and canonical masters with:
+
+```powershell
+$env:DATABASE_URL = "postgresql://bg_app:bg_app_local_pw@127.0.0.1:5432/bg_automation"
+.venv\Scripts\python.exe db/bootstrap.py      # V1-V3 + docs/master-data.md
 ```
 
 ## Datalab pipeline
@@ -106,7 +116,9 @@ $env:PYTHONPATH = "backend"
 | `--report` | `out/review` | JSON + `summary.csv` for the reviewer |
 | `--tracker` | `BG Tracker.xlsx` | template of record; only ever read |
 | `--archive-dir` | `data/ocr-json` | per-PDF pipeline step results and report |
-| `--db` | `db/sqlite/bg_automation.sqlite3` | masters for dropdown matching |
+
+Masters for dropdown matching are read from PostgreSQL (`DATABASE_URL`); the
+CLI has no separate `--db` flag any more.
 
 Exit code 0 means every PDF was read; the summary and review files say which
 fields need a human. Re-running into the same workbook skips duplicate BG
@@ -142,8 +154,9 @@ codes.
   table afterwards. Name and email stay in the schema for the planned SSO
   sign-in. The local logins for this deployment are in `credentials.txt`
   (git-ignored).
-- **Sessions.** Opaque tokens stored in SQLite, not JWTs. The cookie is
-  `httpOnly`, `SameSite=Lax`, and `Secure` only when `BG_COOKIE_SECURE=1`
+- **Sessions.** Opaque tokens stored in PostgreSQL (`sessions`), not JWTs. The
+  cookie is `httpOnly`, `SameSite=Lax`, and `Secure` only when
+  `BG_COOKIE_SECURE=1`
   (plain-HTTP loopback keeps it off). Sessions expire after
   `BG_SESSION_MINUTES` (default 30); changing a password revokes the others.
 - **Lockout.** Five failed sign-ins lock the account for 15 minutes; every
@@ -162,20 +175,26 @@ holds the SDK; PDFs are sent to the Datalab pipeline using the key from `.env`.
 ```powershell
 docker compose build
 docker compose up -d          # -> http://127.0.0.1:8000
-docker compose ps             # waits for (healthy)
+docker compose ps             # db + app healthy; migrate exited 0
 docker compose logs -f app
 ```
 
+- **Services.** `db` is PostgreSQL 16 with a named volume (`bg_pgdata`,
+  no host port), `migrate` runs `python db/bootstrap.py` once (V1-V3 plus the
+  masters from `docs/master-data.md`), and `app` starts only after both succeed.
 - **Port.** The container listens on 8000. The host side is loopback-only and
   configurable: `$env:BG_WEB_PORT="8010"; docker compose up -d` -> port 8010.
   If the port is taken, compose says `port is already allocated`; pick another.
-- **Mounts.** `out/`, `data/` and `db/sqlite/` come from the host, so review
-  workbooks, OCR archives and the masters database are the same files a local
-  run produces. `BG Tracker.xlsx` is mounted read-only.
+- **Mounts.** `out/` and `data/` come from the host, so review workbooks, OCR
+  archives, backups and uploaded PDFs survive a rebuild. The register lives in
+  the `bg_pgdata` volume, not in a bind mount. `BG Tracker.xlsx` is mounted
+  read-only.
 - **Template.** It must exist before `up`, because compose bind-mounts it.
-- **Health.** `GET /api/health` checks that the Datalab SDK is installed and a
-  key or saved login exists. It makes no paid call; a missing key reports
-  `status: degraded`.
+- **Health.** `GET /api/health` checks the Datalab SDK/key and opens a short
+  direct PostgreSQL connection; it reports the server version and makes no paid
+  call. A missing key reports `status: degraded`. The compose healthcheck
+  accepts `ok` or `degraded` but requires the database version, so the container
+  is `healthy` whenever the API serves and Postgres answers.
 - **Rebuild after code changes.** `docker compose build && docker compose up -d`;
   `docker compose restart` reuses the old image.
 - **CLI inside the container.** Same image, so the importer and ingest command
@@ -188,11 +207,11 @@ docker compose logs -f app
 
 The container runs as uid 10001 (`bgauto`), never as root. On Docker Desktop
 the bind mounts are world-writable, so that works unchanged; on a Linux VM give
-that uid write access to `out/`, `data/` and `db/sqlite/`.
+that uid write access to `out/` and `data/`.
 
-`db/docker-compose.yml` is a **separate** compose file for the planned
-PostgreSQL deployment; the app here does not use it. Start it only with
-`-f db/docker-compose.yml`, and set `POSTGRES_PORT` because 5432 is often taken.
+`db/docker-compose.yml` is a **development/CI-only** helper that starts just
+PostgreSQL on port 5432 (override with `POSTGRES_PORT`). The root
+`docker-compose.yml` is the deployment. The app never uses the dev helper.
 
 ## Environment and compose settings
 
@@ -201,6 +220,10 @@ those values into the container. The app still starts with an empty file.
 
 | Variable | Default | Purpose |
 |---|---|---|
+| `DATABASE_URL` | empty (compose sets it) | PostgreSQL DSN, e.g. `postgresql://bg_app:pw@db:5432/bg_automation` |
+| `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | `bg_automation` / `bg_app` / local | credentials used by the `db` and `migrate` services |
+| `BG_DB_POOL_MIN` / `BG_DB_POOL_MAX` | `1` / `8` | connection pool sizing |
+| `BG_DB_POOL_TIMEOUT` | `10` | seconds to wait for a pooled connection |
 | `BG_WEB_PORT` | `8000` | host loopback port |
 | `BG_BOOTSTRAP_ADMIN_USER` | `admin` | first account, only when no users exist |
 | `BG_BOOTSTRAP_ADMIN_PASS` | empty | empty => random password in the log |
@@ -230,9 +253,9 @@ those values into the container. The app still starts with an empty file.
 | `BG_LOOKUP_TTL_DAYS` | `30` | reuse an answer for identical text |
 | `BG_LOOKUP_MAX_MATCHES` | `5` | alternatives offered in the dropdown |
 
-`BG_DB`, `BG_DATA_DIR` and `BG_OUT_DIR` are also honoured by `config.py`. A
-brand-new `BG_DB` is initialised from `db/sqlite/schema.sql` on startup, so a
-fresh Docker volume works without a manual import.
+`BG_DATA_DIR`, `BG_OUT_DIR` and `BG_WORKBOOK` are also honoured by `config.py`.
+The register is not a file: set `DATABASE_URL`. Compose builds it from the
+`POSTGRES_*` values, so a password change needs both sides to agree.
 
 ## Official-name lookup (optional)
 
@@ -288,19 +311,22 @@ ticket.
   confirms, register edits, exports and reminders are all in the admin Audit
   screen. The run folder also keeps `confirm-*.json` and
   `out/web/confirmations.jsonl`.
-- **Backup.** `python -m bgauto.cli backup` zips the database, review workbook,
-  template and PDF archive under `data/backups/`, keeping the last
-  `--keep` archives (default 7). Logs rotate at `out/logs/app.log`.
-- **Deviations from `plan/`.** Sessions are opaque server-side tokens in SQLite
-  (not JWTs) and passwords use `hashlib.scrypt` (not bcrypt). Duplicate BG
-  numbers are reported honestly in the save response instead of a blanket 409.
-  Uploaders work in Review/Runs and can view the read-only workbook page.
+- **Backup.** `python -m bgauto.cli backup` runs `pg_dump --format=custom` and
+  zips the dump with the review workbook, template and PDF archive under
+  `data/backups/`, keeping the last `--keep` archives (default 7). Restore is
+  manual (stop the app, `pg_restore --clean --if-exists`), because it overwrites
+  the register. Logs rotate at `out/logs/app.log`.
+- **Deviations from `plan/`.** Sessions are opaque server-side tokens in
+  PostgreSQL (not JWTs) and passwords use `hashlib.scrypt` (not bcrypt).
+  Duplicate BG numbers are reported honestly in the save response instead of a
+  blanket 409. Uploaders work in Review/Runs and can view the read-only workbook
+  page.
 
 ## Import project and toll-plaza masters
 
-The dropdowns are fed from the SQLite masters, not from a hard-coded list. The
-operations master document (markdown: SPV -> corridor -> toll plaza, with chainage
-and site managers) is the source of truth:
+The dropdowns are fed from the PostgreSQL masters, not from a hard-coded list.
+The operations master document (markdown: SPV -> corridor -> toll plaza, with
+chainage and site managers) is the source of truth:
 
 ```powershell
 $env:PYTHONPATH = "backend"
@@ -317,10 +343,11 @@ Rules the importer follows:
   hand (`source = 'manual'`) are never touched.
 - `--dry-run` reports the same plan without committing.
 
-The database file is tracked, so re-running the importer is the normal way to
-absorb an updated master document.
+The database is the live register, so re-running the importer is the normal way
+to absorb an updated master document (`db/bootstrap.py` does this on every
+deploy).
 
-The seeded dataset (`db/sqlite/seed.sql`) mirrors the same document: 28
+The seeded dataset (`docs/master-data.md`) mirrors the same document: 28
 corridors across three SPVs and 46 plazas, each plaza attached to exactly one
 corridor. Bank and contractor are not seeded at all: those tables are a registry
 that starts empty and gains a row from each confirmed BG (after the optional

@@ -106,7 +106,7 @@ class BgNoFromDocumentTests(unittest.TestCase):
             "Company CIN: 1994PLC021012",
             "OUR REFERENCE: 264GT02252580004",
         ])
-        result = extract(doc, Masters.load(Path("does-not-exist.sqlite3")))
+        result = extract(doc, Masters.load())
         self.assertEqual(result.value("BG No"), "264GT02252580004")
 
     def test_hint_beats_damaged_token(self):
@@ -176,14 +176,14 @@ class ContractorTests(unittest.TestCase):
             "8 SECTOR 16C, SOME CITY",
             "9. STATE (hereinafter called the \u201cContractor\u201d) and the Company,",
         ])
-        masters = Masters.load(Path("does-not-exist.sqlite3"))
+        masters = Masters.load()
         result = extract(doc, masters)
         self.assertEqual(result.value("Name of Contractor"), "Example Engineering Solutions")
         self.assertIn("from_deed_clause", result.fields["Name of Contractor"].notes)
 
     def test_no_contractor_is_blank(self):
         doc = _doc(["A document with no labels at all."])
-        result = extract(doc, Masters.load(Path("does-not-exist.sqlite3")))
+        result = extract(doc, Masters.load())
         field = result.fields["Name of Contractor"]
         self.assertIsNone(field.value)
         self.assertIn("contractor_not_found", field.flags)
@@ -193,14 +193,14 @@ class ContractorTests(unittest.TestCase):
             ":7033: Name of applicant and his details",
             "and any request including claim shall be sent to the bank",
         ])
-        result = extract(doc, Masters.load(Path("does-not-exist.sqlite3")))
+        result = extract(doc, Masters.load())
         field = result.fields["Name of Contractor"]
         self.assertIsNone(field.value)
         self.assertIn("contractor_not_found", field.flags)
 
     def test_applicant_label_with_angle_bracket(self):
         doc = _doc(["APPLICANT > K L ENTERPRISES"])
-        result = extract(doc, Masters.load(Path("does-not-exist.sqlite3")))
+        result = extract(doc, Masters.load())
         self.assertEqual(result.value("Name of Contractor"), "K L ENTERPRISES")
 
     def test_deed_clause_survives_address_on_the_same_line(self):
@@ -208,7 +208,7 @@ class ContractorTests(unittest.TestCase):
             "9 (A) Arya Omnitalk Wireless Solutions Pvt. Ltd..2ND FLOOR,UNITS 202,MAGARPATTA CITY",
             "10 SUMMER COURT HADAPSAR (hereinafter called the \u201cContractor\u201d) and NHIT",
         ])
-        result = extract(doc, Masters.load(Path("does-not-exist.sqlite3")))
+        result = extract(doc, Masters.load())
         self.assertEqual(
             result.value("Name of Contractor"),
             "Arya Omnitalk Wireless Solutions Pvt. Ltd",
@@ -219,7 +219,7 @@ class ContractorTests(unittest.TestCase):
             "Please find enclosed Bank Guarantee favoring yourself on behalf of: ARYA OMNITALK",
             "WIRELESS SOLUTIONS PVT LTD, 2ND FLOOR, PUNE",
         ])
-        result = extract(doc, Masters.load(Path("does-not-exist.sqlite3")))
+        result = extract(doc, Masters.load())
         self.assertEqual(
             result.value("Name of Contractor"),
             "ARYA OMNITALK WIRELESS SOLUTIONS PVT LTD",
@@ -232,7 +232,7 @@ class DateTripletTests(unittest.TestCase):
             "Ref: 0816NDLG00007526",
             "15-11-2025 06-04-2026 06-04-2026 INR 46,99,752.00",
         ])
-        result = extract(doc, Masters.load(Path("does-not-exist.sqlite3")), today=dt.date(2026, 10, 28))
+        result = extract(doc, Masters.load(), today=dt.date(2026, 10, 28))
         self.assertEqual(result.value("From"), dt.date(2025, 11, 15))
         self.assertEqual(result.value("To"), dt.date(2026, 4, 6))
         self.assertEqual(result.value("Claim Period"), dt.date(2026, 4, 6))

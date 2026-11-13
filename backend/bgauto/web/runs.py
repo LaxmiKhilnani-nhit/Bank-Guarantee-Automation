@@ -6,7 +6,7 @@ exactly what was read, what was changed, and what was written.
 
 The real ``BG Tracker.xlsx`` is only ever read (as a template). Confirmed rows
 land in ``out/BG Tracker_ingested.xlsx`` - the same copy the CLI uses - and in
-the SQLite register that feeds the Register screen and the reminders.
+the PostgreSQL register that feeds the Register screen and the reminders.
 
 The uploader owns the run and can save it. Ownership is checked here, not just
 in the UI; admins can access all runs.
@@ -21,6 +21,7 @@ import os
 import re
 import secrets
 import shutil
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -58,21 +59,20 @@ REQUIRED_COLUMNS = (
 )
 RUN_STATUSES = ("draft", "confirmed")
 
-_masters_cache: tuple[tuple, Masters] | None = None
+_masters_cache: tuple[float, Masters] | None = None
+# The UI asks for masters on every upload; a short TTL keeps that cheap while
+# still showing an admin's master edit within a minute.
+_MASTERS_TTL = 60.0
 
 
 def masters() -> Masters:
-    """Load masters once per database revision (the UI asks on every upload)."""
+    """Load masters at most once per TTL (the UI asks on every upload)."""
     global _masters_cache
-    path = config.DB_PATH
-    try:
-        stamp = (str(path), path.stat().st_mtime_ns, path.stat().st_size)
-    except OSError:
-        stamp = (str(path), 0, 0)
-    if _masters_cache and _masters_cache[0] == stamp:
+    now = time.monotonic()
+    if _masters_cache and now - _masters_cache[0] < _MASTERS_TTL:
         return _masters_cache[1]
-    loaded = Masters.load(path)
-    _masters_cache = (stamp, loaded)
+    loaded = Masters.load()
+    _masters_cache = (now, loaded)
     return loaded
 
 
@@ -870,11 +870,13 @@ def confirm(
             "closed_by_extension": closed,
         }
         audit_path = run_dir(run_id) / f"confirm-{now:%Y%m%d-%H%M%S}.json"
-        audit_path.write_text(json.dumps(audit, indent=2, ensure_ascii=False), encoding="utf-8")
+        audit_path.write_text(
+            json.dumps(audit, indent=2, ensure_ascii=False, default=str), encoding="utf-8"
+        )
         audit_file = audit_path.name
         config.RUNS_DIR.mkdir(parents=True, exist_ok=True)
         with (config.RUNS_DIR / "confirmations.jsonl").open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(audit, ensure_ascii=False) + "\n")
+            handle.write(json.dumps(audit, ensure_ascii=False, default=str) + "\n")
 
     with _file_lock(_run_lock_path(run_id)):
         manifest = load_manifest(run_id)

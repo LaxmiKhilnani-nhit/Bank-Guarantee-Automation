@@ -48,7 +48,18 @@ DATA_DIR = Path(os.environ.get("BG_DATA_DIR", REPO_ROOT / "data"))
 OCR_ARCHIVE_DIR = DATA_DIR / "ocr-json"
 PDF_ARCHIVE_DIR = DATA_DIR / "pdfs"
 TRACKER_PATH = Path(os.environ.get("BG_TRACKER", REPO_ROOT / "BG Tracker.xlsx"))
-DB_PATH = Path(os.environ.get("BG_DB", REPO_ROOT / "db" / "sqlite" / "bg_automation.sqlite3"))
+# Canonical master data (companies, corridors, plazas). The database is seeded
+# from this file; it is never edited by the app.
+MASTER_DATA_PATH = Path(
+    os.environ.get("BG_MASTER_DATA", REPO_ROOT / "docs" / "master-data.md")
+)
+
+# --- Database ------------------------------------------------------------
+# PostgreSQL only. No local file, no SQLite fallback.
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+DB_POOL_MIN = int(os.environ.get("BG_DB_POOL_MIN", "1"))
+DB_POOL_MAX = int(os.environ.get("BG_DB_POOL_MAX", "8"))
+DB_POOL_TIMEOUT = float(os.environ.get("BG_DB_POOL_TIMEOUT", "10"))
 
 # --- Outputs -------------------------------------------------------------
 

@@ -37,14 +37,17 @@ MIGRATIONS = sorted((BASE / "migrations").glob("V*.sql"))
 EXPECTED_TABLES = [
     "company", "project", "toll_plaza", "bank", "contractor", "bg_type",
     "nature_of_service", "bg_status", "roles", "users", "user_roles",
-    "loa_records", "bg_records", "ocr_results", "reminders", "audit_logs",
+    "sessions", "lookup_cache", "loa_records", "bg_records", "ocr_results",
+    "reminders", "audit_logs",
 ]
 
-# (table, min_rows) — masters must be seeded; transactional tables may be empty
+# (table, min_rows) — masters must be seeded; transactional tables may be empty.
+# V2 carries the canonical set: 3 SPVs, 28 corridors, 46 plazas, 27 natures.
+# bank/contractor start empty by design; the first confirmed BG creates a row.
 SEED_MINIMUMS = {
-    "bg_type": 2, "bg_status": 6, "roles": 3, "bank": 7,
-    "project": 12, "contractor": 31, "nature_of_service": 25,
-    "company": 1,
+    "bg_type": 2, "bg_status": 6, "roles": 3,
+    "company": 3, "project": 28, "toll_plaza": 46,
+    "nature_of_service": 27,
 }
 
 
@@ -82,18 +85,25 @@ def ensure_database() -> None:
         sys.exit(1)
 
 
+def apply_migrations() -> None:
+    """Run every V*.sql file in filename order, one transaction per file."""
+    if not MIGRATIONS:
+        raise RuntimeError("no migration files found in db/migrations")
+    with psycopg.connect(**conn_params()) as conn:
+        for f in MIGRATIONS:
+            text = f.read_text(encoding="utf-8")
+            with conn.transaction():
+                conn.execute(text)
+            print(f"applied {f.name}")
+
+
 def apply_all(verify_only: bool = False) -> int:
     failures: list[str] = []
     if not verify_only:
         if not MIGRATIONS:
             print("ERROR: no migration files found in db/migrations", file=sys.stderr)
             return 1
-        with psycopg.connect(**conn_params()) as conn:
-            for f in MIGRATIONS:
-                text = f.read_text(encoding="utf-8")
-                with conn.transaction():
-                    conn.execute(text)
-                print(f"applied {f.name}")
+        apply_migrations()
 
     with psycopg.connect(**conn_params()) as conn:
         # 1. tables present
@@ -117,14 +127,6 @@ def apply_all(verify_only: bool = False) -> int:
                 failures.append(f"seed shortfall {t}: {n} < {minimum}")
 
         # 3. FK violations = 0 (all FKs referencing existing rows)
-        bad = conn.execute("""
-            SELECT conrelid::regclass AS tbl, conname
-            FROM pg_constraint c
-            WHERE contype = 'f'
-              AND NOT EXISTS (
-                SELECT 1 FROM pg_constraint v
-                WHERE v.conname = 'fk_violation_check') -- placeholder, always true path below
-        """).fetchall()  # informational only
         viol = conn.execute("""
             SELECT 'bg_records_project' AS chk,
                    count(*) FROM bg_records b
@@ -166,6 +168,29 @@ def apply_all(verify_only: bool = False) -> int:
         print(f"  [{'OK' if v else 'FAIL'}] view v_bg_register")
         if not v:
             failures.append("missing view v_bg_register")
+
+        # 6. master metadata required by the importer/dropdowns
+        for table, columns in (
+            ("company", ("source", "is_active")),
+            ("project", ("state", "round", "project_manager", "source", "is_active")),
+            ("toll_plaza", ("chainage", "toll_manager", "maintenance_manager",
+                            "corridor_manager", "source", "is_active")),
+            ("users", ("failed_attempts", "locked_until")),
+            ("audit_logs", ("ip",)),
+        ):
+            present = {
+                r[0] for r in conn.execute(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema = current_schema() AND table_name = %s",
+                    (table,),
+                ).fetchall()
+            }
+            missing = [c for c in columns if c not in present]
+            ok = not missing
+            print(f"  [{'OK' if ok else 'FAIL'}] columns {table}: "
+                  f"{'all present' if ok else 'missing ' + ', '.join(missing)}")
+            if not ok:
+                failures.append(f"missing columns on {table}: {missing}")
 
     print("VERIFY PASSED" if not failures else f"VERIFY FAILED: {failures}")
     return 0 if not failures else 1

@@ -1,4 +1,4 @@
-"""The SQLite register: confirmed rows, masters, extensions, filters, export."""
+"""The register: confirmed rows, masters, extensions, filters, export."""
 from __future__ import annotations
 
 import datetime as dt
@@ -45,7 +45,9 @@ class RegisterTests(TempDatabase):
         super().setUp()
         self.bootstrap_admin()
         with store.connect() as conn:
-            self.admin = conn.execute("SELECT id FROM users WHERE username='admin'").fetchone()[0]
+            self.admin = conn.execute(
+                "SELECT id FROM users WHERE username='admin'"
+            ).fetchone()["id"]
 
     def _store(self, row):
         with store.connect() as conn:
@@ -63,13 +65,13 @@ class RegisterTests(TempDatabase):
         self.assertEqual(row["Extended"], "No")
         with store.connect() as conn:
             source = conn.execute(
-                "SELECT source FROM company WHERE name = ?",
+                "SELECT source FROM company WHERE name = %s",
                 ("Example Eastern Projects Private Limited",),
-            ).fetchone()[0]
+            ).fetchone()["source"]
             joined = conn.execute(
                 "SELECT l.loa_po_number FROM bg_records r JOIN loa_records l ON l.id = r.loa_id "
                 "WHERE r.bg_no = '0001TESTBG'"
-            ).fetchone()[0]
+            ).fetchone()["loa_po_number"]
         self.assertEqual(source, "manual")
         self.assertEqual(joined, "LOA/TEST/001")
         self.assertEqual(row["LOA Number"], "LOA/TEST/001")
@@ -81,7 +83,7 @@ class RegisterTests(TempDatabase):
         self.assertEqual(existing["BG No"], "0001TESTBG")
         with store.connect() as conn:
             self.assertEqual(
-                conn.execute("SELECT COUNT(*) FROM bg_records").fetchone()[0], 1
+                conn.execute("SELECT COUNT(*) AS n FROM bg_records").fetchone()["n"], 1
             )
 
     def test_extension_closes_the_previous_bg_it_does_not_delete(self):

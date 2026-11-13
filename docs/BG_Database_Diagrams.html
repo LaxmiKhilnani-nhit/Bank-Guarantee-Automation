@@ -19,12 +19,15 @@
 </style>
 </head>
 <body>
-<h1>BG Automation — Database Diagrams (SQLite)</h1>
+<h1>BG Automation — Database Diagrams (PostgreSQL)</h1>
 <p class="note">Conceptual ER (key attributes, crow's foot) followed by the full
-logical schema. Table design matches <code>db/sqlite/schema.sql</code>;
-seed values match <code>db/sqlite/seed.sql</code>. One BG row per guarantee,
-dedupe on <code>bg_no</code>; extensions chain via
-<code>supersedes_bg_id</code> under the same <code>loa_id</code> (1 LOA : M BGs).</p>
+logical schema. Table design matches <code>db/migrations/V1__schema.sql</code>
+plus <code>db/migrations/V3__schema.sql</code>; seed values match
+<code>db/migrations/V2__seed.sql</code> and <code>docs/master-data.md</code>.
+One BG row per guarantee, dedupe on <code>bg_no</code>; extensions chain via
+<code>supersedes_bg_id</code> under the same <code>loa_id</code>
+(1 LOA : M BGs). Dates are <code>DATE</code>; instants are
+<code>TIMESTAMPTZ</code> in UTC.</p>
 
 <h2>1. ER Diagram (conceptual)</h2>
 <pre class="mermaid">
@@ -49,23 +52,25 @@ erDiagram
     USERS ||--o{ OCR_RESULTS : created_by
     USERS ||--o{ AUDIT_LOGS : user_id
     USERS ||--o{ USER_ROLES : user_id
+    USERS ||--o{ SESSIONS : user_id
     ROLES ||--o{ USER_ROLES : role_id
+
     COMPANY {
-        INTEGER id PK
+        SMALLINT id PK
         TEXT name UK
     }
     PROJECT {
-        INTEGER id PK
-        INTEGER company_id FK
+        SMALLINT id PK
+        SMALLINT company_id FK
         TEXT code UK
     }
     TOLL_PLAZA {
         INTEGER id PK
-        INTEGER project_id FK
+        SMALLINT project_id FK
         TEXT name
     }
     BANK {
-        INTEGER id PK
+        SMALLINT id PK
         TEXT name UK
     }
     CONTRACTOR {
@@ -76,58 +81,63 @@ erDiagram
         TEXT code PK
     }
     NATURE_OF_SERVICE {
-        INTEGER id PK
+        SMALLINT id PK
         TEXT name UK
     }
     BG_STATUS {
         TEXT code PK
     }
     ROLES {
-        INTEGER id PK
+        SMALLINT id PK
         TEXT name UK
     }
     USERS {
-        TEXT id PK
-        TEXT username UK
+        UUID id PK
+        CITEXT username UK
         TEXT password_hash
     }
     USER_ROLES {
-        TEXT user_id PK, FK
-        INTEGER role_id PK, FK
+        UUID user_id PK, FK
+        SMALLINT role_id PK, FK
+    }
+    SESSIONS {
+        TEXT token_hash PK
+        UUID user_id FK
+        TIMESTAMPTZ expires_at
     }
     LOA_RECORDS {
-        TEXT id PK
+        UUID id PK
         TEXT loa_po_number UK
-        TEXT created_by FK
+        UUID created_by FK
     }
     BG_RECORDS {
-        TEXT id PK
+        UUID id PK
         TEXT bg_no UK
-        TEXT loa_id FK
+        UUID loa_id FK
         NUMERIC bg_amount
-        TEXT from_date
-        TEXT to_date
+        DATE from_date
+        DATE to_date
         TEXT status FK
         TEXT source_pdf
-        TEXT supersedes_bg_id FK
+        UUID supersedes_bg_id FK
     }
     OCR_RESULTS {
-        TEXT id PK
-        TEXT bg_id FK
+        UUID id PK
+        UUID bg_id FK
         TEXT source_pdf
         TEXT status
     }
     REMINDERS {
-        TEXT id PK
-        TEXT bg_id FK
-        TEXT scheduled_for
+        UUID id PK
+        UUID bg_id FK
+        DATE scheduled_for
         TEXT status
     }
     AUDIT_LOGS {
-        INTEGER id PK
-        TEXT user_id FK
+        BIGINT id PK
+        UUID user_id FK
         TEXT action
-        TEXT bg_id FK
+        UUID bg_id FK
     }
 </pre>
 
@@ -154,128 +164,165 @@ erDiagram
     USERS ||--o{ OCR_RESULTS : created_by
     USERS ||--o{ AUDIT_LOGS : user_id
     USERS ||--o{ USER_ROLES : user_id
+    USERS ||--o{ SESSIONS : user_id
     ROLES ||--o{ USER_ROLES : role_id
+
     COMPANY {
-        INTEGER id PK
-        TEXT name UK
+        SMALLINT id PK
+        TEXT name UK "e.g. NSPPL"
+        TEXT source "NULL, imported, manual or migrated"
+        BOOLEAN is_active
     }
     PROJECT {
-        INTEGER id PK
-        INTEGER company_id FK
-        TEXT code UK
+        SMALLINT id PK
+        SMALLINT company_id FK
+        TEXT code UK "e.g. SB, MH"
         TEXT name
+        TEXT state
+        INTEGER round
+        TEXT project_manager
+        TEXT source
+        BOOLEAN is_active
     }
     TOLL_PLAZA {
         INTEGER id PK
-        INTEGER project_id FK
-        TEXT name
+        SMALLINT project_id FK
+        TEXT name "UNIQUE per project"
+        TEXT chainage
+        TEXT toll_manager
+        TEXT maintenance_manager
+        TEXT corridor_manager
+        TEXT source
+        BOOLEAN is_active
     }
     BANK {
-        INTEGER id PK
-        TEXT name UK
+        SMALLINT id PK
+        TEXT name UK "created by the first BG"
+        TEXT source
     }
     CONTRACTOR {
         INTEGER id PK
-        TEXT name UK
+        TEXT name UK "created by the first BG"
+        TEXT source
     }
     BG_TYPE {
-        TEXT code PK
+        TEXT code PK "PBG, ABG"
+        INTEGER sort_order
     }
     NATURE_OF_SERVICE {
-        INTEGER id PK
-        TEXT name UK
+        SMALLINT id PK
+        TEXT name UK "27 master values"
     }
     BG_STATUS {
-        TEXT code PK
+        TEXT code PK "Draft..Closed"
+        INTEGER sort_order
     }
     ROLES {
-        INTEGER id PK
-        TEXT name UK
+        SMALLINT id PK
+        TEXT name UK "admin, uploader, viewer"
     }
     USERS {
-        TEXT id PK
-        TEXT username UK
-        TEXT email UK
+        UUID id PK
+        CITEXT username UK "case-insensitive"
+        CITEXT email UK "case-insensitive, nullable"
         TEXT full_name
-        TEXT password_hash
-        INTEGER is_active
-        TEXT last_login
-        TEXT created_at
-        TEXT updated_at
+        TEXT password_hash "scrypt"
+        BOOLEAN is_active
+        TIMESTAMPTZ last_login
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+        INTEGER failed_attempts "lockout after 5"
+        TIMESTAMPTZ locked_until
     }
     USER_ROLES {
-        TEXT user_id PK, FK
-        INTEGER role_id PK, FK
+        UUID user_id PK, FK
+        SMALLINT role_id PK, FK
+    }
+    SESSIONS {
+        TEXT token_hash PK "hash of the cookie token"
+        UUID user_id FK "ON DELETE CASCADE"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ expires_at
+        TIMESTAMPTZ last_seen
+        TEXT ip
+        TEXT user_agent
+    }
+    LOOKUP_CACHE {
+        TEXT field PK
+        TEXT query PK
+        JSONB payload
+        TIMESTAMPTZ created_at
     }
     LOA_RECORDS {
-        TEXT id PK
-        TEXT loa_po_number UK
+        UUID id PK
+        TEXT loa_po_number UK "1 LOA : M BGs"
         TEXT description
-        TEXT created_by FK
-        TEXT created_at
-        TEXT updated_at
+        UUID created_by FK
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
     }
     BG_RECORDS {
-        TEXT id PK
-        TEXT bg_no UK
-        INTEGER company_id FK
-        INTEGER project_id FK
+        UUID id PK
+        TEXT bg_no UK "dedupe key UC003"
+        SMALLINT company_id FK
+        SMALLINT project_id FK
         INTEGER toll_plaza_id FK
         TEXT bg_type FK
-        INTEGER nature_id FK
+        SMALLINT nature_id FK
         INTEGER contractor_id FK
-        INTEGER bank_id FK
-        TEXT loa_id FK
-        NUMERIC bg_amount
-        TEXT from_date
-        TEXT to_date
-        TEXT claim_period
-        TEXT extended_date
-        TEXT status FK
+        SMALLINT bank_id FK
+        UUID loa_id FK
+        TEXT po_number
+        NUMERIC bg_amount "CHECK > 0"
+        DATE from_date
+        DATE to_date "T-7 anchor"
+        DATE claim_period "NULL or >= to_date"
+        DATE extended_date "NULL until extended"
+        TEXT status FK "default Draft"
         TEXT remarks
         TEXT source_pdf
-        TEXT created_by FK
-        TEXT created_at
-        TEXT updated_at
-        TEXT reminder_sent_at
-        TEXT supersedes_bg_id FK
+        UUID created_by FK
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+        TIMESTAMPTZ reminder_sent_at
+        UUID supersedes_bg_id FK "ST007 chain"
     }
     OCR_RESULTS {
-        TEXT id PK
-        TEXT bg_id FK
+        UUID id PK
+        UUID bg_id FK "nullable pre-confirm"
         TEXT source_pdf
-        TEXT di_model
-        TEXT raw_json
-        TEXT extracted_fields
-        NUMERIC avg_confidence
-        TEXT status
+        TEXT di_model "Datalab mode"
+        JSONB raw_json
+        JSONB extracted_fields
+        NUMERIC avg_confidence "0..1"
+        TEXT status "queued/success/needs_review/failed"
         TEXT error
-        TEXT created_by FK
-        TEXT created_at
+        UUID created_by FK
+        TIMESTAMPTZ created_at
     }
     REMINDERS {
-        TEXT id PK
-        TEXT bg_id FK
-        TEXT scheduled_for
-        TEXT sent_at
-        TEXT recipients
+        UUID id PK
+        UUID bg_id FK "ON DELETE CASCADE"
+        DATE scheduled_for "to_date - 7"
+        TIMESTAMPTZ sent_at
+        TEXT recipients "Postgres TEXT[]"
         TEXT subject
         TEXT body
         TEXT provider_msg_id
-        TEXT status
+        TEXT status "pending/sent/failed/skipped"
         TEXT error
-        TEXT created_at
+        TIMESTAMPTZ created_at
     }
     AUDIT_LOGS {
-        INTEGER id PK
-        TEXT ts
-        TEXT user_id FK
-        TEXT action
-        TEXT bg_id FK
+        BIGINT id PK "identity"
+        TIMESTAMPTZ ts
+        UUID user_id FK
+        TEXT action "upload/extract/confirm/..."
+        UUID bg_id FK
         TEXT bg_no
-        TEXT old_data
-        TEXT new_data
-        TEXT ip
+        JSONB old_data
+        JSONB new_data
+        TEXT ip "text, not INET"
     }
 </pre>
 

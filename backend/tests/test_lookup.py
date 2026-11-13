@@ -174,10 +174,10 @@ class LookupTests(TempDatabase):
             register.ensure_contractor(conn, "Web Contractor Private Limited", origin="web")
             register.ensure_bank(conn, "Web Bank Limited", origin="web")
             contractor = conn.execute(
-                "SELECT source FROM contractor WHERE name = ?", ("Web Contractor Private Limited",)
+                "SELECT source FROM contractor WHERE name = %s", ("Web Contractor Private Limited",)
             ).fetchone()["source"]
             bank = conn.execute(
-                "SELECT source FROM bank WHERE name = ?", ("Web Bank Limited",)
+                "SELECT source FROM bank WHERE name = %s", ("Web Bank Limited",)
             ).fetchone()["source"]
         self.assertEqual(contractor, "web")
         self.assertEqual(bank, "web")

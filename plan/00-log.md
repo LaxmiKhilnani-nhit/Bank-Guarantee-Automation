@@ -2,8 +2,8 @@
 id: PLAN-LOG
 title: Decision and Change Log
 status: active
-last_updated: 2026-11-10
-version: 11
+last_updated: 2026-11-13
+version: 15
 inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx", "BG_UseCase_Story_Tracking.xlsx", "plan/"]
 outputs: ["plan/00-log.md"]
 ---
@@ -19,6 +19,138 @@ current state. Newest entries are first.
 Format for each entry: date, author, what changed, why, files affected.
 
 ## 2. Log (newest first)
+
+### 2026-11-13 — Team — Deployment topology: Docker Compose on the Windows VM
+
+- What: production deployment is recorded as Docker Compose on the Windows VM.
+  The stack is the three-service compose file already in the repo: `db`
+  (PostgreSQL 16, `bg_pgdata` named volume), the one-shot `migrate`
+  (`db/bootstrap.py`, applies V1–V3 and seeds the masters before the app
+  starts) and `app` (built from `Dockerfile`, publishes
+  `127.0.0.1:${BG_WEB_PORT:-8000}:8000`). Docker Desktop with the WSL 2
+  backend (or Docker Engine plus Compose v2) runs it; the app publishes only
+  on the loopback interface, so TLS stays with the environment's reverse proxy
+  or load balancer in front of that port.
+- Why: IIS, the Windows Service wrapper and the Task Scheduler job are dropped
+  — none of them is what actually runs today, and compose is already the tested
+  deployment (`docker compose up -d`, `docker compose logs -f app`,
+  `docker compose run --rm migrate`). This entry records that decision rather
+  than changing the stack.
+- Scheduling: the 09:00 IST T-7 run is the in-process daemon thread in the app
+  container (`ReminderScheduler`, catches up a late start, writes
+  `data/scheduler-last-run.txt`); `POST /internal/daily-reminder` stays as the
+  token-guarded manual trigger for re-runs, not as the default scheduler.
+- Reminders: the run writes `reminders` rows (`UNIQUE (bg_id, scheduled_for)`)
+  and sets `bg_records.reminder_sent_at`; no `tracker_mirror` or
+  `reminder_log` table exists.
+- Config: `.env` changes need `docker compose up -d app` (recreate), not
+  `docker compose restart app`.
+- Files: `plan/01-architecture.md`, `plan/05-flows.md`,
+  `plan/06-email-scheduler-hosting.md`, `BG_Automation_Plan.md`.
+
+### 2026-11-13 — Team — Rollback window closed; SQLite removed from the tree
+
+- What: the rollback window opened at the 2026-11-12 cutover and closed after the
+  smoke checks passed (browser flows, export, reminders, Audit, a real PDF
+  upload through to review). PostgreSQL is now the only database of record.
+- Deleted: `db/sqlite/` (`apply.py`, `schema.sql`, `seed.sql`,
+  `bg_automation.sqlite3`), the `bg-automation:pre-postgres` image,
+  `data/backups/bg_automation.pre-postgres.sqlite3` and
+  `data/backups/docker-compose.pre-postgres.yml`. No rollback path to SQLite
+  remains; recovery is `pg_restore` from
+  `data/backups/bg_automation.post-cutover.dump`.
+- Docs: `plan/07-postgres-migration.md` marked complete (v3, Phase 8 ticked),
+  `plan/02-data-model.md` rewritten to the real Postgres model,
+  `plan/01-architecture.md` and `BG_Automation_Plan.md` describe PostgreSQL,
+  `db/README.md` replaces its rollback section with history, and the
+  `docs/BG_*Diagram.mmd` / `docs/BG_Database_Diagrams.html` diagrams were
+  regenerated with the Postgres types and tables.
+- Code: `db/import_sqlite.py` now requires `--source` (its old default pointed
+  at the deleted `db/sqlite/` file); SQLite prose was removed from the
+  `auth.py`, `web/security.py`, `store.py` and register-test docstrings, and
+  `app.db` was dropped from the data-folder lists in `plan/01` and `plan/06`.
+- Config: `.dockerignore` no longer excludes `db/sqlite`; compose builds
+  `DATABASE_URL` from `${POSTGRES_USER}`/`${POSTGRES_PASSWORD}`/`${POSTGRES_DB}`,
+  and both healthchecks accept `ok`/`degraded` but require a database version.
+- Health: `DATALAB_API_KEY` is set, so `/api/health` reports `ok` and OCR
+  extraction works; `.env` changes need `docker compose up -d app`, not
+  `restart`.
+- Tests: 190 tests pass against the Postgres container on `127.0.0.1:5433`.
+- Files: `db/README.md`, `db/import_sqlite.py`, `.dockerignore`,
+  `plan/01-architecture.md`, `plan/02-data-model.md`,
+  `plan/06-email-scheduler-hosting.md`, `plan/07-postgres-migration.md`,
+  `docs/BG_ER_Diagram.mmd`, `docs/BG_Schema_Diagram.mmd`,
+  `docs/BG_Database_Diagrams.html`, `backend/bgauto/{auth,store,web/security}.py`,
+  `BG_Automation_Plan.md`; `db/sqlite/` removed.
+
+### 2026-11-12 — Team — Cutover executed; the live stack runs PostgreSQL
+
+- What: the deployment stack was migrated in place during a maintenance window.
+  The SQLite app was stopped and its image kept as `bg-automation:pre-postgres`;
+  the SQLite file was copied to
+  `data/backups/bg_automation.pre-postgres.sqlite3` (SHA-256 verified) and the
+  old compose file to `data/backups/docker-compose.pre-postgres.yml`.
+- Database: a fresh `bg_pgdata` volume was created, `docker compose run --rm
+  migrate` applied V1–V3 and seeded the canonical masters (3 companies, 28
+  projects, 46 plazas, 27 natures), and `db/import_sqlite.py --apply` (file
+  mounted read-only at `/legacy`) moved 3 users, 3 roles, 1 LOA, 1 BG and 46
+  audit rows. `ICICI Bank Limited` and `ARYA OMNITALK WIRELESS SOLUTIONS PVT LTD`
+  were created with `source='migrated'`.
+- Verification: `db/apply.py --verify-only` passes on the live database; the
+  live password hashes match the SQLite ones for `admin`, `uploader` and
+  `viewer`; `bg_records` resolves to `NHIT Southern Projects Private Limited` /
+  `SB` / `Bhojpuri` / `Manpower`; a post-cutover `pg_dump` (custom format,
+  `--no-owner`) is in `data/backups/`; the full suite still passes (190 tests).
+- Note: `/api/health` is `degraded` while `DATALAB_API_KEY` is empty (the UI
+  shows "Datalab not configured"). The compose and image healthchecks require a
+  database version and accept `degraded`, so the container reports `healthy`
+  when the API serves and Postgres answers; set the key in `.env` for `ok` and
+  working OCR. Compose now builds `DATABASE_URL` from the `POSTGRES_*` values, so
+  changing the password cannot desync the app.
+- Live check: an `admin` sign-in after the cutover added audit row 47 and a
+  session, confirming authentication against the migrated users.
+- Remaining: the rollback window, then Phase 8 (delete `db/sqlite/`, rewrite
+  `plan/01` and `plan/02`, drop the `pre-postgres` image and backup).
+- Files: `plan/07-postgres-migration.md` (§12.3 records the run),
+  `data/backups/*` (not tracked).
+
+### 2026-11-12 — Team — SQLite retired; application runs on PostgreSQL
+
+- What: the backend now talks to PostgreSQL through `psycopg` + `psycopg_pool`
+  (`dict_row`, UTC session via pool `configure`); `backend/bgauto/schema.py` and
+  every `sqlite3` import are gone. A new `V3__schema.sql` closes the parity gap
+  (state/round/project manager/chainage, login lockout, `TEXT[]` recipients)
+  while V1/V2 stay untouched.
+- Masters: `docs/master-data.md` is the single source (3 companies, 28 projects,
+  46 plazas, 27 natures). `db/bootstrap.py` applies V1–V3, imports the document
+  through the existing CLI importer, then verifies counts, FKs, trigger,
+  indexes and the view.
+- Data: `db/import_sqlite.py` moves only the referenced live rows (3 users,
+  3 roles, 1 LOA, 1 BG, 46 audit rows) into the canonical masters. It is a dry
+  run by default, `--apply` commits in one transaction, and it opens the SQLite
+  file read-only. The live BG `0024NDLG00226526` maps `NSPPL` → `NHIT Southern
+  Projects Private Limited`, plaza `Bhojpuri & Mudipar` → `Bhojpuri`, and
+  creates the ICICI bank and ARYA contractor with `source='migrated'`.
+- Correctness: audit rows are deduplicated by multiplicity, not set membership,
+  so the three identical legacy logins all survive; UUID columns are compared in
+  canonical form, so a second import inserts nothing. `PLANNED_COUNTS` is now
+  informational (one target row per source row is the requirement), and
+  `preflight()` pins the session to UTC so timestamps keep their SQLite reading.
+- Deployment: root `docker-compose.yml` runs Postgres 16 (`bg_pgdata`), a
+  one-shot `migrate` service (`db/bootstrap.py`) and the app; `db/docker-compose.yml`
+  is development/CI only. `db/README.md` and `backend/README.md` are
+  PostgreSQL-first.
+- Verification: the full suite passes against a disposable Postgres schema
+  (190 tests), the importer has its own regression module (dry run, apply,
+  duplicate audit rows, master resolution, second-apply no-op), the imported
+  data was smoke-tested through health/sign-in/register/audit, and a
+  `pg_dump`/`pg_restore` rehearsal into a scratch database succeeded.
+- Remaining: cutover on the deployment host and the Phase 8 cleanup (delete
+  `db/sqlite/`, update `plan/01`/`plan/02`) after the rollback window. Rollback
+  is the previous image plus the untouched SQLite file.
+- Files: `db/{migrations/V3__schema.sql,apply.py,bootstrap.py,import_sqlite.py,README.md,docker-compose.yml,requirements.txt}`,
+  `backend/bgauto/**`, `backend/tests/**`, `backend/{requirements.txt,Dockerfile,README.md}`,
+  `docker-compose.yml`, `.env.example`, `.dockerignore`, `plan/07-postgres-migration.md`.
 
 ### 2026-11-10 — Team — Datalab convert → extract pipeline replaces text-rule extraction
 

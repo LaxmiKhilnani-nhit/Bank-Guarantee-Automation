@@ -1,3 +1,8 @@
+# DEVELOPMENT / CI ONLY: a standalone Postgres for db/apply.py, the test
+# fixtures and local psql work. The deployment stack is the root
+# docker-compose.yml (db + one-shot migrate + app); this file is not part of it.
+#
+#   docker compose -f db/docker-compose.yml up -d
 services:
   postgres:
     image: postgres:16-alpine
