@@ -106,8 +106,8 @@ metadata columns; its `audit_logs` CHECK rejects actions the app already writes;
 and `reminders.recipients` / `audit_logs.ip` / JSONB parameters do not match how
 the code uses them. Phase 1 closes this gap.
 
-`plan/02-data-model.md` still describes `jobs`, `audit_log` and `reminder_log`.
-Those tables do not exist. Phase 8 rewrites it.
+At the time, `plan/02-data-model.md` still described `jobs`, `audit_log` and
+`reminder_log`; those tables did not exist. Phase 8 rewrote it (2026-11-13).
 
 ## 4. Decisions
 

@@ -3,7 +3,7 @@ id: PLAN-01
 title: System Architecture
 status: active
 last_updated: 2026-11-13
-version: 5
+version: 6
 inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx"]
 outputs: ["React dashboard", "FastAPI service", "PostgreSQL 16 database", "BG Tracker.xlsx updates"]
 related: ["PLAN-02", "PLAN-03", "PLAN-06"]
@@ -90,22 +90,37 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-  Internet --> IIS["IIS reverse proxy (HTTPS)"]
-  IIS --> FE["Static React build"]
-  IIS -->|"/api/*"| SVC["Windows Service\n(uvicorn FastAPI on 127.0.0.1:8000)"]
-  SVC --> DATA["C:/bg-auto/data/\nBG Tracker.xlsx, pdfs/, pipeline archive, backups/"]
-  SVC -->|SQL over psycopg| PG[("PostgreSQL 16\nbg_pgdata volume")]
-  SVC -->|PDF + API key| DIC["Datalab API\n(remote OCR)"]
-  SVC -->|outbound port 587| O365["smtp.office365.com"]
-  TS["Task Scheduler - daily 09:00 IST"] -->|calls API| SVC
+  Internet["Users over the internet"] -->|HTTPS| RP["Environment reverse proxy /\nload balancer (TLS)"]
+  RP -->|"http://127.0.0.1:8000\n(loopback publish)"| API
+  subgraph APP["app container - FastAPI API + static HTML pages"]
+    API["Upload, review, register, auth"]
+    SCH["ReminderScheduler -\ndaemon thread, 09:00 IST"]
+    SCH -->|daily T-7 run| API
+  end
+  API -->|SQL over psycopg, compose network| PG[("PostgreSQL 16 container\ndb service, bg_pgdata volume")]
+  MIG["migrate - one-shot\nschema V1-V3 + master seed"] -.->|applies before app starts| PG
+  API -->|PDF + API key| DIC["Datalab API\n(remote OCR)"]
+  API -->|STARTTLS port 587| O365["smtp.office365.com"]
 ```
 
-- IIS ends TLS and forwards `/api/*` to the backend.
-- The service account owns the data folder. End users never open the Excel file directly.
+- Production runs as a three-service Docker Compose stack on the Windows VM:
+  `db`, the one-shot `migrate` (applies the schema migrations V1–V3 and seeds
+  the masters before the app starts), and `app`.
+- The `app` container publishes only on the host loopback,
+  `127.0.0.1:${BG_WEB_PORT:-8000}:8000`; nothing is exposed on the VM's LAN
+  interfaces.
+- TLS is terminated in front of that published port by the environment's
+  reverse proxy / load balancer. This stack does not terminate TLS itself.
+- Docker Compose is the supported deployment, not an option: the app runs as a
+  container, so every lifecycle command is a compose command.
+- The 09:00 IST T-7 run happens inside the `app` container: an in-process
+  daemon thread (`ReminderScheduler`), with `POST /internal/daily-reminder`
+  as the token-guarded manual trigger for re-runs.
 - Secrets and endpoints come from environment variables (`DATALAB_API_KEY`,
-  `BG_DATALAB_MODE`, `SMTP_*`, paths), so a later move to App Service needs
+  `BG_DATALAB_MODE`, `SMTP_*`, paths), so a later move to another host needs
   config changes only.
-- Docker is optional for the pilot.
+- Restart the stack with `docker compose up -d`; recreate the app only
+  (`docker compose up -d app`) after a `.env` change.
 
 ## 6. Acceptance criteria
 

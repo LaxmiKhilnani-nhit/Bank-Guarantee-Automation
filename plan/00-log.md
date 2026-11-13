@@ -3,7 +3,7 @@ id: PLAN-LOG
 title: Decision and Change Log
 status: active
 last_updated: 2026-11-13
-version: 14
+version: 15
 inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx", "BG_UseCase_Story_Tracking.xlsx", "plan/"]
 outputs: ["plan/00-log.md"]
 ---
@@ -19,6 +19,34 @@ current state. Newest entries are first.
 Format for each entry: date, author, what changed, why, files affected.
 
 ## 2. Log (newest first)
+
+### 2026-11-13 — Team — Deployment topology: Docker Compose on the Windows VM
+
+- What: production deployment is recorded as Docker Compose on the Windows VM.
+  The stack is the three-service compose file already in the repo: `db`
+  (PostgreSQL 16, `bg_pgdata` named volume), the one-shot `migrate`
+  (`db/bootstrap.py`, applies V1–V3 and seeds the masters before the app
+  starts) and `app` (built from `Dockerfile`, publishes
+  `127.0.0.1:${BG_WEB_PORT:-8000}:8000`). Docker Desktop with the WSL 2
+  backend (or Docker Engine plus Compose v2) runs it; the app publishes only
+  on the loopback interface, so TLS stays with the environment's reverse proxy
+  or load balancer in front of that port.
+- Why: IIS, the Windows Service wrapper and the Task Scheduler job are dropped
+  — none of them is what actually runs today, and compose is already the tested
+  deployment (`docker compose up -d`, `docker compose logs -f app`,
+  `docker compose run --rm migrate`). This entry records that decision rather
+  than changing the stack.
+- Scheduling: the 09:00 IST T-7 run is the in-process daemon thread in the app
+  container (`ReminderScheduler`, catches up a late start, writes
+  `data/scheduler-last-run.txt`); `POST /internal/daily-reminder` stays as the
+  token-guarded manual trigger for re-runs, not as the default scheduler.
+- Reminders: the run writes `reminders` rows (`UNIQUE (bg_id, scheduled_for)`)
+  and sets `bg_records.reminder_sent_at`; no `tracker_mirror` or
+  `reminder_log` table exists.
+- Config: `.env` changes need `docker compose up -d app` (recreate), not
+  `docker compose restart app`.
+- Files: `plan/01-architecture.md`, `plan/05-flows.md`,
+  `plan/06-email-scheduler-hosting.md`, `BG_Automation_Plan.md`.
 
 ### 2026-11-13 — Team — Rollback window closed; SQLite removed from the tree
 

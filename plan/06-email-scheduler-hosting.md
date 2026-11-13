@@ -2,8 +2,8 @@
 id: PLAN-06
 title: Email, Scheduler, Hosting and Operations
 status: active
-last_updated: 2026-10-08
-version: 3
+last_updated: 2026-11-13
+version: 4
 inputs: ["BG_Automation_Plan.md (R4, R8)"]
 outputs: ["T-7 mails", "Daily scheduler", "VM deployment", "Backups"]
 related: ["PLAN-01", "PLAN-02", "PLAN-05"]
@@ -41,42 +41,81 @@ open behind the `MailSender` interface.
 ## 4. Daily scheduler (09:00 IST)
 
 Once a day the scheduler finds BGs expiring in exactly 7 calendar days that
-have not been reminded and are not closed.
+have not been reminded and are still open.
 
-```sql
-SELECT *
-FROM tracker_mirror
-WHERE date("To", '-7 days') = date('now', 'localtime')
-  AND reminder_sent_at IS NULL
-  AND Status <> 'Closed';
-```
-
-On success: set `reminder_sent_at` and insert a `reminder_log` row (BG No,
-recipients, subject, timestamp). On empty result: log a no-op run.
-
-Trigger: Windows Task Scheduler at 09:00 IST calls
-`POST /internal/daily-reminder` with a shared-secret header. An in-process
-scheduler is an acceptable alternative for the pilot.
+- The scheduler is an in-process daemon thread inside the `app` container
+  (`ReminderScheduler`), started with the API's lifespan. It wakes at 09:00
+  IST, runs once per day, and writes `data/scheduler-last-run.txt` so a restart
+  can tell whether today's run already happened.
+- If the app starts after 09:00 and today's marker is missing, it catches up
+  immediately; otherwise it waits for the next 09:00 IST.
+- The time is configurable with `BG_SCHEDULER_TIME` (default `09:00`); the
+  thread runs in the app process, so there is no separate job to schedule.
+- Selection semantics (`to_date` is the T-7 anchor):
+  `bg_records.to_date = today + 7`, `reminder_sent_at IS NULL`, and
+  `status <> 'Closed'`.
+- On send: write a `reminders` row (`bg_id`, `scheduled_for`, `recipients`,
+  `status`, and `sent_at` once the mail goes out) and set
+  `bg_records.reminder_sent_at`. `UNIQUE (bg_id, scheduled_for)` on the table
+  is what stops a BG from getting the same T-7 mail twice, so a re-run cannot
+  double-send.
+- On empty result: log a no-op run.
+- Manual re-run for ops (missed day, changed DLs, dry run):
+  `POST /internal/daily-reminder` with `X-Internal-Token: $BG_INTERNAL_TOKEN`.
+  Admins can also resend a single BG from the register. Neither is the default
+  scheduler — the in-process thread is.
 
 ## 5. Hosting on the Windows VM
 
-- IIS ends HTTPS and serves the static React build. It forwards `/api/*` to
-  `127.0.0.1:8000`, where the FastAPI app runs as a Windows Service
-  (uvicorn).
-- Data folder: `C:/bg-auto/data/` holds `BG Tracker.xlsx`, `pdfs/`,
-  `ocr-json/`, and `backups/`. The service account owns it. The register itself
-  lives in PostgreSQL (compose `db` service), not in a file here.
-- Configuration is 100% environment-driven, so a later move to App Service
+Production is Docker Compose on the Windows VM. Requirements:
+
+- Docker Desktop with the WSL 2 backend (or Docker Engine plus Compose v2)
+  installed on the VM, with the project checked out in a fixed folder.
+- `docker compose build` once, then `docker compose up -d` starts all three
+  services: `db` (PostgreSQL 16 with the `bg_pgdata` named volume), the
+  one-shot `migrate` (applies the schema migrations, then seeds the masters),
+  and `app` (FastAPI serving the API and the static HTML pages).
+- The app publishes only on the host loopback:
+  `127.0.0.1:${BG_WEB_PORT:-8000}:8000` (override with `BG_WEB_PORT`). No
+  database port is published; `app` reaches `db` over the compose network.
+- TLS is terminated in front of that published port by the environment's
+  reverse proxy / load balancer. This stack does not terminate TLS itself and
+  does not name a proxy product — whatever the environment already fronts the
+  VM with is expected to forward to `http://127.0.0.1:8000`.
+- IIS is not used, and neither is a Windows Service wrapper: the app runs as a
+  container, so all lifecycle commands are compose commands.
+- Inspect the stack with `docker compose ps`, and follow the app log with
+  `docker compose logs -f app`.
+- Changing `.env` needs a recreate, not a restart: run `docker compose up -d
+  app`, because `docker compose restart app` keeps the old environment.
+- Data folders: `out/` holds the review workbook, the run archive and the mail
+  dry-run `.eml` files; backup archives go to `data/backups/`, next to the OCR
+  and PDF archive under `data/pdfs/`. The register itself lives in the
+  `bg_pgdata` volume, not in a file.
+- Configuration is 100% environment-driven, so a later move to another host
   needs no code change.
 
 ## 6. Backups and runbook
 
-- Daily backup of the Excel file, the database, and PDFs with 7-day rotation.
-- Log rotation for API and scheduler logs.
-- Runbook covers: restore from backup, re-run the scheduler for a date,
-  resend a reminder, unlock a user, and rotate the SMTP password.
+- Take a backup with `python -m bgauto.cli backup`. It writes one zip
+  (`bg-auto-backup-<timestamp>.zip`) to `data/backups/` containing a `pg_dump`
+  custom-format dump of the register and audit trail, the review workbook, the
+  tracker template and the archived PDFs, and keeps the newest 7 archives.
+- Restore is manual: stop the app, unzip the archive, then restore the register
+  with `pg_restore --clean --if-exists --no-owner --dbname "$DATABASE_URL"
+  database.dump` and copy `out/BG Tracker_ingested.xlsx` and `data/pdfs/` back
+  into place. Start the app and check `/api/health`, the Register screen and one
+  reminder dry run.
+- `bg_pgdata` is a named volume, so it also survives `docker compose down`;
+  a volume deletion, however, is unrecoverable without a dump.
+- Log rotation for the container logs is an operational task on the VM.
+- Runbook covers: restore from backup, re-run the scheduler
+  (`POST /internal/daily-reminder`), resend a reminder, unlock a user, and
+  rotate the SMTP password.
 - UAT: one month of parallel manual entry with an accuracy report, a
   scheduler dry run (`To = today + 7`), and a sandbox mail test.
+- Off-host copies of the backups are an operational task for the VM owner —
+  nothing in this stack uploads them anywhere yet.
 
 ## 7. Risks
 
