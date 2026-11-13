@@ -1,0 +1,58 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // Firecrawl only. Requires FIRECRAWL_API_KEY in environment.
+  "websearch": {
+    "provider": "firecrawl"
+  },
+  "mcp": {
+    "servers": {
+      "firecrawl": {
+        "type": "remote",
+        "url": "https://mcp.firecrawl.dev/v2/mcp",
+        "oauth": false,
+        "headers": {
+          "Authorization": "Bearer {env:FIRECRAWL_API_KEY}"
+        }
+      }
+    }
+  },
+  // Built-ins: shell (local tool run), webfetch (free URL fetch), websearch are
+  // already included. These permissions make them usable without extra plugins.
+  "permissions": [
+    {
+      "action": "websearch",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "webfetch",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "firecrawl_*",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "*",
+      "effect": "ask"
+    },
+    {
+      "action": "shell",
+      "resource": "git status *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git diff *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git log *",
+      "effect": "allow"
+    }
+  ]
+}

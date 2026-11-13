@@ -1,0 +1,135 @@
+---
+id: PLAN-01
+title: System Architecture
+status: active
+last_updated: 2026-11-13
+version: 6
+inputs: ["BG_Automation_Plan.md", "BG Tracker.xlsx"]
+outputs: ["React dashboard", "FastAPI service", "PostgreSQL 16 database", "BG Tracker.xlsx updates"]
+related: ["PLAN-02", "PLAN-03", "PLAN-06"]
+---
+
+# 01 — System Architecture
+
+## 1. Purpose
+
+This document describes the building blocks of BG Automation and where they
+run. Read it if you are setting up the project, deploying it, or adding a
+new integration.
+
+## 2. Context and scope
+
+- In scope: frontend, backend API, database, Excel tracker, OCR service,
+  mail service, VM deployment.
+- Out of scope (Phase 1): Microsoft Graph, SharePoint live sync, Entra SSO.
+  The code must keep clean seams so these can be added later without rewrites.
+
+## 3. System context
+
+A user uploads BG PDFs on a web dashboard. The backend runs each PDF through a
+pinned Datalab pipeline (convert then structured extract). A human reviews the
+result, and confirmed rows are appended to the Excel tracker. A daily job
+emails Finance and the User Team 7 days before expiry.
+
+```mermaid
+flowchart LR
+  Uploader["Uploader or Admin\n(React dashboard)"] -->|HTTPS| API["FastAPI on port 8000\n(upload, review, register, auth)"]
+  Viewer["Viewer - Finance / User Team"] -->|HTTPS read and export| API
+  API -->|PDF + API key| DL["Datalab API\n(pipeline: convert + extract)"]
+  API -->|single writer| XLSX["BG Tracker.xlsx\n(Sheet1, 21 columns)"]
+  API -->|SQL over psycopg| DB[("PostgreSQL 16\nusers, register, audit, reminders")]
+  API -->|STARTTLS port 587| SMTP["smtp.office365.com\n(service mailbox)"]
+  SMTP -->|T-7 reminder| DLIST["Finance DL + User Team DL"]
+  API -->|pipeline results and review archive| STORE["Local run archive"]
+```
+
+Phase 1 has no Graph, SharePoint, or Entra. Each external dependency sits
+behind an interface: `Extractor`, `TrackerStore`, `MailSender`,
+`AuthProvider`.
+
+## 4. Components
+
+```mermaid
+flowchart TB
+  subgraph UI["Frontend - React (Vite)"]
+    Login["Login"]
+    Upload["Upload - drag and drop, multiple PDFs"]
+    Review["Review - page text plus editable form"]
+    Register["Register - table, Due-7d and Overdue filters, search, export"]
+    RemLog["Reminders log"]
+    Users["Users and Admin"]
+  end
+  subgraph SVC["Backend - FastAPI"]
+    AuthN["Auth - opaque session cookie, role checks"]
+    Jobs["Jobs - upload, fetch, edit, confirm"]
+    Extract["Extractor - Datalab convert -> extract pipeline"]
+    Track["TrackerStore - append row, dedupe on BG No"]
+    Mail["MailSender - SMTP"]
+    Sched["Scheduler - daily 09:00 T-7 check"]
+  end
+  Login --> AuthN
+  Upload --> Jobs
+  Review --> Jobs
+  Register --> Track
+  Jobs --> Extract
+  Jobs --> Track
+  Sched --> Mail
+  Jobs --> AuthN
+```
+
+| Component | Responsibility | Key rule |
+|-----------|---------------|----------|
+| Upload | Accept PDFs, create a job per file | Max file size and type validated before queuing |
+| Extractor | Run the pinned Datalab pipeline, map its JSON through master resolution, return fields + extras | Never invent values; a failed convert or extract fails that upload |
+| Review | Let humans fix fields and pick dropdowns | Uploader edits own drafts; admin edits any |
+| TrackerStore | Append confirmed rows to Excel | One writer at a time; reject duplicate BG No with 409 |
+| MailSender | Send T-7 mails, log results | Retry 3 times, then dead-letter |
+| Auth | Login, roles, audit | Every mutation is logged |
+
+## 5. Deployment on the Windows VM
+
+```mermaid
+flowchart LR
+  Internet["Users over the internet"] -->|HTTPS| RP["Environment reverse proxy /\nload balancer (TLS)"]
+  RP -->|"http://127.0.0.1:8000\n(loopback publish)"| API
+  subgraph APP["app container - FastAPI API + static HTML pages"]
+    API["Upload, review, register, auth"]
+    SCH["ReminderScheduler -\ndaemon thread, 09:00 IST"]
+    SCH -->|daily T-7 run| API
+  end
+  API -->|SQL over psycopg, compose network| PG[("PostgreSQL 16 container\ndb service, bg_pgdata volume")]
+  MIG["migrate - one-shot\nschema V1-V3 + master seed"] -.->|applies before app starts| PG
+  API -->|PDF + API key| DIC["Datalab API\n(remote OCR)"]
+  API -->|STARTTLS port 587| O365["smtp.office365.com"]
+```
+
+- Production runs as a three-service Docker Compose stack on the Windows VM:
+  `db`, the one-shot `migrate` (applies the schema migrations V1–V3 and seeds
+  the masters before the app starts), and `app`.
+- The `app` container publishes only on the host loopback,
+  `127.0.0.1:${BG_WEB_PORT:-8000}:8000`; nothing is exposed on the VM's LAN
+  interfaces.
+- TLS is terminated in front of that published port by the environment's
+  reverse proxy / load balancer. This stack does not terminate TLS itself.
+- Docker Compose is the supported deployment, not an option: the app runs as a
+  container, so every lifecycle command is a compose command.
+- The 09:00 IST T-7 run happens inside the `app` container: an in-process
+  daemon thread (`ReminderScheduler`), with `POST /internal/daily-reminder`
+  as the token-guarded manual trigger for re-runs.
+- Secrets and endpoints come from environment variables (`DATALAB_API_KEY`,
+  `BG_DATALAB_MODE`, `SMTP_*`, paths), so a later move to another host needs
+  config changes only.
+- Restart the stack with `docker compose up -d`; recreate the app only
+  (`docker compose up -d app`) after a `.env` change.
+
+## 6. Acceptance criteria
+
+- [ ] A new developer can draw the data path (browser → API → Datalab → Excel → mail) from this file alone.
+- [ ] Every external system maps to one interface (`Extractor`, `TrackerStore`, `MailSender`, `AuthProvider`).
+- [ ] Deployment steps work on a fresh Windows VM without code edits.
+
+## References
+
+- Master plan §4: `../BG_Automation_Plan.md`
+- Data model: `02-data-model.md`
+- Hosting detail: `06-email-scheduler-hosting.md`

@@ -1,0 +1,155 @@
+# Whole app in Docker: FastAPI review UI with Datalab OCR.
+#
+#   docker compose build
+#   docker compose up -d            -> http://127.0.0.1:8000
+#   docker compose logs -f app
+#   docker compose run --rm migrate # re-apply migrations + seed masters
+#
+# Three services: db (Postgres 16, volume bg_pgdata), migrate (one-shot
+# db/bootstrap.py) and app. The app never opens a port to the database; it talks
+# to db over the compose network with DATABASE_URL.
+#
+# The host port is loopback-only on purpose (same promise as running the script
+# by hand). Change it with BG_WEB_PORT, e.g. $env:BG_WEB_PORT="8010".
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: bg-automation-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bg_automation}
+      POSTGRES_USER: ${POSTGRES_USER:-bg_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bg_app_local_pw}
+    # No published port by default: only the app needs the database, and it
+    # reaches db over the compose network. To poke at it from the host during
+    # development, add a dev-only mapping such as
+    #   ports: ["127.0.0.1:${POSTGRES_PORT:-5432}:5432"]
+    volumes:
+      - bg_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Exec form (no shell): compose substitutes the .env overrides before the
+      # container is created, so nothing has to be $-escaped for the shell.
+      test:
+        - CMD
+        - pg_isready
+        - -U
+        - ${POSTGRES_USER:-bg_app}
+        - -d
+        - ${POSTGRES_DB:-bg_automation}
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # One-shot: applies db/migrations/V1-V3 and seeds the masters from
+  # docs/master-data.md. Idempotent; run it again after a document update.
+  migrate:
+    build:
+      context: .
+      args:
+        BG_BASE_IMAGE: ${BG_BASE_IMAGE:-python:3.13-slim}
+    image: bg-automation:local
+    container_name: bg-automation-migrate
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-bg_app}:${POSTGRES_PASSWORD:-bg_app_local_pw}@db:5432/${POSTGRES_DB:-bg_automation}}
+      POSTGRES_DB: ${POSTGRES_DB:-bg_automation}
+      POSTGRES_USER: ${POSTGRES_USER:-bg_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bg_app_local_pw}
+    command: python db/bootstrap.py
+
+  app:
+    build:
+      context: .
+      args:
+        BG_BASE_IMAGE: ${BG_BASE_IMAGE:-python:3.13-slim}
+    image: bg-automation:local
+    container_name: bg-automation-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${BG_WEB_PORT:-8000}:8000"
+    environment:
+      # PostgreSQL. Compose points these at the db service; override
+      # DATABASE_URL to use a database outside this stack.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-bg_app}:${POSTGRES_PASSWORD:-bg_app_local_pw}@db:5432/${POSTGRES_DB:-bg_automation}}
+      POSTGRES_DB: ${POSTGRES_DB:-bg_automation}
+      POSTGRES_USER: ${POSTGRES_USER:-bg_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bg_app_local_pw}
+      BG_WEB_HOST: 0.0.0.0
+      BG_WEB_PORT: "8000"
+      # Accounts and sessions. A random bootstrap password is logged once when
+      # BG_BOOTSTRAP_ADMIN_PASS is empty and no account exists yet.
+      BG_BOOTSTRAP_ADMIN_USER: ${BG_BOOTSTRAP_ADMIN_USER:-admin}
+      BG_BOOTSTRAP_ADMIN_PASS: ${BG_BOOTSTRAP_ADMIN_PASS:-}
+      BG_BOOTSTRAP_ADMIN_EMAIL: ${BG_BOOTSTRAP_ADMIN_EMAIL:-}
+      BG_SESSION_MINUTES: ${BG_SESSION_MINUTES:-30}
+      BG_COOKIE_SECURE: ${BG_COOKIE_SECURE:-0}
+      # T-7 reminders. Empty BG_SMTP_HOST keeps the safe default: messages are
+      # written to out/mail/*.eml instead of being sent. Set BG_MAIL_DRY_RUN=0
+      # as well when a real mailbox is configured.
+      BG_SMTP_HOST: ${BG_SMTP_HOST:-}
+      BG_SMTP_PORT: ${BG_SMTP_PORT:-587}
+      BG_SMTP_USER: ${BG_SMTP_USER:-}
+      BG_SMTP_PASS: ${BG_SMTP_PASS:-}
+      BG_MAIL_FROM: ${BG_MAIL_FROM:-bg-automation@localhost}
+      BG_MAIL_FROM_NAME: ${BG_MAIL_FROM_NAME:-BG Automation}
+      BG_MAIL_DRY_RUN: ${BG_MAIL_DRY_RUN:-1}
+      BG_FINANCE_DL: ${BG_FINANCE_DL:-}
+      BG_USER_TEAM_DL: ${BG_USER_TEAM_DL:-}
+      BG_REMINDER_DAYS: ${BG_REMINDER_DAYS:-7}
+      BG_APP_URL: ${BG_APP_URL:-http://127.0.0.1:8000}
+      # In-process 09:00 IST scheduler, plus the token-guarded manual trigger.
+      BG_SCHEDULER: ${BG_SCHEDULER:-1}
+      BG_SCHEDULER_TIME: ${BG_SCHEDULER_TIME:-09:00}
+      BG_INTERNAL_TOKEN: ${BG_INTERNAL_TOKEN:-}
+      # Optional Firecrawl name check. Empty key = no lookup (OCR still runs).
+      BG_FIRECRAWL_API_KEY: ${BG_FIRECRAWL_API_KEY:-}
+      BG_LOOKUP: ${BG_LOOKUP:-1}
+      BG_LOOKUP_TIMEOUT: ${BG_LOOKUP_TIMEOUT:-120}
+      BG_LOOKUP_MAX_CREDITS: ${BG_LOOKUP_MAX_CREDITS:-100}
+      BG_LOOKUP_TTL_DAYS: ${BG_LOOKUP_TTL_DAYS:-30}
+      BG_LOOKUP_MAX_MATCHES: ${BG_LOOKUP_MAX_MATCHES:-5}
+      # Datalab OCR. The key stays in the git-ignored .env file and is never
+      # written to source, logs or the image. Mode: lite|fast|balanced|accurate.
+      DATALAB_API_KEY: ${DATALAB_API_KEY:-}
+      BG_DATALAB_MODE: ${BG_DATALAB_MODE:-fast}
+      BG_DATALAB_TIMEOUT: ${BG_DATALAB_TIMEOUT:-600}
+      BG_DATALAB_MAX_POLLS: ${BG_DATALAB_MAX_POLLS:-300}
+      BG_DATALAB_POLL_INTERVAL: ${BG_DATALAB_POLL_INTERVAL:-2}
+      BG_DATALAB_PIPELINE_ID: ${BG_DATALAB_PIPELINE_ID:-pl_INVNggnY7MaE}
+      BG_DATALAB_PIPELINE_VERSION: ${BG_DATALAB_PIPELINE_VERSION:-1}
+      BG_DATALAB_EXTRACTION_MODE: ${BG_DATALAB_EXTRACTION_MODE:-turbo}
+    volumes:
+      # Outputs and the OCR archive stay on the host, so the files a reviewer
+      # checks are the same ones the local run produces. The database itself
+      # lives in the bg_pgdata volume, not in a file under db/.
+      - ./out:/app/out
+      - ./data:/app/data
+      # Template of record: readable, never writable, inside the container.
+      - "./BG Tracker.xlsx:/app/BG Tracker.xlsx:ro"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # Healthy means "the API is serving and the database is reachable".
+      # /api/health reports `degraded` while DATALAB_API_KEY is empty, which is
+      # a configuration state, not a liveness failure (the UI shows it), so
+      # accept `degraded` but require a database version.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import json,sys,urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=15)); db=(h.get('database') or {}).get('version'); sys.exit(0 if h.get('status') in ('ok','degraded') and db else 1)"
+      interval: 30s
+      timeout: 20s
+      start_period: 20s
+      retries: 3
+
+volumes:
+  # Postgres data. It is not a bind mount: back it up with pg_dump
+  # (postgresql-client is in the image) or `docker compose exec db pg_dump`.
+  bg_pgdata:

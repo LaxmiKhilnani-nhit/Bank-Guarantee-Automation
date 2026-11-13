@@ -1,0 +1,1034 @@
+{
+  "info": {
+    "id": "ses_eea4c5ff5ffdbyWLn6g9nKhCPp",
+    "projectID": "5e08d0ec8a132f1a7971ec881f236461006e955a",
+    "agent": "build",
+    "model": {
+      "id": "muse-spark-1.3-contributor-free",
+      "providerID": "opencode",
+      "variant": "high"
+    },
+    "cost": 0,
+    "tokens": {
+      "input": 88680,
+      "output": 8142,
+      "reasoning": 3248,
+      "cache": {
+        "read": 157019,
+        "write": 0
+      }
+    },
+    "outcome": "succeeded",
+    "time": {
+      "created": 1791365455896,
+      "updated": 1791438042727,
+      "idle": 1791365804805
+    },
+    "title": "BG OCR Options Comparison for Manager",
+    "permissions": [],
+    "location": {
+      "directory": "D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation"
+    }
+  },
+  "messages": [
+    {
+      "id": "msg_115b3a00a001hmcKxvggWlYdjy",
+      "metadata": {
+        "displayText": "Based on @BG_OCR_Options_Comparison.md make me a small presentation so that I can present it to my manager",
+        "comments": [],
+        "attachments": [],
+        "agent": "build",
+        "model": {
+          "modelID": "muse-spark-1.3-contributor-free",
+          "providerID": "opencode",
+          "variant": "high"
+        }
+      },
+      "time": {
+        "created": 1791365456089
+      },
+      "text": "Based on @BG_OCR_Options_Comparison.md make me a small presentation so that I can present it to my manager",
+      "files": [
+        {
+          "data": "IyBCRyBBdXRvbWF0aW9uIOKAlCBPQ1IgLyBFeHRyYWN0aW9uIE9wdGlvbnMgQ29tcGFyaXNvbgoKKipEYXRlOioqIDcgT2N0b2JlciAyMDI2CioqVXNlIGNhc2U6KiogQmFuayBHdWFyYW50ZWUgKEJHKSBQREZzIHVwbG9hZGVkIG9uIGRhc2hib2FyZCwgT0NSICsgc3RydWN0dXJlZCBkZXRhaWxzIGV4dHJhY3Rpb24sIHdyaXRlIHRvIGxpdmUgU2hhcmVQb2ludCBFeGNlbCwgVC03IGV4cGlyeSBlbWFpbCB2aWEgTTM2NSBPdXRsb29rCioqVm9sdW1lIGFzc3VtcHRpb246KiogMjDigJMyNSBQREZzL21vbnRoLCA24oCTMTAgcGFnZXMgZWFjaCA9IH4yMDAgcGFnZXMvbW9udGgsIH4yLDQwMCBwYWdlcy95ZWFyCioqRG9jdW1lbnQgdHlwZToqKiBQcmludGVkIEVuZ2xpc2ggb25seSAobm8gaGFuZHdyaXRpbmcgcmVxdWlyZW1lbnQpCgotLS0KCiMjIDEuIEV4ZWN1dGl2ZSBTdW1tYXJ5ICsgUmVjb21tZW5kYXRpb24KCioqUmVjb21tZW5kZWQ6IEF6dXJlIEFJIERvY3VtZW50IEludGVsbGlnZW5jZSAoQ3VzdG9tIC8gTGF5b3V0KSBkZXBsb3llZCBpbiBDZW50cmFsIEluZGlhLioqCgpSYXRpb25hbGU6CgotIExvd2VzdCBlbnRlcnByaXNlIGV4dHJhY3Rpb24gY29zdCBhdCB0aGlzIHZvbHVtZTogfiQy4oCTJDYvbW9udGggKFJzIDE4MOKAkzU0MC9tb250aCkuCi0gT25seSBvcHRpb24gdGhhdCBzaW11bHRhbmVvdXNseSBzYXRpc2ZpZXMgYWxsIHRocmVlIGhhcmQgY29uc3RyYWludHM6IChhKSBJbmRpYS1vbmx5IGRhdGEgcmVzaWRlbmN5IHdpdGggYSBtYXR1cmUgQ2VudHJhbCBJbmRpYSBlbmRwb2ludCwgKGIpIG5hdGl2ZSBNMzY1IC8gRW50cmEgSUQgLyBTaGFyZVBvaW50IC8gT3V0bG9vayBpbnRlZ3JhdGlvbiwgYW5kIChjKSBlbnRlcnByaXNlIHN1cHBvcnQgd2l0aCBubyBvcGVuLXNvdXJjZSBjb21wb25lbnRzLgotIEN1c3RvbSBtb2RlbCB0cmFpbmluZyBhbGxvd3MgZmllbGQtbGV2ZWwgZXh0cmFjdGlvbiB0dW5lZCB0byBCRyBmb3JtYXRzIChCRyBudW1iZXIsIGlzc3VpbmcgYmFuaywgYmVuZWZpY2lhcnksIGFwcGxpY2FudCwgYW1vdW50LCBpc3N1ZSBkYXRlLCBleHBpcnkgZGF0ZSwgY2xhaW0gcGVyaW9kKSB3aXRoIGhpZ2ggYWNjdXJhY3kgb24gcHJpbnRlZCB0ZXh0LgotIE9wZXJhdGlvbmFsIHNpbXBsaWNpdHk6IHNpbmdsZSBBenVyZSB0ZW5hbnQsIHNhbWUgRW50cmEgSUQgdXNlZCBmb3IgYXBwIGxvZ2luLCBubyBjcm9zcy1jbG91ZCBkYXRhIHRyYW5zZmVyLCBubyBhZGRpdGlvbmFsIGhvc3RpbmcgZmVlIGZvciB0aGUgT0NSIHNlcnZpY2UgaXRzZWxmLgoKR29vZ2xlIERvY3VtZW50IEFJIGFuZCBBV1MgVGV4dHJhY3QgYXJlIHRlY2huaWNhbGx5IGNhcGFibGUgYW5kIGhhdmUgTXVtYmFpIHJlZ2lvbnMsIGJ1dCBpbnRyb2R1Y2UgY3Jvc3MtY2xvdWQgaWRlbnRpdHksIGRhdGEtZ292ZXJuYW5jZSwgYW5kIE0zNjUgaW50ZWdyYXRpb24gb3ZlcmhlYWQgd2l0aCBubyBjb3N0IGFkdmFudGFnZS4gQUJCWVkgVmFudGFnZSBpcyBoaWdobHkgYWNjdXJhdGUgYnV0IHByaWNlZCBhdCB+JDEwLDAwMCsveWVhciBtaW5pbXVtLCB1bmp1c3RpZmllZCBmb3IgMjAwIHBhZ2VzL21vbnRoLiBBSSBCdWlsZGVyIGlzIE0zNjUtbmF0aXZlIGJ1dCB+M+KAkzh4IG1vcmUgZXhwZW5zaXZlIHRoYW4gQXp1cmUgREkgYXQgdGhpcyB2b2x1bWUgYW5kIGxlc3MgdHVuYWJsZSBmb3IgdmFyaWVkIEJHIGxheW91dHMuCgotLS0KCiMjIDIuIFJlcXVpcmVtZW50cyBSZWNhcAoKfCAjIHwgUmVxdWlyZW1lbnQgfCBEZXRhaWwgfAp8LS0tfC0tLS0tLS0tLS0tLS18LS0tLS0tLS18CnwgUjEgfCBJbnB1dCB8IEJHIFBERnMsIDIw4oCTMjUgZmlsZXMvbW9udGgsIDbigJMxMCBwYWdlcyBlYWNoLCB+MjAwIHBhZ2VzL21vbnRoIHwKfCBSMiB8IERvY3VtZW50IHR5cGUgfCBQcmludGVkIEVuZ2xpc2ggb25seTsgdGFibGVzIGFuZCBrZXktdmFsdWUgZmllbGRzOyBzdGFtcC9zaWduYXR1cmUgbm9pc2UgdG9sZXJhdGVkLCBubyBoYW5kd3JpdGluZyBkZXBlbmRlbmN5IHwKfCBSMyB8IEZ1bmN0aW9ucyB8IE9DUiArIHN0cnVjdHVyZWQgZXh0cmFjdGlvbiAoQkcgbm8uLCBiYW5rLCBkYXRlcywgYW1vdW50LCBwYXJ0aWVzKSwgd3JpdGUgdG8gbGl2ZSBTaGFyZVBvaW50IEV4Y2VsLCBULTcgZXhwaXJ5IGVtYWlsIHZpYSBNMzY1IE91dGxvb2sgfAp8IFI0IHwgRGF0YSByZXNpZGVuY3kgfCBJbmRpYS1vbmx5LCBzdHJpY3QuIERhdGEgYXQgcmVzdCBhbmQgcHJvY2Vzc2luZyBtdXN0IHJlbWFpbiBpbiBJbmRpYSB8CnwgUjUgfCBJZGVudGl0eSB8IEVudHJhIElEIGxvZ2luIG1hbmRhdG9yeSB8CnwgUjYgfCBFbnRlcnByaXNlLW9ubHkgfCBObyBvcGVuLXNvdXJjZSBPQ1IgLyBMTE0gKG5vIFRlc3NlcmFjdCwgRWFzeU9DUiwgUGFkZGxlT0NSLCBzZWxmLWhvc3RlZCBMTE1zKSB8CnwgUjcgfCBQcmlvcml0aWVzIHwgMS4gQ29zdCwgMi4gQWNjdXJhY3ksIDMuIE0zNjUgZml0LCA0LiBPcGVyYXRpb25hbCBzaW1wbGljaXR5IHwKfCBSOCB8IEhvc3RpbmcgfCBQcmVmZXIgcmV1c2Ugb2YgZXhpc3RpbmcgV2luZG93cyBWTTsgQXBwIFNlcnZpY2UgYXMgYWx0ZXJuYXRpdmUgfAoKLS0tCgojIyAzLiBPcHRpb25zIENvbXBhcmlzb24KCkFsbCBjb3N0cyBub3JtYWxpc2VkIHRvIDIwMCBwYWdlcy9tb250aC4KCnwgQ3JpdGVyaWEgfCBBenVyZSBBSSBEb2N1bWVudCBJbnRlbGxpZ2VuY2UgfCBHb29nbGUgQ2xvdWQgRG9jdW1lbnQgQUkgfCBBV1MgVGV4dHJhY3QgfCBBQkJZWSBWYW50YWdlIHwgTWljcm9zb2Z0IEFJIEJ1aWxkZXIgfAp8LS0tLS0tLS0tLXwtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tfC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tfC0tLS0tLS0tLS0tLS0tfC0tLS0tLS0tLS0tLS0tLXwtLS0tLS0tLS0tLS0tLS0tLS0tLS0tfAp8ICoqT0NSIGNvc3QgKGxpc3QpKiogfCBSZWFkOiAkMS41MCAvIDEsMDAwIHBhZ2VzIHwgT0NSOiAkMS41MCAvIDEsMDAwIHBhZ2VzIHwgRGV0ZWN0IERvY3VtZW50IFRleHQ6ICQxLjUwIC8gMSwwMDAgcGFnZXMgfCBJbmNsdWRlZCBpbiBwbGF0Zm9ybSBsaWNlbmNlLCBjdXN0b20gcXVvdGUgfCBJbmNsdWRlZCBpbiAkMC4wOCAvIHBhZ2UgKHZpYSBDb3BpbG90IC8gUG93ZXIgQXV0b21hdGUgY3JlZGl0cykgfAp8ICoqRXh0cmFjdGlvbiBjb3N0IChsaXN0KSoqIHwgTGF5b3V0OiAkMTAgLyAxLDAwMCBwYWdlczsgQ3VzdG9tIGNsYXNzaWZpY2F0aW9uICsgZXh0cmFjdGlvbjogJDMwIC8gMSwwMDAgcGFnZXMgfCBDdXN0b20gRXh0cmFjdG9yIC8gRm9ybSBQYXJzZXI6ICQzMCAvIDEsMDAwIHBhZ2VzICsgcHJvY2Vzc29yIGhvc3RpbmcgJDAuMDUgLyBob3VyICh+JDM2IC8gbW9udGggcGVyIHByb2Nlc3NvcikgfCBUYWJsZXM6ICQxNSAvIDEsMDAwIHBhZ2VzOyBGb3JtcyAoa2V5LXZhbHVlKTogJDUwIC8gMSwwMDAgcGFnZXMgfCBJbmNsdWRlZCBpbiBwbGF0Zm9ybSBsaWNlbmNlLCBjdXN0b20gcXVvdGUgfCBEb2N1bWVudCBwcm9jZXNzaW5nOiB+JDAuMDggLyBwYWdlIHwKfCAqKkNvc3QgYXQgMjAwIHBncy9tbyoqIHwgUmVhZDogJDAuMzAvbW87IExheW91dDogJDIuMDAvbW87IEN1c3RvbTogJDYuMDAvbW8gfCBPQ1Igb25seTogJDAuMzAvbW87IEN1c3RvbSArIGhvc3Rpbmc6IH4kNDIuMDAvbW8gfCBEZXRlY3Qgb25seTogJDAuMzAvbW87IERldGVjdCArIFRhYmxlczogfiQzLjMwL21vOyBEZXRlY3QgKyBUYWJsZXMgKyBGb3JtczogfiQxMy4zMC9tbyB8IH4kODMzKy9tbyBhbW9ydGlzZWQgKCQxMCwwMDArL3lyIG1pbmltdW0pIHwgfiQxNi4wMC9tbyB8CnwgKipJbmRpYSByZXNpZGVuY3kqKiB8IFllcyDigJQgQ2VudHJhbCBJbmRpYSBhdmFpbGFibGU7IGNvbmZpZ3VyZSByZXNvdXJjZSBpbiBDZW50cmFsIEluZGlhIHwgUGFydGlhbCDigJQgTXVtYmFpIChhc2lhLXNvdXRoMSkgYXZhaWxhYmxlIGZvciBzZWxlY3QgcHJvY2Vzc29yczsgcmVzaWRlbmN5IGNvbnRyb2xzIGxlc3Mgc3RyYWlnaHRmb3J3YXJkIGZvciB0aGlzIHdvcmtsb2FkIHwgWWVzIOKAlCBNdW1iYWkgKGFwLXNvdXRoLTEpIGF2YWlsYWJsZSB8IE5vIOKAlCBTYWFTIGhvc3RlZCBVUy9FVTsgbm8gSW5kaWEgZGF0YSBjZW50cmUgZm9yIHN0YW5kYXJkIG9mZmVyaW5nIHwgWWVzIOKAlCBQb3dlciBQbGF0Zm9ybSAvIERhdGF2ZXJzZSBlbnZpcm9ubWVudCBjYW4gYmUgcHJvdmlzaW9uZWQgaW4gSW5kaWEgfAp8ICoqTTM2NSAvIEVudHJhIElEIGZpdCoqIHwgTmF0aXZlIOKAlCBzYW1lIHRlbmFudCwgRW50cmEgSUQgYXV0aCwgU0RLICsgUkVTVCwgU2hhcmVQb2ludC9HcmFwaCBpbnRlZ3JhdGlvbiB8IFBvb3Ig4oCUIHNlcGFyYXRlIEdvb2dsZSBJQU0sIEFQSSBrZXlzIC8gV29ya2xvYWQgSWRlbnRpdHkgRmVkZXJhdGlvbiwgY3VzdG9tIGJyaWRnZSB0byBNMzY1IHwgUG9vciDigJQgc2VwYXJhdGUgQVdTIElBTSwgY3VzdG9tIGJyaWRnZSB0byBNMzY1IHwgTW9kZXJhdGUg4oCUIFNTTy9TQU1MICsgUkVTVCBBUEksIGJ1dCBzZXBhcmF0ZSBwbGF0Zm9ybSBhbmQgbGljZW5jZSBtYW5hZ2VtZW50IHwgTmF0aXZlIOKAlCBidWlsdCBpbnRvIFBvd2VyIFBsYXRmb3JtLCBFbnRyYSBJRCBieSBkZWZhdWx0IHwKfCAqKkFjY3VyYWN5IGZvciBwcmludGVkIEJHcyoqIHwgSGlnaCDigJQgUmVhZC9MYXlvdXQgdmVyeSBzdHJvbmcgb24gcHJpbnRlZCBFbmdsaXNoICsgdGFibGVzOyBDdXN0b20gdHJhaW5hYmxlIG9uIEJHIGxheW91dHMgfCBIaWdoIOKAlCBzdHJvbmcgT0NSIGFuZCBjdXN0b20gZXh0cmFjdG9yIHF1YWxpdHkgfCBIaWdoIOKAlCBzdHJvbmcgb24gcHJpbnRlZCB0ZXh0LCB0YWJsZXMgYW5kIGZvcm1zOyB0dW5pbmcgdmlhIHF1ZXJpZXMgaXMgbW9yZSBsaW1pdGVkIHwgVmVyeSBoaWdoIOKAlCBwdXJwb3NlLWJ1aWx0IGZvciBkb2N1bWVudCBza2lsbCBleHRyYWN0aW9uLCBzdHJvbmcgb24gbm9pc3kgc2NhbnMgfCBHb29kIOKAlCBhZGVxdWF0ZSBmb3Igc3RhbmRhcmQgZm9ybXM7IGxlc3MgdHVuYWJsZSBmb3IgdmFyaWVkIEJHIGJhbmsgZm9ybWF0cyB8CgpOb3RlczoKCi0gR29vZ2xlIGhvc3RpbmcgZmVlIGFwcGxpZXMgcGVyIGN1c3RvbSBwcm9jZXNzb3IgYW5kIGFjY3J1ZXMgMjR4NyAofiQzNi9tb250aCkgZXZlbiB3aXRoIHplcm8gdHJhZmZpYy4gT25lIEJHIHByb2Nlc3NvciA9IH4kMzYvbW9udGggZml4ZWQgYmVmb3JlIGFueSBwZXItcGFnZSBjaGFyZ2UuCi0gQVdTIGNvc3RzIGFyZSBhZGRpdGl2ZTogYSBmdWxsIEJHIGV4dHJhY3Rpb24gbmVlZGluZyB0ZXh0ICsgdGFibGVzICsgZm9ybXMgaXMgdGhlIHN1bSBvZiBlYWNoIGZlYXR1cmUgYXBwbGllZCB0byB0aGUgc2FtZSBwYWdlcy4KLSBBSSBCdWlsZGVyIHByaWNpbmcgdmFyaWVzIGJ5IGxpY2Vuc2luZyByb3V0ZSAoQ29waWxvdCBjcmVkaXRzLCBQb3dlciBBdXRvbWF0ZSBwcmVtaXVtLCBwYXktYXMteW91LWdvKTsgJDAuMDgvcGFnZSBpcyB0aGUgcmVwcmVzZW50YXRpdmUgY29uc3VtcHRpb24gZmlndXJlIHVzZWQgaGVyZS4KLSBBQkJZWSBwcmljaW5nIGlzIHF1b3RlLWJhc2VkOyAkMTAsMDAwKy95ZWFyIHJlZmxlY3RzIGN1cnJlbnQgZW50cnktbGV2ZWwgU2FhUy9saWNlbmNlIGZsb29yIGZvciBWYW50YWdlIHdpdGggZXh0cmFjdGlvbiBza2lsbHMuCgotLS0KCiMjIDQuIENvc3QgTWF0aCDigJQgMjAwIFBhZ2VzIC8gTW9udGggKFVTRCArIElOUiwgJDEgPSBScyA5MCkKCnwgU2VydmljZSAvIFRpZXIgfCBGb3JtdWxhIHwgVVNEIC8gbW9udGggfCBJTlIgLyBtb250aCB8IFVTRCAvIHllYXIgfCBJTlIgLyB5ZWFyIHwKfC0tLS0tLS0tLS0tLS0tLS18LS0tLS0tLS0tfC0tLS0tLS0tLS0tLS18LS0tLS0tLS0tLS0tLXwtLS0tLS0tLS0tLS18LS0tLS0tLS0tLS0tfAp8IEF6dXJlIERJIOKAlCBSZWFkIChPQ1Igb25seSkgfCAwLjIgeCAkMS41MCB8ICQwLjMwIHwgUnMgMjcgfCAkMy42MCB8IFJzIDMyNCB8CnwgQXp1cmUgREkg4oCUIExheW91dCB8IDAuMiB4ICQxMC4wMCB8ICQyLjAwIHwgUnMgMTgwIHwgJDI0LjAwIHwgUnMgMiwxNjAgfAp8IEF6dXJlIERJIOKAlCBDdXN0b20gZXh0cmFjdGlvbiB8IDAuMiB4ICQzMC4wMCB8ICQ2LjAwIHwgUnMgNTQwIHwgJDcyLjAwIHwgUnMgNiw0ODAgfAp8IEdvb2dsZSDigJQgT0NSIG9ubHkgfCAwLjIgeCAkMS41MCB8ICQwLjMwIHwgUnMgMjcgfCAkMy42MCB8IFJzIDMyNCB8CnwgR29vZ2xlIOKAlCBDdXN0b20gKyAxIHByb2Nlc3NvciBob3N0aW5nIHwgMC4yIHggJDMwLjAwICsgJDM2LjAwIHwgJDQyLjAwIHwgUnMgMyw3ODAgfCAkNTA0LjAwIHwgUnMgNDUsMzYwIHwKfCBBV1Mg4oCUIERldGVjdCBvbmx5IHwgMC4yIHggJDEuNTAgfCAkMC4zMCB8IFJzIDI3IHwgJDMuNjAgfCBScyAzMjQgfAp8IEFXUyDigJQgRGV0ZWN0ICsgVGFibGVzIHwgJDAuMzAgKyAwLjIgeCAkMTUuMDAgfCAkMy4zMCB8IFJzIDI5NyB8ICQzOS42MCB8IFJzIDMsNTY0IHwKfCBBV1Mg4oCUIERldGVjdCArIFRhYmxlcyArIEZvcm1zIHwgJDAuMzAgKyAkMy4wMCArIDAuMiB4ICQ1MC4wMCB8ICQxMy4zMCB8IFJzIDEsMTk3IHwgJDE1OS42MCB8IFJzIDE0LDM2NCB8CnwgQUkgQnVpbGRlciAofiQwLjA4L3BhZ2UpIHwgMjAwIHggJDAuMDggfCAkMTYuMDAgfCBScyAxLDQ0MCB8ICQxOTIuMDAgfCBScyAxNywyODAgfAp8IEFCQllZIFZhbnRhZ2UgKGVudHJ5IGZsb29yKSB8ICQxMCwwMDAgLyAxMiAobWluKSB8IH4kODMzLjAwIHwgflJzIDc1LDAwMCB8IH4kMTAsMDAwLjAwIHwgflJzIDkwMCwwMDAgfAoKSW50ZXJwcmV0YXRpb246CgotIEF0IDIwMCBwYWdlcy9tb250aCwgQXp1cmUgQ3VzdG9tICgkNi9tb250aCkgaXMgfjd4IGNoZWFwZXIgdGhhbiBHb29nbGUgQ3VzdG9tIHdpdGggaG9zdGluZyAoJDQyL21vbnRoKSwgfjLigJMzeCBjaGVhcGVyIHRoYW4gZnVsbCBBV1MgZXh0cmFjdGlvbiAoJDEzLjMwL21vbnRoKSwgfjIuN3ggY2hlYXBlciB0aGFuIEFJIEJ1aWxkZXIgKCQxNi9tb250aCksIGFuZCB+MTM5eCBjaGVhcGVyIHRoYW4gQUJCWVkgZW50cnkgcHJpY2luZy4KLSBFdmVuIEF6dXJlIEN1c3RvbSBmb3IgYSBmdWxsIHllYXIgKCQ3MikgY29zdHMgbGVzcyB0aGFuIG9uZSBtb250aCBvZiBHb29nbGUgQ3VzdG9tIGhvc3Rpbmcgb3IgQUJCWVkgYW1vcnRpc2VkIGNvc3QuCi0gT0NSLW9ubHkgdGllcnMgKCQwLjMwL21vbnRoKSBhcmUgbm90IHN1ZmZpY2llbnQgYWxvbmUg4oCUIEJHIGZpZWxkIGV4dHJhY3Rpb24gcmVxdWlyZXMgTGF5b3V0L0N1c3RvbSAoQXp1cmUpLCBDdXN0b20gRXh0cmFjdG9yIChHb29nbGUpLCBUYWJsZXMrRm9ybXMgKEFXUyksIG9yIGVxdWl2YWxlbnQuCgpDdXN0b20gbW9kZWwgdHJhaW5pbmcgYW5kIGxhYmVsbGluZyBlZmZvcnQgaXMgb25lLXRpbWUgYW5kIG5vdCBpbmNsdWRlZCBhYm92ZTsgQXp1cmUsIEdvb2dsZSwgYW5kIEFCQllZIGFsbCByZXF1aXJlIGEgbGFiZWxsZWQgc2V0IG9mIHNhbXBsZSBCR3MgKHR5cGljYWxseSAxMOKAkzMwIHNhbXBsZXMgYWNyb3NzIGlzc3VpbmcgYmFua3MpLgoKLS0tCgojIyA1LiBEYXRhIFJlc2lkZW5jeSBWZXJkaWN0Cgp8IE9wdGlvbiB8IEluZGlhIFJlc2lkZW5jeSBWZXJkaWN0IHwKfC0tLS0tLS0tfC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS18CnwgQXp1cmUgREkgaW4gQ2VudHJhbCBJbmRpYSB8ICoqQ29tcGxpYW50LioqIFByb3Zpc2lvbiBEb2N1bWVudCBJbnRlbGxpZ2VuY2UgcmVzb3VyY2UgaW4gQ2VudHJhbCBJbmRpYTsgc3RvcmFnZSwgbG9nZ2luZywgYW5kIEFwcC9EQiBhbHNvIGluIENlbnRyYWwgSW5kaWEuIFNpbmdsZS10ZW5hbnQgYm91bmRhcnksIHN0cmFpZ2h0Zm9yd2FyZCBhdWRpdC4gfAp8IEdvb2dsZSBEb2N1bWVudCBBSSAoTXVtYmFpKSB8ICoqQ29uZGl0aW9uYWxseSBjb21wbGlhbnQsIG5vdCByZWNvbW1lbmRlZC4qKiBNdW1iYWkgZW5kcG9pbnQgZXhpc3RzIGZvciBzZWxlY3QgcHJvY2Vzc29ycyBidXQgYWRkcyBjcm9zcy1jbG91ZCBkYXRhIGZsb3csIHNlcGFyYXRlIGF1ZGl0IHRyYWlsLCBhbmQgR29vZ2xlLXNpZGUgc3VwcG9ydC9kYXRhLWFjY2VzcyBjb25zaWRlcmF0aW9ucy4gV2Vha2VucyBzdHJpY3QgcmVzaWRlbmN5IHBvc3R1cmUuIHwKfCBBV1MgVGV4dHJhY3QgKE11bWJhaSkgfCAqKkNvbmRpdGlvbmFsbHkgY29tcGxpYW50LCBub3QgcmVjb21tZW5kZWQuKiogU2FtZSBjb25jZXJuIGFzIEdvb2dsZSDigJQgdGVjaG5pY2FsbHkgcHJvY2Vzc2FibGUgaW4gYXAtc291dGgtMSwgYnV0IGNyb3NzLWNsb3VkIHRvIE0zNjUgaW5jcmVhc2VzIGNvbXBsaWFuY2Ugc3VyZmFjZS4gfAp8IEFCQllZIFZhbnRhZ2UgU2FhUyB8ICoqTm9uLWNvbXBsaWFudCBmb3Igc3RyaWN0IEluZGlhLW9ubHkuKiogU3RhbmRhcmQgU2FhUyByZWdpb25zIGFyZSBVUy9FVTsgSW5kaWEgaG9zdGluZyBvbmx5IHZpYSBwcml2YXRlIGRlcGxveW1lbnQgYXQgc2lnbmlmaWNhbnRseSBoaWdoZXIgY29zdC4gfAp8IEFJIEJ1aWxkZXIgKEluZGlhIGVudmlyb25tZW50KSB8ICoqQ29tcGxpYW50IGlmIGVudmlyb25tZW50IGlzIHBpbm5lZCB0byBJbmRpYS4qKiBBY2NlcHRhYmxlIG9uIHJlc2lkZW5jeSwgZmFpbHMgb24gY29zdCBhbmQgdHVuYWJpbGl0eSByZWxhdGl2ZSB0byBBenVyZSBESS4gfAoKQ29uY2x1c2lvbjogb25seSBBenVyZSBESSBhbmQgQUkgQnVpbGRlciBzYXRpc2Z5IHN0cmljdCBJbmRpYS1vbmx5IHJlc2lkZW5jeSB3aXRob3V0IGFyY2hpdGVjdHVyYWwgY29tcHJvbWlzZS4gQXp1cmUgREkgaXMgcHJlZmVycmVkIG9uIGNvc3QgYW5kIGFjY3VyYWN5IHR1bmluZy4KCi0tLQoKIyMgNi4gSG9zdGluZyBPcHRpb25zCgpBc3N1bXB0aW9uczogYXBwIHN0YWNrIGlzIGRhc2hib2FyZCAodXBsb2FkKSArIGV4dHJhY3Rpb24gd29ya2VyICsgU2hhcmVQb2ludCBFeGNlbCB3cml0ZXIgKyBPdXRsb29rIG1haWxlciwgYWxsIHVuZGVyIEVudHJhIElEIGxvZ2luLgoKIyMjIE9wdGlvbiBBIOKAlCBFeGlzdGluZyBXaW5kb3dzIFZNIChwcmVmZXJyZWQgZm9yIFBoYXNlIDEpCgotIERlcGxveSBhcHAgYXMgYSBXaW5kb3dzIFNlcnZpY2UgLyBzY2hlZHVsZWQgdGFzayArIGxpZ2h0d2VpZ2h0IHdlYiBkYXNoYm9hcmQgKGUuZy4sIEZsYXNrL0Zhc3RBUEkgYmVoaW5kIElJUyBvciBkaXJlY3QgcG9ydCB3aXRoIHJldmVyc2UgcHJveHkpLgotIEF6dXJlIERJIGNhbGxlZCB2aWEgU0RLL1JFU1Q7IFNoYXJlUG9pbnQgRXhjZWwgdmlhIE1pY3Jvc29mdCBHcmFwaDsgbWFpbCB2aWEgR3JhcGggKE0zNjUgT3V0bG9vaykg4oCUIG5vIFNNVFAgY3JlZGVudGlhbHMgbmVlZGVkLgotIFByb3M6IHplcm8gYWRkaXRpb25hbCBob3N0aW5nIGNvc3QsIGZhc3Rlc3QgdG8gZGVsaXZlciwgZnVsbCBjb250cm9sLCBkYXRhIHN0YXlzIGluIGV4aXN0aW5nIGJvdW5kYXJ5LgotIENvbnM6IFZNIGJlY29tZXMgc2luZ2xlIHBvaW50IG9mIGZhaWx1cmU7IG1hbnVhbCBwYXRjaGluZywgYmFja3VwcywgYW5kIHNjYWxpbmc7IG5lZWRzIHNlcnZpY2UgaGFyZGVuaW5nIChhdXRvLXJlc3RhcnQsIGxvZyByb3RhdGlvbiwgZGlzayBtb25pdG9yaW5nKS4KLSBCZXN0IGZvcjogcGlsb3QgYW5kIGZpcnN0IDbigJMxMiBtb250aHMgYXQgMjDigJMyNSBQREZzL21vbnRoLgoKIyMjIE9wdGlvbiBCIOKAlCBBenVyZSBBcHAgU2VydmljZSAoQ2VudHJhbCBJbmRpYSkKCi0gV2ViIEFwcCAoZGFzaGJvYXJkKSArIFdlYkpvYi9GdW5jdGlvbiAoZXh0cmFjdGlvbiB3b3JrZXIpICsgQXp1cmUgU3RvcmFnZS9UYWJsZSBvciBTUUwgZm9yIGpvYiBzdGF0ZSwgYWxsIGluIENlbnRyYWwgSW5kaWE7IE1hbmFnZWQgSWRlbnRpdHkgZm9yIEdyYXBoIGFuZCBEb2N1bWVudCBJbnRlbGxpZ2VuY2UgYWNjZXNzIChubyBzZWNyZXRzIGluIGNvZGUpLgotIFByb3M6IG1hbmFnZWQgcGF0Y2hpbmcsIGF1dG8tcmVzdGFydCwgc2NhbGUtdXAgcGF0aCwgZGVwbG95bWVudCBzbG90cywgbmF0aXZlIEVudHJhIElEIGF1dGhlbnRpY2F0aW9uIChFYXN5IEF1dGgpLCBjbGVhbmVyIGF1ZGl0LgotIENvbnM6IHJlY3VycmluZyBjb3N0IChCYXNpYyBCMSB+JDEz4oCTJDE1L21vbnRoIHBsdXMgc3RvcmFnZS9iYW5kd2lkdGgpIGFuZCBzbWFsbCBtaWdyYXRpb24gZWZmb3J0IGZyb20gVk0uCi0gQmVzdCBmb3I6IHByb2R1Y3Rpb24gaGFyZGVuaW5nIG9uY2Ugdm9sdW1lcyBvciBTTEEgcmVxdWlyZW1lbnRzIGdyb3cuCgpSZWNvbW1lbmRhdGlvbjogc3RhcnQgb24gdGhlIGV4aXN0aW5nIFdpbmRvd3MgVk0gd2l0aCBDZW50cmFsIEluZGlhIEF6dXJlIERJLCBkZXNpZ24gdGhlIGNvZGViYXNlIHNvIHRoZSBleHRyYWN0aW9uIGNsaWVudCwgR3JhcGggY2xpZW50LCBhbmQgc3RvcmFnZSBsYXllciBhcmUgZW52aXJvbm1lbnQtZHJpdmVuIOKAlCBlbmFibGluZyBhIGxpZnQtYW5kLXNoaWZ0IHRvIEFwcCBTZXJ2aWNlIGluIENlbnRyYWwgSW5kaWEgd2l0aG91dCByZXdyaXRlLgoKLS0tCgojIyA3LiBSZWNvbW1lbmRhdGlvbiArIE5leHQgU3RlcHMKCioqRGVjaXNpb246IHByb2NlZWQgd2l0aCBBenVyZSBBSSBEb2N1bWVudCBJbnRlbGxpZ2VuY2UgKEN1c3RvbSBtb2RlbCwgZmFsbGJhY2sgdG8gTGF5b3V0KSBpbiBDZW50cmFsIEluZGlhLCBob3N0ZWQgaW5pdGlhbGx5IG9uIHRoZSBleGlzdGluZyBXaW5kb3dzIFZNLCB3aXRoIEVudHJhIElEIGxvZ2luIGFuZCBNaWNyb3NvZnQgR3JhcGggZm9yIFNoYXJlUG9pbnQvT3V0bG9vay4qKgoKTmV4dCBzdGVwczoKCjEuIFByb3Zpc2lvbiBBenVyZSBBSSBEb2N1bWVudCBJbnRlbGxpZ2VuY2UgcmVzb3VyY2UgaW4gQ2VudHJhbCBJbmRpYSAocGF5LWFzLXlvdS1nbywgUzApIGFuZCBhIHRlc3QgcmVzb3VyY2UgZ3JvdXAgd2l0aCBDb3N0IE1hbmFnZW1lbnQgYnVkZ2V0IGFsZXJ0LgoyLiBDb2xsZWN0IDE14oCTMjUgc2FtcGxlIEJHIFBERnMgY292ZXJpbmcgbWFqb3IgaXNzdWluZyBiYW5rczsgcmVkYWN0L2FwcHJvdmUgZm9yIHRyYWluaW5nIHVzZS4KMy4gVHJhaW4gYW5kIGV2YWx1YXRlOiAoYSkgTGF5b3V0IGJhc2VsaW5lIGZvciBmaWVsZCBjb3ZlcmFnZSwgKGIpIEN1c3RvbSBleHRyYWN0aW9uIG1vZGVsIGZvciBCRyBudW1iZXIsIGlzc3VpbmcgYmFuay9icmFuY2gsIGFwcGxpY2FudCwgYmVuZWZpY2lhcnksIGFtb3VudCwgaXNzdWUvZXhwaXJ5L2NsYWltIGRhdGVzLgo0LiBCdWlsZCBNVlAgcGlwZWxpbmU6IHVwbG9hZCDihpIgREkgZXh0cmFjdGlvbiDihpIgZmllbGQgdmFsaWRhdGlvbiBVSSDihpIgR3JhcGggd3JpdGUgdG8gU2hhcmVQb2ludCBFeGNlbCDihpIgVC03IGV4cGlyeSBjaGVjayBqb2Ig4oaSIE91dGxvb2sgZW1haWwgdmlhIEdyYXBoLgo1LiBJbXBsZW1lbnQgRW50cmEgSUQgYXBwIHJlZ2lzdHJhdGlvbiAoZGVsZWdhdGVkL2FwcCBwZXJtaXNzaW9ucyBmb3IgU2l0ZXMuU2VsZWN0ZWQgKyBNYWlsLlNlbmQpLCBNYW5hZ2VkIElkZW50aXR5LXJlYWR5IGNvZGUsIEFwcGxpY2F0aW9uIEluc2lnaHRzL2ZpbGUgbG9nZ2luZywgYW5kIHJldHJ5L2RlYWQtbGV0dGVyIGhhbmRsaW5nIGZvciBESSB0aHJvdHRsaW5nLgo2LiBVQVQgb24gMSBtb250aCBvZiBsaXZlIEJHcyBpbiBwYXJhbGxlbCB3aXRoIG1hbnVhbCBlbnRyeTsgbWVhc3VyZSBmaWVsZCBhY2N1cmFjeSBhbmQgY29ycmVjdGlvbiByYXRlIGJlZm9yZSBjdXRvdmVyLgo3LiBEb2N1bWVudCBydW5ib29rOiBWTSBzZXJ2aWNlIHJlY292ZXJ5LCBrZXkgcm90YXRpb24sIGNvc3QgZGFzaGJvYXJkLCByZXNpZGVuY3kgZXZpZGVuY2UgKHJlc291cmNlIGxvY2F0aW9ucyksIGFuZCBBcHAgU2VydmljZSBtaWdyYXRpb24gcGxhbi4KCi0tLQoKIyMgU291cmNlcwoKLSBNaWNyb3NvZnQgTGVhcm4g4oCUIEF6dXJlIEFJIERvY3VtZW50IEludGVsbGlnZW5jZSBwcmljaW5nIGFuZCByZWdpb25hbCBhdmFpbGFiaWxpdHkKLSBNaWNyb3NvZnQgTGVhcm4g4oCUIERvY3VtZW50IEludGVsbGlnZW5jZSBjdXN0b20gZXh0cmFjdGlvbiBhbmQgTGF5b3V0IG1vZGVsIGRvY3VtZW50YXRpb24KLSBNaWNyb3NvZnQgTGVhcm4g4oCUIE1pY3Jvc29mdCBHcmFwaCAoU2hhcmVQb2ludCBFeGNlbCwgT3V0bG9vayBtYWlsKSBhbmQgRW50cmEgSUQgYXV0aGVudGljYXRpb24KLSBHb29nbGUgQ2xvdWQg4oCUIERvY3VtZW50IEFJIHByaWNpbmcgKE9DUiwgQ3VzdG9tIEV4dHJhY3RvciwgcHJvY2Vzc29yIGhvc3RpbmcpCi0gR29vZ2xlIENsb3VkIOKAlCBEb2N1bWVudCBBSSByZWdpb25hbCBhdmFpbGFiaWxpdHkKLSBBV1Mg4oCUIFRleHRyYWN0IHByaWNpbmcgKERldGVjdCwgVGFibGVzLCBGb3JtcykgYW5kIE11bWJhaSByZWdpb24gYXZhaWxhYmlsaXR5Ci0gTWljcm9zb2Z0IOKAlCBBSSBCdWlsZGVyIC8gUG93ZXIgUGxhdGZvcm0gY29uc3VtcHRpb24gYW5kIGxpY2Vuc2luZyAoZG9jdW1lbnQgcHJvY2Vzc2luZyByYXRlcykKLSBBQkJZWSDigJQgVmFudGFnZSBTYWFTIHByaWNpbmcgYW5kIGRhdGEtY2VudHJlIGluZm9ybWF0aW9uIChxdW90ZS1iYXNlZCwgZW50cnkgZmxvb3IpCi0gSW50ZXJuYWwgZXN0aW1hdGUg4oCUIEJHIHZvbHVtZSAoMjDigJMyNSBQREZzL21vbnRoLCB+MjAwIHBhZ2VzL21vbnRoKSBhbmQgRlggYXNzdW1wdGlvbiAoJDEgPSBScyA5MCkK",
+          "mime": "text/plain",
+          "source": {
+            "type": "uri",
+            "uri": "file:///D:/OneDrive%20-%20National%20Highways%20Infra%20Investment%20Managers%20Private%20Limited/Projects/BG_Automation/BG_OCR_Options_Comparison.md"
+          },
+          "name": "BG_OCR_Options_Comparison.md",
+          "mention": {
+            "start": 9,
+            "end": 38,
+            "text": "@BG_OCR_Options_Comparison.md"
+          }
+        }
+      ],
+      "agents": [],
+      "type": "user"
+    },
+    {
+      "id": "msg_115b3a0fc001oKVO9VL7jmU60t",
+      "time": {
+        "created": 1791365456154,
+        "streamed": 1791365458848,
+        "completed": 1791365458853
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "itemId": "rs_6ac611513d943df424a541d3:rs_01a115b3a650753e83b82ca7d64c2598",
+            "reasoningEncryptedContent": "Q-PaDgH7TlIMNejrA2TMAL0nyLpDPOOVA3szHcsvIJiIvJDP0tOsZStDPC4m459OaxDY7EMm3mqA7hBUMyeTU_I0xNT6XTnPuITtgPiEl1_Lh2CPXpUCNZrRgXqCOl9dCfXLG-D5KZYfHMJv8fleWpWSHfcsvaZa7R4SrR65bsq6mA19eHte9es6fjFAreK9uq39w67sc2dXE811Q-HLP4UDwo5grNyXtwbfftSbM57ERR9CozKS7mvEUJ49PvdJ6xPQj9zqbMa3dBOMeO83L-b3vFGlPoViJ1uIPAvnGIidZVTK2ZtogBveZ5ydSz1YWndOeyN8vEmIc7POmLG-imNTJee9Jso2UClI8Zn5OrjwTBI4IW6hcdHcBIoftVFLF3fjlgVIlvWFfhJkoPSXyaRPJOZcM1Q0i76PQNPgvRJMELvgLwKzAZ8c5ww8QW_mi1136UlpLV6qfQTc2Bmz71bwLGDmAkZBd88HUnZTNqEF7DtdvAbzevp8FZq3MaBO_d_DVkFl_iiGKcVZkB-hRr9Z2vZGywGQSF0JkYPVNID9_LMcxDa_z3qnrIj4Yryb1KVvmn6xpBQaFaWXYCY3KYJLWbaSMDPj334mbwPyFOGDUJBsOKClAkbfbAOiFRGHxkJYvkve3AaFYdCI6aEYNmsVSTWu7xY3ctXA4frYzkD8CmTs_EzTwBDeBqgL27VikmkEwfjLGAFKuoys6BpQRIo1eJOsAQHTcsbdypXtFt6fjk2dUKwXTASmT7DAoDQ9dPTX7umNmzWPhT4lzJ0Y7ArmopJY3i88Bg4Fga_hw4KGyY5hDnqpq1MGxI8bblX396UoyUq44GtumPc8q3oErgrhqHIqXVpJEr2yeMLoUhQhH9Cg3MRmugNizmtBgIpKP9PLcG2eSzu_Klzx8Y4L11AjPd0LzwuV_454daXt-W6MOTAqgZEX3y9OpBtmvrtCslOH7UhJvsLtasEH9lhsLI7A-7uvoL1_vdOjkOj4M5oQffTBlvS5sz0eKAbvcaVk_a_F-3tokoqMzi-Dl1NeyE4m3fH6egwTc4r7XtQp1P9d6IBb_wN4on3YlU8VQIeXIY3GHq47PExvCcX7XS-L3u4rFoWiF6obsVTtGQq0Ge-vaTUuyM4v5tanOUe-w3dy12XI39yG8VVgl91Yl8zkQQHkbZ8-POkat_uwu3cE60HUJ-LtfKUR-lShoCYTbdP6r6Tw39VWeX0SKgOWkUewGT1dOP4xpidXokxRQS7oQU2hrT_CCnbU3N_9I34yYVkPLgOsgKtk3gxx3TNgjdAsi6sD8Fjju5vLWxWCXlfe_KgAFp4sNroB9JozDPZqNH0SrdfCjz-Pg8LwsDm6502_orAWCQJZn6GPjbGB2mCK5eyO8qNtbinzLP9eZy0s0QPVSOMtp5cs2CSDsL72Vg"
+          },
+          "time": {
+            "created": 1791365458464,
+            "completed": 1791365458470
+          }
+        },
+        {
+          "type": "text",
+          "text": "Building your manager-ready presentation from the comparison.",
+          "state": {
+            "itemId": "rs_01a115b3a92073268b4817ad4d62ac06",
+            "phase": "commentary"
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_01a115b3a99274caa73ad1676667c1a4",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "itemId": "fc_01a115b3a99274caa73ad1676667c1a4"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "path": "D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Read directory D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation, entries 1-7\nSample_Bank_Guarantees\\\n.env\nBG Details-Updated.xlsx\nBG_Automation_Plan.md\nBG_OCR_Options_Comparison.md\nBG_UseCase_Story_Tracking.xlsx\nopencode.jsonc"
+              }
+            ],
+            "metadata": {
+              "truncated": false
+            }
+          },
+          "time": {
+            "created": 1791365458603,
+            "ran": 1791365458761,
+            "completed": 1791365458776
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_6ac611513d943df424a541d3"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 9504,
+        "output": 85,
+        "reasoning": 117,
+        "cache": {
+          "read": 1521,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b3abc3001Vb09Y78gGTTEaV",
+      "time": {
+        "created": 1791365458910,
+        "streamed": 1791365461617,
+        "completed": 1791365461623
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "itemId": "rs_6ac61154fba6dd7506f74b95:rs_01a115b3b102714a87e392f847d36560",
+            "reasoningEncryptedContent": "Q-PaDgHS-EwL7KfLC_vJkdMrzdT40dtT2L-EafEVxDxgded4h5-nBGYNvYfqJnktllLeBIH4FCR3WnueRKbJSLmQ7R7nmWUN1DbkgwM8qRSRaIAzMD0Gp3mDgSMrPI-lwi1Fis1UlrdP9UDS9-es7zijFTUF1UXMVzMh0kV9UoddftgMnJR7f4RZ8wMarnw9XIF1C9bjrYUIU4SsYXQymkUkTCUtAOdnv5GT0PdK0rjlNySMkbtpba0c-9igrCJMhyFbuy7cc8pftFyVDzO-_EgV0s6pOQlwNzswB6f3jrTKQhxRX0FJYMHumFc3IBgzE5rpuyMUykNXkxSq_S4XuUKcOgE3pSohUVskFb_RkQ2n6xXjBcjfOcVFt8Yr4xJYU7V2_LUDwPSdt9g-dHSf5FpgKknYVN1ydpF3M9Tm5vC67njF-XraVzpKrjw1Zhe7AG9ejWUopDSw-p1Ose1aZr90SwsqBKzM42scyCeFSCBw27GTb-eY09Fxiemy1Pc4xiK2JXRU4w35N4VWLz3eq-N2EVZ6WhVewuATIID1IqExl1_aBJi4RKfgTKAYxBRv-2tNtWGCuStYCXBK_fTDVvoVr2fc6eboX9I4jus-2t3lhr_eQJNJCBNwqQrjXlQqxXyGCSrq5pANEx2w9foG0s7BDQ11wGD92c6Gt4gpHbBfmP-CXmN5DbmxPp5OfjggdYdyJwj3s0KzYywPBxuM8WnyCZzxIIfZZ6OTGcOHD8Lam-2C7WfAK20Io6qtpX2vPDs9CGYRQWiIRmsDgxLp_F73RaeYzQ7HeN6R0Tv2bR7jplM_LqUDMt9eMt-65wJsaCGCAQZ8qEWY4wjY61Aw30CxjRPzHy26IpQMqlXoQhozPfAtvZfO40drywyPRfDqdRsQP1Y763gqSC_rRdC1ChpVq43LKTFWNC2UyRkLlEIy8h0UsbM5d93CjUxLe9DBIJD_na2OI9z872YMBBIIS-7fLjGgvNaSz1QMhvoPW5ORvkr0QpT89dTCs1CBljYTM1En-5cQclz_Pg2BY1a0B_0IyMdDKkC15aXLpXB6lm1ZUiUFWUVn1gduIkSkBjWhvK3Y4ddFK9cxKd_Dr7wBmDKU8Z_zvTy_W02DAGP2ciWpRj4xW3czeXwR6An3iuscTykorrBMSgOahklGNCTQS51WlvFwK6zRQwUznkjvZiVKJdHS3353H6V2PbJSm3WG-MDQOekfBViCS1IVUdHvyCHDmUUVUaMhbL3ye9WA8IrvTBMHYmZMSYHV8QT01gBmpC1TrvS66VZy7htGE7zXlhNGkBrnubUQ7ZzPNwk1KA1hETMnLBil_z6Mg9uecgiFHt98UDedpb7kNRkjCW8POxltVi9M-dEUEOxkQI1kyV_ErThzbP4w4_36ZFJM1A2UuHc2mp5DxDXHxS-Rgw"
+          },
+          "time": {
+            "created": 1791365460537,
+            "completed": 1791365461279
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_01a115b3b46274da8a8410113d3752dc",
+          "name": "read",
+          "executed": false,
+          "providerState": {
+            "itemId": "fc_01a115b3b46274da8a8410113d3752dc"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "limit": 20,
+              "path": "D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation\\BG_OCR_Options_Comparison.md"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Read file D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation\\BG_OCR_Options_Comparison.md, lines 1-20\n1: # BG Automation — OCR / Extraction Options Comparison\n2: \n3: **Date:** 7 October 2026\n4: **Use case:** Bank Guarantee (BG) PDFs uploaded on dashboard, OCR + structured details extraction, write to live SharePoint Excel, T-7 expiry email via M365 Outlook\n5: **Volume assumption:** 20–25 PDFs/month, 6–10 pages each = ~200 pages/month, ~2,400 pages/year\n6: **Document type:** Printed English only (no handwriting requirement)\n7: \n8: ---\n9: \n10: ## 1. Executive Summary + Recommendation\n11: \n12: **Recommended: Azure AI Document Intelligence (Custom / Layout) deployed in Central India.**\n13: \n14: Rationale:\n15: \n16: - Lowest enterprise extraction cost at this volume: ~$2–$6/month (Rs 180–540/month).\n17: - Only option that simultaneously satisfies all three hard constraints: (a) India-only data residency with a mature Central India endpoint, (b) native M365 / Entra ID / SharePoint / Outlook integration, and (c) enterprise support with no open-source components.\n18: - Custom model training allows field-level extraction tuned to BG formats (BG number, issuing bank, beneficiary, applicant, amount, issue date, expiry date, claim period) with high accuracy on printed text.\n19: - Operational simplicity: single Azure tenant, same Entra ID used for app login, no cross-cloud data transfer, no additional hosting fee for the OCR service itself.\n20: \n[Output truncated. Continue reading with offset: 21]"
+              }
+            ],
+            "metadata": {
+              "truncated": true
+            }
+          },
+          "time": {
+            "created": 1791365461296,
+            "ran": 1791365461567,
+            "completed": 1791365461592
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_6ac61154fba6dd7506f74b95"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 11324,
+        "output": 91,
+        "reasoning": 127,
+        "cache": {
+          "read": 0,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b3b693001cx70pSZbO2cJ7A",
+      "time": {
+        "created": 1791365461679,
+        "streamed": 1791365464148,
+        "completed": 1791365562222
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "itemId": "rs_6ac61156f5fad2559da243b9:rs_01a115b3ba017727b3c333ec38ca61bb",
+            "reasoningEncryptedContent": "Q-PaDgFra_2AxwhIFXuKl5VmDldeZ6ORXs9ZvAlMTLhgCe9oRq1cEzo9N9g9U4nnz_1547ERsopcyKYDk-65pDuYvjww47Vhsep51SsD9wWyPwNQ8NbXD3UdqFc9PGiqlncqnIrayCCfYlPi86ggn6r7jjejAymy5PRKVZwwwZUPH6OrzZhmQG-o48vNIs_QLBMaP54L6ULGFsrkTBoSornVf_Z0Nerwx3735ArnVpbnfPZcMPR5wXxC4bnNDZEwa5qs-F1sxzcQBYgjkok92Qm2aigaKY5Io4-CPej5u2_F_hLywaaD8eeNJ0QGnUpmuVwVrlLo1KnZ4MZMevB7qmphKNW8n9GwjRZx4Csy3qrbxGGzsyM5a6PWHW_ttAinhRNq7j8qCC3pFUVnMeMtbT2lrFdgXwM3GuiA7YH1c4PqJYVfw6pS3sv8_cEHDmfk-oPC_ebmcK74Jw8lNB9XPYF9IPaPYthMIzBrgRnLbFg6ccusl1inMa4DnTv6G1ZtGVQWVE7-LwwSP9987NXVeY87AWCIlJHSqhShRK-RTKqYBSnjxBi_rmpupOp0Bi4rWBRTMkRTLB4JBpvopCDesi6O6uU9fyVw1QMkcwolPCubq7q878EHXtUGwaLf_d0TbQ3o7WDAbtvprksoT1iKUQbQ0tRis9HYQIBasLLTA2TCt-Hjs-yQTCrvl-kaFgcoqoTNhOlix-KerTXE_pTX7-41XTohZ-qaAt8r9Rjc8XAz6FEBh9dE2bqbMlFbyX2f2dP5GjBO1MP4zr5xG3YCjuWxg0K5pNlEAewjnv4-pfmtXZooDlC_2eomVZ7tctsyEk2ibAGe8brwE2Ax0KM3evvGJ8yCtHaibYRD52j2uyayhaBhzTokE4ne4FoMzih1OkdLrFMJy-kIo4deuh7wHH31W4CW-wHr-rBoeONqf9CKiWv_EjJA4geGsGjLBegRR0NaqTznlUkEjezgqP-Rm0-UjKonEMebjx2vpW5PSG8LxEboF6_-BU_SPlA2lK35v2ccPlPqVDFd3YLQmSnzMIvbEa9yI_YAtEtf46-hVH4DAsr6J4-SGzxZXnUKmZpTkxD2PB-i06jD1rY9l3QVYFCiBdYOHj915bRbeJcpNp1VOKArM5JKn0eTKPZfQ-XkYKB9W4IaI6fw7lfs70hWKSeJ9I4lO3COHu9iVE720IFM4myoxea4davvBJMU7TJGtAWFZkAKeKry6DZ4c1bcx5-6bFhLi4uBBbE_2odhj7b7HRKaE5Z_c0e-K3z9pZtX9U2_8tpPZILCSLWb7SDn3DNWCsYSWEXjH3aJ3gzgUVRKQliJ3jyZo2FJYjsKFCbCr4Cgf0PrarZYG1wJYvYjALZ_OAru7DmcbXeS35rOl6ApUNwYhf_BkSZOEn1HgL54SFI6oeNKSrijVepwdw"
+          },
+          "time": {
+            "created": 1791365462910,
+            "completed": 1791365463712
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_01a115b3bd9c7728803d254545ab621d",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "itemId": "fc_01a115b3bd9c7728803d254545ab621d"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "python3 -c \"import pptx; print(pptx.__version__)\" 2>&1 || pip install python-pptx --quiet 2>&1 | tail -5",
+              "workdir": "D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "At line:1 char:56\r\n+ python3 -c \"import pptx; print(pptx.__version__)\" 2>&1 || pip install ...\r\n+                                                        ~~\r\nThe token '||' is not a valid statement separator in this version.\r\n    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException\r\n    + FullyQualifiedErrorId : InvalidEndOfLine\r\n \r\n"
+              },
+              {
+                "type": "text",
+                "text": "Exited with code 1"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": false,
+              "exit": 1
+            }
+          },
+          "time": {
+            "created": 1791365463735,
+            "ran": 1791365464094,
+            "completed": 1791365562219
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_6ac61156f5fad2559da243b9"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 692,
+        "output": 122,
+        "reasoning": 137,
+        "cache": {
+          "read": 11249,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b53f7a001vIdwH618315qkQ",
+      "time": {
+        "created": 1791365562246,
+        "streamed": 1791365563559,
+        "completed": 1791365564342
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "itemId": "rs_6ac611bac393f454cb5e4fd6:rs_01a115b541e2731f9912af1416043bca",
+            "reasoningEncryptedContent": "Q-PaDgFS-V-MTFIuiey3SFoejpTMA5mYtFWB0I7NJAtvBGKWciJjvORIZqy-JsPK7NYOd0tw26ikf2BIlsGq6YDibOqr0CLoKTI1-61TcbVPF6WyS3Q0XzZYDAMEQbFx25g9EV_aZ61NtATYu4fMPTtyjtCPmPcBkeL2fLl4JtoF3y3-w0qOHN0J3kNuPNVfZalx-xKFyRJA_olFrQhuaK4dp7tvg8SWaFf0w2FVvWqUp6PwoqLwQsJWKRpTnGiJttQVnOVlZXkoafhRJbFsajBUbATsWt__mutRQmaZq8vXWXXxEeXXgSEABXLvZLFWIJGnw1kL-90lCq9b0Bay5L968afcZZQglfITC6daK02MFppZpMxcrUuJjFbr5n8qVDx2YZMuiaFO_Zpf1CZ2EX9Kz3App62V3xsoujmRhk_xTeaaPpgFfkwTNo78NDjUHoyqtisudD4O0eOvGmq77xY3V2Cu8QZBL7wskvil3LbSAp7BGa1DD_NZ6Zknn1TSrM5IHDH4CwsKsaV7fmj2-_T6jlkZVSeTkNWwaSGmxfAINd7Gz2bdZshXZFbkDxsSSGJyVDLxlUWjAXpExMviOCJbroKrmfkrSg1LzvE6OK8D9S0I5WIfftDDCF15gI_mdSbyTQLDbPcFBElLLD7R3wl8bN5h1IPuhpjCf5apwWyXl7dmb4WviG9yjJ-FRX6Q-U65UtpfqqdOorJH9S3VV1AQHvLpsJ1FnU4tMSaVZeVbqB5MQSrT5v5hgM5bJtSjJCa4y7Igzim-LCnCTZUY43Rl7uBlHoWRw3HhVNUHqIzYPFskDHtq91ptwnnR4TcJd9CFroPQxSgh7YJBlEhooj3Q1TI3RItDVONTa2vpEOW9ZRdkdGRQ9mnJjO7MEw3N1gR-3ee8sCcidaF5hbU9aCjjf5UqV7w8EL0hZ0vifGd2-ceNmSx4m_EkZy4DWMh2Rk9Eb63LeaUfrMj5BBN2BqI0VE0WWDIVUBtkpBCucmnMxnlDFi5j3ub3jaYgzPcMxWVThGVT7EoBRRDj0xNFlgJJrcK7nrLa47iMYcDOg8_F7_5SujsAXp64zICVnQcczTqEtEMb7-eWkVrl_CFbAZLn1wZQWoLaJw3cAUPdr5r440pRc78Bi48ytvR2NFGvomvn9RYunmcY9t3OJtosvCMGS43ovm2mF6u-oAxAjP78wkC4IkL8RZrJmKCos6J46tfPUsiU-fRufuRUp-rC2I1e0iEKXVDNiXSeWRbfrh2gFuRGr7x-uyrhQKlHbC-A0eOIYUEVOnKWjAZL9lXwicKhYFsg4GxVbVJIDpT82aXM1qCcHTp5l-n_nLW1Ef0mY8ZZpCz2OPUN7klpaOvzTQTS4xe0WIw_01dv5k7jp60CNHqfuQs_EmHmqb66SCGQGEhDnDq9kb6bhcpIUQ"
+          },
+          "time": {
+            "created": 1791365563393,
+            "completed": 1791365563399
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_01a115b54239703eba7758ec1b134d7c",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "itemId": "fc_01a115b54239703eba7758ec1b134d7c"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "python -c \"import pptx; print(pptx.__version__)\"",
+              "workdir": "D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Traceback (most recent call last):\r\n  File \"<string>\", line 1, in <module>\r\n    import pptx; print(pptx.__version__)\r\n    ^^^^^^^^^^^\r\nModuleNotFoundError: No module named 'pptx'\r\n"
+              },
+              {
+                "type": "text",
+                "text": "Exited with code 1"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": false,
+              "exit": 1
+            }
+          },
+          "time": {
+            "created": 1791365563405,
+            "ran": 1791365563428,
+            "completed": 1791365564337
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_6ac611bac393f454cb5e4fd6"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 12315,
+        "output": 100,
+        "reasoning": 7,
+        "cache": {
+          "read": 0,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b547d7001eIXOBw4ayDRreo",
+      "time": {
+        "created": 1791365564405,
+        "streamed": 1791365566690,
+        "completed": 1791365570583
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_01a115b54f06760d8dd312c30c1f8fff",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "itemId": "fc_01a115b54f06760d8dd312c30c1f8fff"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "pip install python-pptx --quiet",
+              "workdir": "D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "(no output)"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": false,
+              "exit": 0
+            }
+          },
+          "time": {
+            "created": 1791365566512,
+            "ran": 1791365566630,
+            "completed": 1791365570577
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_6ac611be8929c32395594bd7"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 231,
+        "output": 86,
+        "reasoning": 0,
+        "cache": {
+          "read": 12273,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b56036001grWV26zQvzsHuc",
+      "time": {
+        "created": 1791365570642,
+        "streamed": 1791365601506,
+        "completed": 1791365601513
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "itemId": "rs_6ac611c372f17a6880f94dc2:rs_01a115b5634275f2be82d6a970a4937d",
+            "reasoningEncryptedContent": "Q-PaDgFFPcWuhOmihZPIRgGfoMGolAtnpyp6REJXgEASpSCIC3v6i91TuwSrZiAiwhWbId8aHYqVtvwgaXbyEaITOtAqKli0DcPcNchfov8ydqK8dFqetSZdxQzJ1uzf_Pd49S97u5XV5U2Yi19mESYsnD20Vvkbm_RjlGOHt3lCd1OrS8fzgQnkJUoJdi1SyEmFdX5_lhLj4mp48FwwVZT0dk8zm3VoLDr3mA7zldypdbMyZGqLC6Cz8zcXDfdniNwCMflQTd6og-RQ1Ydeu3FIQayJMXNAvM3JAAQ4e3wKwTMX7jhDyWlIV_5BG6ljcaFzhWNB7boBzu4SfrLtmXEtpSeI_w--RSl5e_KKCnvJgk9q74PTTI6r00X_GmLm9uSS18fflabj1YK70VBBAMGXzKViMFvNp0tOm3egd53Dm3VwpkUbUCc2zq-HH2YfIoeN2BFgAtoaVNHGDiFLh-TIpKuMAhzfk469Gp0ddyi045GPQ5Zdk_sjcJhsAj31L-_odifSEV0MTobNEvmO9_FzVTI7ogfdP9NtgnvVkgPmqgS71BwRmSQSb8Sss1nxDVshDpC9iOkXGLm6dzH5Ku6RnR5-_hWWDW_eEiWwJwRjjR1FXRosNdKX8z05RI7rnbnwkaoJ35oSDMN2gEJ7_Z49tcmzbEqpLElO8o_8DOyqr8XWq5AIVktYo4ORbqqGwxZ78jtjCpR2IM7Ucf-8uQwc0-UX1RPhTLRFUkB1lHyNtQP5qJacgUSqe2s8SLrNXc-iuqXx2B5iB6qvigxyDtD2sfEu5XFxAr5aXjeFBlwfDSfodlLXqUZTq5Vlw-Xyz19aPn62o-SCRsZj6XXsqrVZW3O3T9_cxrEtdZeCd2X6SiUSEgmeisKovbXpy6C4B51mNEne6_NUsyXYw3WrMzgtBfCGUwRMhjeJh7J4RYat1rOdtIXNrq3_oy_d5sJZzhplj4KRrh8nMkaX1kaWUKxSthm_EzWd3cqURzB875twSfHGSmpdTuJoo5arYIkuLzZ0EB-VpHPv_snTHudhlJZzRiuUU045szGUFalGw79AxCiAyDqBToUTYl0PoYNzkJecQ7KnnOUgfj8--oZuCTFzMuqSFt-mnWSKeqAbTjuGf5WudktUkOh044rzm-qHk9_Xr8wJvMp7vDRUzDSQq9y-kpsTW-9YO2ykE_cSjQkWXQq0KpffKpclH0Gxp5aRh2xyJfwTo32ArfjFsNcl7GrtA604AfWc__CJglDFtYgh819EsLzbhvYxB8_yyd0MRoT39tHKbaKvuuBl7x3RD0xjYlz7E_8Z7BLdeVtPMI69-ce9BI01xnC_7d1Lf5FgEs6gR8f_GkU3AmsA8xEyirEZPdgm8y9TVaGQVkg-3qwZZdEBcL7CzQ6bdnaJxo40ab8pv3R9EJIIL98Vzg"
+          },
+          "time": {
+            "created": 1791365571698,
+            "completed": 1791365571703
+          }
+        },
+        {
+          "type": "text",
+          "text": "Requirements are clear — now creating the slide deck.",
+          "state": {
+            "itemId": "rs_01a115b563d6736e81e06d94ea0e4694",
+            "phase": "commentary"
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_01a115b5642c76f9a823bbf93f458988",
+          "name": "write",
+          "executed": false,
+          "providerState": {
+            "itemId": "fc_01a115b5642c76f9a823bbf93f458988"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "content": "from pptx import Presentation\nfrom pptx.util import Inches, Pt, Emu\nfrom pptx.dml.color import RGBColor\nfrom pptx.enum.text import PP_ALIGN, MSO_ANCHOR\nfrom pptx.enum.shapes import MSO_SHAPE\n\nprs = Presentation()\nprs.slide_width = Inches(13.333)\nprs.slide_height = Inches(7.5)\n\nNAVY = RGBColor(0x1B, 0x2F, 0x4A)\nACCENT = RGBColor(0x0E, 0x7C, 0x6B)  # teal\nACCENT2 = RGBColor(0x2E, 0x86, 0xDE)\nLIGHT_BG = RGBColor(0xF2, 0xF4, 0xF7)\nDARK_TEXT = RGBColor(0x1B, 0x2F, 0x4A)\nGREY = RGBColor(0x5D, 0x6D, 0x7E)\nGREEN = RGBColor(0x0E, 0x7C, 0x6B)\nRED = RGBColor(0xC0, 0x39, 0x2B)\nAMBER = RGBColor(0xB7, 0x79, 0x00)\nWHITE = RGBColor(0xFF,0xFF,0xFF)\n\ndef set_bg(slide, color):\n    bg = slide.background\n    fill = bg.fill\n    fill.solid()\n    fill.fore_color.rgb = color\n\ndef add_shape_bg(slide, left, top, width, height, fill_color):\n    shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, top, width, height)\n    shape.fill.solid()\n    shape.fill.fore_color.rgb = fill_color\n    shape.line.fill.background()\n    return shape\n\ndef textbox(slide, left, top, width, height, text, size=18, bold=False, color=DARK_TEXT, align=PP_ALIGN.LEFT, font_name=\"Calibri\"):\n    tx = slide.shapes.add_textbox(left, top, width, height)\n    tf = tx.text_frame\n    tf.word_wrap = True\n    p = tf.paragraphs[0]\n    p.text = text\n    p.font.size = Pt(size)\n    p.font.bold = bold\n    p.font.color.rgb = color\n    p.font.name = font_name\n    p.alignment = align\n    return tx\n\ndef bullet_box(slide, left, top, width, height, items, size=14, color=DARK_TEXT, line_spacing=1.2):\n    tx = slide.shapes.add_textbox(left, top, width, height)\n    tf = tx.text_frame\n    tf.word_wrap = True\n    for i, (txt, bold) in enumerate(items):\n        if i==0:\n            p = tf.paragraphs[0]\n        else:\n            p = tf.add_paragraph()\n        p.text = txt\n        p.font.size = Pt(size)\n        p.font.color.rgb = color\n        p.font.name = \"Calibri\"\n        p.font.bold = bold\n        p.space_after = Pt(4)\n        p.space_before = Pt(2)\n        p.level = 0\n    return tx\n\ndef header_bar(slide, kicker, title, subtitle=\"\"):\n    # navy top bar\n    set_bg(slide, WHITE)\n    bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0), Inches(0), prs.slide_width, Inches(1.55))\n    bar.fill.solid(); bar.fill.fore_color.rgb = NAVY\n    bar.line.fill.background()\n    textbox(slide, Inches(0.5), Inches(0.2), Inches(12.3), Inches(0.35), kicker, size=11, bold=True, color=RGBColor(0x8E,0xA8,0xC3), align=PP_ALIGN.LEFT)\n    textbox(slide, Inches(0.5), Inches(0.5), Inches(9.5), Inches(0.7), title, size=26, bold=True, color=WHITE, align=PP_ALIGN.LEFT)\n    if subtitle:\n        textbox(slide, Inches(0.5), Inches(1.05), Inches(9.5), Inches(0.35), subtitle, size=11, color=RGBColor(0xC9,0xD6,0xE8), align=PP_ALIGN.LEFT)\n    # slide number placeholder area right\n    textbox(slide, Inches(11.8), Inches(0.6), Inches(1), Inches(0.4), \"\", size=10, color=WHITE, align=PP_ALIGN.RIGHT)\n\ndef footer(slide, num, total=\"7\"):\n    textbox(slide, Inches(0.5), Inches(7.0), Inches(6), Inches(0.3), \"BG Automation  •  OCR Options  •  Strict India-only  •  Entra ID  •  No open-source\", size=8, color=GREY)\n    textbox(slide, Inches(12.0), Inches(7.0), Inches(0.8), Inches(0.3), f\"{num} / {total}\", size=8, color=GREY, align=PP_ALIGN.RIGHT)\n\n# ---- SLIDE 1 : Title ----\nslide = prs.slides.add_slide(prs.slide_layouts[6])  # blank\nset_bg(slide, NAVY)\n# accent line\nline = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.6), Inches(0.5), Inches(1.2), Pt(4))\nline.fill.solid(); line.fill.fore_color.rgb = ACCENT; line.line.fill.background()\ntextbox(slide, Inches(0.6), Inches(0.9), Inches(7.5), Inches(0.4), \"BANK GUARANTEE AUTOMATION  •  7 OCTOBER 2026\", size=11, bold=True, color=RGBColor(0x8E,0xA8,0xC3))\ntextbox(slide, Inches(0.6), Inches(1.4), Inches(7.5), Inches(1.6), \"OCR / Extraction:\\nwhich option should we pick?\", size=40, bold=True, color=WHITE)\ntextbox(slide, Inches(0.6), Inches(3.6), Inches(7.0), Inches(0.8), \"20–25 BG PDFs / month  •  6–10 pages each  •  ~200 pages/month  •  Printed English only\\nDashboard upload → Extract → SharePoint Excel (live) → T-7 expiry email via Outlook\", size=13, color=RGBColor(0xC9,0xD6,0xE8))\n# recommendation card\ncard = add_shape_bg(slide, Inches(0.6), Inches(4.8), Inches(7.0), Inches(1.7), WHITE)\ntextbox(slide, Inches(0.9), Inches(5.0), Inches(6.7), Inches(0.35), \"RECOMMENDATION\", size=10, bold=True, color=ACCENT)\ntextbox(slide, Inches(0.9), Inches(5.3), Inches(6.7), Inches(0.6), \"Azure AI Document Intelligence (Custom / Layout) in Central India\", size=18, bold=True, color=NAVY)\ntextbox(slide, Inches(0.9), Inches(5.9), Inches(6.7), Inches(0.5), \"$6 / month (Rs 540)  •  India-only compliant  •  Native M365 / Entra ID  •  No open-source\", size=12, color=DARK_TEXT)\n# right visual - cost pills\ntextbox(slide, Inches(8.4), Inches(0.9), Inches(4.2), Inches(0.4), \"MONTHLY COST AT 200 PAGES\", size=10, bold=True, color=RGBColor(0x8E,0xA8,0xC3), align=PP_ALIGN.LEFT)\ncosts = [(\"Azure Custom\", \"$6\", \"Rs 540\", True), (\"AWS Full\", \"$13.3\", \"Rs 1,197\", False), (\"AI Builder\", \"$16\", \"Rs 1,440\", False), (\"Google Custom\", \"$42\", \"Rs 3,780\", False), (\"ABBYY\", \"~$833\", \"~Rs 75k\", False)]\ny = 1.45\nfor name, usd, inr, hl in costs:\n    bg = WHITE if hl else RGBColor(0x24,0x3D,0x5E)\n    c = add_shape_bg(slide, Inches(8.4), Inches(y), Inches(4.2), Inches(0.75), bg)\n    if hl:\n        # teal border effect via line? keep simple\n        pass\n    textbox(slide, Inches(8.6), Inches(y+0.05), Inches(2.2), Inches(0.65), name, size=12, bold=True, color=NAVY if hl else WHITE)\n    textbox(slide, Inches(10.7), Inches(y+0.05), Inches(1.8), Inches(0.65), f\"{usd}  •  {inr}\", size=12, bold=True, color=NAVY if hl else WHITE, align=PP_ALIGN.RIGHT)\n    y += 0.88\ntextbox(slide, Inches(8.4), Inches(6.6), Inches(4.2), Inches(0.3), \"Source: BG_OCR_Options_Comparison.md  •  $1 = Rs 90\", size=8, color=RGBColor(0x8E,0xA8,0xC3), align=PP_ALIGN.LEFT)\n\n# ---- SLIDE 2 : Requirements ----\nslide = prs.slides.add_slide(prs.slide_layouts[6])\nheader_bar(slide, \"01  •  CONTEXT\", \"What we need\", \"Hard constraints drive the decision — not just OCR accuracy\")\nfooter(slide, \"2\")\n# 4 cards\ncards = [\n    (\"INPUT & TASK\", \"20–25 PDFs / month\\n6–10 pages each\\n~200 pages / month\", \"OCR + extract 8 fields:\\nBG no., bank/branch,\\napplicant, beneficiary,\\namount, issue / expiry /\\nclaim dates\"),\n    (\"WRITE & ALERT\", \"Write to live\\nSharePoint Excel\", \"T-7 expiry email\\nvia M365 Outlook\\nEntra ID login\\nmandatory\"),\n    (\"HARD CONSTRAINTS\", \"India-only residency\\n(strict)\", \"Enterprise-only:\\nNo Tesseract / EasyOCR /\\nPaddleOCR / self-hosted\\nLLMs\"),\n    (\"PRIORITIES\", \"1. Cost\\n2. Accuracy\", \"3. M365 fit\\n4. Operational\\nsimplicity\"),\n]\nx = 0.5\nfor t, b1, b2 in cards:\n    add_shape_bg(slide, Inches(x), Inches(2.0), Inches(2.85), Inches(4.6), LIGHT_BG)\n    # top accent\n    acc = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(2.0), Inches(2.85), Pt(5))\n    acc.fill.solid(); acc.fill.fore_color.rgb = ACCENT; acc.line.fill.background()\n    textbox(slide, Inches(x+0.25), Inches(2.35), Inches(2.4), Inches(0.35), t, size=10, bold=True, color=ACCENT)\n    textbox(slide, Inches(x+0.25), Inches(2.75), Inches(2.4), Inches(1.5), b1, size=13, bold=True, color=NAVY)\n    textbox(slide, Inches(x+0.25), Inches(4.1), Inches(2.4), Inches(2.2), b2, size=12, color=DARK_TEXT)\n    x += 3.1\n\n# ---- SLIDE 3 : Options ----\nslide = prs.slides.add_slide(prs.slide_layouts[6])\nheader_bar(slide, \"02  •  OPTIONS EVALUATED\", \"5 enterprise options — same workload\", \"All costs normalised to 200 pages / month\")\nfooter(slide, \"3\")\nopts = [\n    (\"Azure AI\\nDocument\\nIntelligence\", \"$2–$6/mo\", \"High + trainable\", True),\n    (\"AWS\\nTextract\", \"$13.30/mo\\nfull\", \"High\", False),\n    (\"MS AI\\nBuilder\", \"$16/mo\", \"Good\", False),\n    (\"Google\\nDocument AI\", \"$42/mo\\n(+$36 hosting)\", \"High\", False),\n    (\"ABBYY\\nVantage\", \"~$833/mo\\n($10k+/yr min)\", \"Very high\", False),\n]\nx = 0.5\nfor title, cost, acc, hl in opts:\n    bgc = NAVY if hl else WHITE\n    border = ACCENT if hl else GREY\n    card = add_shape_bg(slide, Inches(x), Inches(2.0), Inches(2.3), Inches(4.6), bgc)\n    # border simulation - skip, use fill distinction + outline via line\n    if not hl:\n        card.line.color.rgb = RGBColor(0xD5,0xDB,0xDB)\n        card.line.width = Pt(1)\n    textbox(slide, Inches(x+0.2), Inches(2.3), Inches(1.9), Inches(1.4), title, size=15, bold=True, color=WHITE if hl else NAVY, align=PP_ALIGN.CENTER)\n    textbox(slide, Inches(x+0.2), Inches(3.7), Inches(1.9), Inches(0.8), cost, size=14, bold=True, color=RGBColor(0x7F,0xDB,0xCA) if hl else ACCENT, align=PP_ALIGN.CENTER)\n    textbox(slide, Inches(x+0.2), Inches(4.5), Inches(1.9), Inches(0.5), acc, size=11, color=RGBColor(0xC9,0xD6,0xE8) if hl else GREY, align=PP_ALIGN.CENTER)\n    badge = \"★ RECOMMENDED\" if hl else (\"CHEAP BUT\\nCROSS-CLOUD\" if \"AWS\" in title else (\"M365-NATIVE\\nBUT 3× COST\" if \"Builder\" in title else (\"FIXED FEE\\nEVEN AT ZERO USE\" if \"Google\" in title else \"OVERKILL\\nFOR 200 PGS/MO\")))\n    textbox(slide, Inches(x+0.2), Inches(5.2), Inches(1.9), Inches(0.9), badge, size=9, bold=True, color=RGBColor(0xF9,0xE7,0x9B) if hl else GREY, align=PP_ALIGN.CENTER)\n    x += 2.55\ntextbox(slide, Inches(0.5), Inches(6.65), Inches(12.3), Inches(0.3), \"OCR-only tiers ($0.30/mo) are insufficient — BG field extraction needs Layout/Custom (Azure), Tables+Forms (AWS), Custom Extractor (Google), or equivalent.\", size=9, bold=False, color=GREY, align=PP_ALIGN.CENTER)\n\n# ---- SLIDE 4 : Cost ----\nslide = prs.slides.add_slide(prs.slide_layouts[6])\nheader_bar(slide, \"03  •  COST AT OUR VOLUME  —  200 PAGES / MONTH  •  $1 = Rs 90\", \"Azure Custom costs less per year than one month of alternatives\", \"\")\nfooter(slide, \"4\")\n# bar chart manual\nbars = [\n    (\"Azure Read*\", 0.30, 27),\n    (\"Azure Layout\", 2.00, 180),\n    (\"Azure Custom\", 6.00, 540),\n    (\"AWS Full\", 13.30, 1197),\n    (\"AI Builder\", 16.00, 1440),\n    (\"Google Custom\", 42.00, 3780),\n    (\"ABBYY floor\", 833.00, 75000),\n]\n# draw area\nbase_y = 6.2\nmax_w = 7.5\n# scale log-ish: use proportional but cap ABBYY\n# linear scale would make others invisible, so use two scales: show first 6 linear to 42, ABBYY broken\nscale = max_w / 45.0\ny = 2.0\nfor name, usd, inr in bars:\n    textbox(slide, Inches(0.5), Inches(y), Inches(2.0), Inches(0.45), name, size=11, bold=(name==\"Azure Custom\"), color=NAVY if name==\"Azure Custom\" else DARK_TEXT, align=PP_ALIGN.RIGHT)\n    w = max(0.3, usd*scale) if usd<100 else max_w\n    if name==\"ABBYY floor\":\n        w = max_w\n    bar = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(2.7), Inches(y+0.05), Inches(w), Inches(0.38))\n    bar.fill.solid()\n    bar.fill.fore_color.rgb = ACCENT if name==\"Azure Custom\" else (RED if \"ABBYY\" in name else (RGBColor(0x5D,0x6D,0x7E) if \"Read\" in name else NAVY))\n    bar.line.fill.background()\n    label = f\"${usd}  •  Rs {inr:,}\"\n    if \"ABBYY\" in name:\n        label = f\"~${usd:,.0f}  •  ~Rs {inr:,}  (broken axis)\"\n    textbox(slide, Inches(2.7+w+0.15), Inches(y), Inches(2.8), Inches(0.45), label, size=10, bold=(name==\"Azure Custom\"), color=DARK_TEXT)\n    y += 0.58\n# insight box right\nadd_shape_bg(slide, Inches(9.2), Inches(2.0), Inches(3.6), Inches(4.4), LIGHT_BG)\ntextbox(slide, Inches(9.45), Inches(2.2), Inches(3.1), Inches(0.35), \"READ THE MATH\", size=10, bold=True, color=ACCENT)\nbullet_box(slide, Inches(9.45), Inches(2.6), Inches(3.1), Inches(3.8), [\n    (\"Azure Custom 7× cheaper than Google Custom.\", True),\n    (\"2–3× cheaper than AWS full + AI Builder.\", False),\n    (\"139× cheaper than ABBYY entry floor.\", False),\n    (\"Full year Azure Custom = $72 — less than 1 month of Google hosting.\", False),\n    (\"*Read ($0.30) is OCR-only — not enough for fields.\", False),\n], size=11)\n\n# ---- SLIDE 5 : Non-cost ----\nslide = prs.slides.add_slide(prs.slide_layouts[6])\nheader_bar(slide, \"04  •  BEYOND COST\", \"Only two options pass strict India-only without compromise\", \"\")\nfooter(slide, \"5\")\n# table-like rows\nrows = [\n    (\"Azure DI\\nCentral India\", \"✓ Compliant\", GREEN, \"Native — same tenant,\\nEntra ID + Graph\", GREEN, \"High, trainable\\non BG layouts\", GREEN),\n    (\"AI Builder\\nIndia env.\", \"✓ If pinned\\nto India\", GREEN, \"Native — Power\\nPlatform\", GREEN, \"Good, less\\ntunable\", AMBER),\n    (\"AWS Textract\\nMumbai\", \"△ Conditional\", AMBER, \"Poor — separate IAM,\\ncustom M365 bridge\", RED, \"High\", GREEN),\n    (\"Google Doc AI\\nMumbai\", \"△ Conditional\", AMBER, \"Poor — separate IAM,\\ncustom M365 bridge\", RED, \"High\", GREEN),\n    (\"ABBYY SaaS\\nUS / EU\", \"✕ Non-compliant\", RED, \"Moderate — SSO only,\\nseparate platform\", AMBER, \"Very high\", GREEN),\n]\n# header\nheaders = [\"OPTION\", \"INDIA RESIDENCY\", \"M365 / ENTRA ID FIT\", \"ACCURACY (PRINTED BG)\"]\nhx = [0.5, 3.1, 5.7, 9.0]\nfor i, h in enumerate(headers):\n    textbox(slide, Inches(hx[i]), Inches(1.85), Inches(2.2 if i>0 else 2.3), Inches(0.35), h, size=9, bold=True, color=GREY)\ny = 2.25\nfor opt, res, rc, m365, mc, acc, ac in rows:\n    is_azure = \"Azure\" in opt\n    bgc = RGBColor(0xE8,0xF5,0xF0) if is_azure else WHITE\n    add_shape_bg(slide, Inches(0.5), Inches(y), Inches(12.33), Inches(0.82), bgc)\n    textbox(slide, Inches(0.6), Inches(y+0.08), Inches(2.2), Inches(0.66), opt, size=11, bold=True, color=NAVY)\n    textbox(slide, Inches(3.1), Inches(y+0.08), Inches(2.2), Inches(0.66), res, size=11, bold=True, color=rc)\n    textbox(slide, Inches(5.7), Inches(y+0.08), Inches(3.0), Inches(0.66), m365, size=11, color=DARK_TEXT)\n    textbox(slide, Inches(9.0), Inches(y+0.08), Inches(2.5), Inches(0.66), acc, size=11, color=DARK_TEXT)\n    y += 0.90\ntextbox(slide, Inches(0.5), Inches(6.65), Inches(12.3), Inches(0.3), \"Google adds ~$36/mo fixed per-processor hosting (24×7, even at zero traffic).  AWS full extraction = Detect + Tables + Forms summed.  ABBYY India hosting only via private deploy at far higher cost.\", size=9, color=GREY, align=PP_ALIGN.CENTER)\n\n# ---- SLIDE 6 : Hosting ----\nslide = prs.slides.add_slide(prs.slide_layouts[6])\nheader_bar(slide, \"05  •  HOSTING\", \"Start on existing VM — design for App Service lift-and-shift\", \"\")\nfooter(slide, \"6\")\n# two columns\nadd_shape_bg(slide, Inches(0.5), Inches(2.0), Inches(6.1), Inches(4.6), LIGHT_BG)\nacc = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.5), Inches(2.0), Inches(6.1), Pt(5))\nacc.fill.solid(); acc.fill.fore_color.rgb = ACCENT; acc.line.fill.background()\ntextbox(slide, Inches(0.8), Inches(2.3), Inches(5.5), Inches(0.35), \"OPTION A  •  EXISTING WINDOWS VM  —  PREFERRED FOR PHASE 1\", size=10, bold=True, color=ACCENT)\ntextbox(slide, Inches(0.8), Inches(2.7), Inches(5.5), Inches(0.5), \"Zero extra host cost  •  Fastest to pilot\", size=16, bold=True, color=NAVY)\nbullet_box(slide, Inches(0.8), Inches(3.4), Inches(5.5), Inches(3.0), [\n    (\"Web dashboard + worker as Service / scheduled task.\", False),\n    (\"DI via SDK/REST, Excel + mail via Graph (no SMTP).\", False),\n    (\"Caveat: single point of failure — harden with auto-restart, logs, disk alerts.\", False),\n    (\"Best for: first 6–12 months at 20–25 PDFs/mo.\", True),\n], size=12)\n\nadd_shape_bg(slide, Inches(6.73), Inches(2.0), Inches(6.1), Inches(4.6), WHITE)\n# outline\ncard2 = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(6.73), Inches(2.0), Inches(6.1), Inches(4.6))\ncard2.fill.background(); card2.line.color.rgb = RGBColor(0xD5,0xDB,0xDB); card2.line.width = Pt(1)\ntextbox(slide, Inches(7.0), Inches(2.3), Inches(5.5), Inches(0.35), \"OPTION B  •  APP SERVICE (CENTRAL INDIA)  —  WHEN WE SCALE\", size=10, bold=True, color=GREY)\ntextbox(slide, Inches(7.0), Inches(2.7), Inches(5.5), Inches(0.5), \"Managed + scalable  •  ~$13–15/mo (B1)\", size=16, bold=True, color=NAVY)\nbullet_box(slide, Inches(7.0), Inches(3.4), Inches(5.5), Inches(3.0), [\n    (\"Web App + WebJob/Function + Storage, Managed Identity.\", False),\n    (\"Easy Auth (Entra ID), slots, auto-patching, cleaner audit.\", False),\n    (\"Migrate without rewrite — keep DI / Graph / storage env-driven.\", False),\n], size=12)\n\n# ---- SLIDE 7 : Ask ----\nslide = prs.slides.add_slide(prs.slide_layouts[6])\nset_bg(slide, NAVY)\ntextbox(slide, Inches(0.6), Inches(0.4), Inches(12), Inches(0.35), \"06  •  RECOMMENDATION & ASK\", size=11, bold=True, color=RGBColor(0x8E,0xA8,0xC3))\ntextbox(slide, Inches(0.6), Inches(0.8), Inches(7.5), Inches(0.9), \"Proceed with Azure DI\\nin Central India.\", size=32, bold=True, color=WHITE)\ntextbox(slide, Inches(0.6), Inches(2.5), Inches(7.5), Inches(0.5), \"Custom model (fallback: Layout)  •  VM-hosted MVP  •  Graph for Excel + Outlook\", size=13, color=RGBColor(0xC9,0xD6,0xE8))\nsteps = [\n    \"1. Provision DI (Central India, S0) + budget alert\",\n    \"2. Collect 15–25 sample BGs across issuing banks\",\n    \"3. Train Layout baseline → Custom model (8 fields)\",\n    \"4. Build MVP: Upload → Extract → Validate → Excel → T-7 mail\",\n    \"5. Entra ID app reg, logging, retry / dead-letter\",\n    \"6. 1-month parallel UAT vs manual entry → cutover\",\n]\ny = 3.3\nfor s in steps:\n    textbox(slide, Inches(0.6), Inches(y), Inches(7.5), Inches(0.4), s, size=12, color=WHITE)\n    y += 0.42\n# ask card\nadd_shape_bg(slide, Inches(8.6), Inches(0.8), Inches(4.0), Inches(5.9), WHITE)\ntextbox(slide, Inches(8.9), Inches(1.1), Inches(3.4), Inches(0.35), \"APPROVAL NEEDED\", size=10, bold=True, color=ACCENT)\ntextbox(slide, Inches(8.9), Inches(1.5), Inches(3.4), Inches(1.0), \"Green-light Azure DI\\n+ VM pilot?\", size=20, bold=True, color=NAVY)\nbullet_box(slide, Inches(8.9), Inches(2.7), Inches(3.4), Inches(2.2), [\n    (\"One Azure resource in Central India.\", False),\n    (\"Sample BGs approved for training.\", False),\n    (\"Entra ID app permissions\\n(Sites.Selected + Mail.Send).\", False),\n], size=11)\n# button-like\nbtn = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.9), Inches(4.8), Inches(3.4), Inches(0.6))\nbtn.fill.solid(); btn.fill.fore_color.rgb = ACCENT; btn.line.fill.background()\ntextbox(slide, Inches(8.9), Inches(4.82), Inches(3.4), Inches(0.6), \"Full detail: BG_OCR_Options_Comparison.md\", size=10, bold=True, color=WHITE, align=PP_ALIGN.CENTER)\ntextbox(slide, Inches(8.9), Inches(5.6), Inches(3.4), Inches(0.4), \"200 pgs/mo  •  $72/year  •  Audit-ready residency\", size=9, color=GREY, align=PP_ALIGN.CENTER)\n\nout = r\"D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation\\BG_OCR_Recommendation_Deck.pptx\"\nprs.save(out)\nprint(f\"saved:{out}\")\n",
+              "path": "D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation\\make_deck.py"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Created file successfully: make_deck.py"
+              }
+            ],
+            "metadata": {
+              "truncated": false
+            }
+          },
+          "time": {
+            "created": 1791365571851,
+            "ran": 1791365600897,
+            "completed": 1791365600917
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_6ac611c372f17a6880f94dc2"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 10838,
+        "output": 6507,
+        "reasoning": 8,
+        "cache": {
+          "read": 1777,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b5d908001t9vijHHT9ZfEdy",
+      "time": {
+        "created": 1791365601575,
+        "streamed": 1791365602930,
+        "completed": 1791365618482
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "tool",
+          "id": "call_01a115b5db2471258643f0e2273f77b8",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "itemId": "fc_01a115b5db2471258643f0e2273f77b8"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "python make_deck.py",
+              "workdir": "D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "saved:D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation\\BG_OCR_Recommendation_Deck.pptx\r\n"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": false,
+              "exit": 0
+            }
+          },
+          "time": {
+            "created": 1791365602803,
+            "ran": 1791365602812,
+            "completed": 1791365618477
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_6ac611e27879b6edf41040c9"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 6630,
+        "output": 83,
+        "reasoning": 0,
+        "cache": {
+          "read": 12529,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b61b520019JP4V7g3xhu3FW",
+      "time": {
+        "created": 1791365618542,
+        "streamed": 1791365620992,
+        "completed": 1791365625711
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "itemId": "rs_6ac611f3c7919c358b3b43d9:rs_01a115b6207e724590bd72e67efe9321",
+            "reasoningEncryptedContent": "Q-PaDgFtYU-EigFuurXoADr0BQKUxmPFRVALv_orRj_4yAD6nvBYy5kEokUOM-JIByXUNKOQt1DOEydht26O97aiB7iO7aKdJJN5yVxyN2Ghh6SA7D79HLRH4tGWOcO1QZ3CcI0X14zq1zg7OByGM3HHXM8LwxsElFKbOixPfpB6rad18-UdqvhC4e-ce88GSygwUSkM3JD3NpXUWkMI8MBelw31cw4YrUzQvAlsRiQ3v8k3CMyujj3mfTTELwpMAk1vTs-IC5988Nd_lEDC96pV6SymV413ld-w59CI6XLA17tO4C0eclZxqIgJ9WfH4kzkoz7WTHmZTIQdYNSlu3TBI1miikKE0sm9xBoZMLgjTJozXDt8r3CyfCH3gG9OSwh7pAnWFeGD5UFUZSSyjG8ZRwDqV4Tuqch6HmQ78wHtQNbRhDEdAglqYM2MyW4MjATlLuvFUgRRbAsaeLv-DBt-Zxe-lI4WRIsvkvqd7SI8TkOHWJ8CybCMFHI2KP-a6Ky_CKamx1dC2QFlvsET8-okdFGcEiT6_UKjGcVrpbxx892i-yWq4b9byM7vuQt7cxCDno4N2a-q5yv8Mh6MUuwRxPcZe8ObjJT0tYDUku9w3UObQQgLrpRHFDNZklv4NHEWCHgQxq9UGqGPvbO4iV2G0Rh6QMdp3WWiB5FWJ-u_7mUytF6WfRFHP0feDbpsFKCMM62BV1jP_ujLphgaUQ41Trp7L1jcYSlqomvmVoru9a6rNovgiOPg-9R4BZ_KC5KnYK2UgCipmfZtLw-vXeFj6G2RVLMH3baCbl_yO98qcLvuP45NT_gH-mhuiJe4Xyw-ykG6zQcvMk3A-q-g5JzcSL5kQVCxsEp7DAkFNYAp4QYmGMKi6vTEsVfaCSIS8fMfQdl-3F1xaFxxUaRG3Fa1NWyetk1vPUONePfyGDOjwHbHT5NUbwIA-zM9C0h0583OcYuYCjFOlSXEgq2whxWZKWRRx7wMOPVa13JOEj6zxvyhrepfZ5i_siMghSthMzhUL7damr3RKdC0N38orexYCjKz0JqYmSFYmw-myLR7J3kj2nlrAxvvzVTljGwtBJPJCj9-euvJ-VY0sNBHSwUlZxwXqccWxvB5qjfmVw0MzYcf820vNOAJ3PO7R0NgBVYHZ9W1iQP4EGdVx6IrkL30ASl-72UY1mH8wCSJnit0wtCgAUVPxAP-26DgOL-xdP99XAjWR32lf8ZxvrEa_BnDnugh-Fzxd74Wsvzdn9xSAhrfxYbxqm6GDpFMvAH9bgw2BO6RmdS8t007oumN1jv9uwPE9aTRUXkOutqFYJqM7z_Lq4XkQ0aarSLcR28K6R0BKcpdL6gHbw5JThmUkY05ZWI-rFhe2c4bATG3ARwGMaIhwwxzFZbi5-mbsPOoYU1DtnMC9Qwcdt7_uQ"
+          },
+          "time": {
+            "created": 1791365620166,
+            "completed": 1791365620575
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_01a115b622bc73138784579896790cf6",
+          "name": "shell",
+          "executed": false,
+          "providerState": {
+            "itemId": "fc_01a115b622bc73138784579896790cf6"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "Get-Item BG_OCR_Recommendation_Deck.pptx | Select-Object Name, Length; Remove-Item make_deck.py",
+              "workdir": "D:\\OneDrive - National Highways Infra Investment Managers Private Limited\\Projects\\BG_Automation"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "\r\nName                            Length\r\n----                            ------\r\nBG_OCR_Recommendation_Deck.pptx  43704\r\n\r\n\r\n"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": false,
+              "exit": 0
+            }
+          },
+          "time": {
+            "created": 1791365620618,
+            "ran": 1791365620939,
+            "completed": 1791365625708
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_6ac611f3c7919c358b3b43d9"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 240,
+        "output": 108,
+        "reasoning": 79,
+        "cache": {
+          "read": 19057,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b6377c001nkiA5qw7tS2NS6",
+      "time": {
+        "created": 1791365625732,
+        "streamed": 1791365635069,
+        "completed": 1791365635075
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "itemId": "rs_6ac61200a0e9bb7bc2584492:rs_01a115b651c9761f861ace786cda3765",
+            "reasoningEncryptedContent": "Q-PaDgEi_xoca-b-5fdZH-3K9IT4Rp56QKste6vfI77X_h_xCX7uWMB4B35fLE9T9PfszUc6vvcERUNXdQDKQ0xMdXvAEetHn1lPgXFGr8wgz2xHC3HY4AK-dF3oHW-Cpu0ekQu7-tgtc2Jrgg5mcAEoed8nvJD8uFjiP1o7N-orsB0c5PudIipNWypOid1ELbcatYlvVgYpYTJefpc2y0iVd710URZY9_zqKMYWaPS6aCE5f5BmXXogHOMadEA7KxulwZBuF31fLvaOk5hw-M_pFBog7gObQTvXOW2Gw3GsOPO4x6gEHfLAxhBDmCIwRfnx3qARkMgLJxtRGFvnMgyRZ1_P6Ld28JcazqFonOWc8QV8N99_C9f-crWfElFeNSgcqqwKHmKAtk10H8qd5U7-GQXdEUQHyoXIHzCYYyXIg2BWPkbcur0LB0rrDqtqXESvS2_Kmuki43aRbYehaaGOhW2laeD8u5rD6FhvmO9vLZTfVJT4hD09QboLUQqSs2s3UziRbRuWV2iVwL-aYeeGRnBB_5WMngMekQXakXBvFtoblp029wXNJNa86jsNhXa9tzMWq3OEYaRtyvHROpGykK_sTxtA7dCOhrCZg-_ZuU2M5XVAOaLhJiNLz2QsonkS5xWICziMHMBE_SQ0On0XIKNH4vKzD4YAdq6s8SS2HzEHyu_gXQQQmKAwibL1Fll5qecrfyi2YjXl8UpWNPbSn6aXbHVtsC6OEaXUq9_PEqB2W7dz7TmMCYXkOeuvHToxsnl_YkzSMQnqzsGcE0PQTt8o_8TzP3yCqj8AanyozK7YdK3gM4qA7pfRN4-RGQbOw9ZVb-UP9cyDhQBocN-UZbBMxSrWUy_ETA-o8NgiEAxTEgak3n0uBaNECtHaJItuAQZJsoWabfAp4OfaY2k-h0biUjOdL8ZjsZd6QjNvkm0FakDgcS33veZv_30BHsWhgLNgQ0mPTsy6W1YcOjGj2rS51VLFdUGFehxDSbIHIu_SBHequ0mho9UIMsAD16xrLGUER2jO6yz4vd1WSrtTqlBKZ9NjeF0CyRImT2WDNwPJyG1RY0FDFIuMbSorN_qWS_guM-Ro6GXKTY95xbbXyBUMukOrIEYBssOiSizsm64m3K0xnEbrsqMlT8z2F2PNiH-DJilvFTpHAXbnJejY9BwIjYGuKrnUblyDdx0LadWAdm4aeX7CRSfLSl1dqQ0dcruK6A18Pl_pXNO-6C_stxafJGUH_6COpY-_r3H0NoX29ZKXGDGGfr91XuqPgjmcDXZOh5KFBg2fdZLmcB5W66deUoOpR8aPgG96SCLFZ3F5iVpiJA9rKEgd1P0NfJU_0KwCYUWzbkeNIZ6TrnrdqJSBhvAEtIwI-v9VTwlOhJEXmXKMv7UDMaEdgyHCnr4RBiu9_42plopCgQ"
+          },
+          "time": {
+            "created": 1791365632768,
+            "completed": 1791365632835
+          }
+        },
+        {
+          "type": "text",
+          "text": "Done: `BG_OCR_Recommendation_Deck.pptx` — 7 slides, 16:9, ready to present.\n\nSlides:\n1. Title + recommendation: Azure DI Custom/Layout, Central India — `BG_OCR_Options_Comparison.md:12`\n2. What we need: 200 pgs/mo, 8 BG fields, SharePoint Excel + T-7 Outlook mail, India-only, Entra ID, no open-source\n3. 5 options at a glance with monthly cost\n4. Cost chart: Azure Custom $6 (Rs 540) vs AWS $13.30, AI Builder $16, Google $42, ABBYY ~$833\n5. Beyond cost: only Azure + AI Builder pass strict residency; only Azure is also native M365 + trainable + cheapest\n6. Hosting: VM for Phase 1 (zero extra cost), App Service Central India when scaling (~$13–15/mo)\n7. Ask: approve DI resource + sample BGs + Entra ID permissions, then 1-month parallel UAT\n\nTalk track (30 sec/slide):\n- \"Volume is small — 200 pages/mo — so fixed fees hurt more than per-page rates.\"\n- \"Google's $36/mo processor hosting accrues even at zero traffic. ABBYY's $10k/yr floor is 139x our Azure cost.\"\n- \"OCR-only at $0.30/mo isn't enough; we need field extraction.\"\n- \"Azure is the only one that meets residency + M365 + enterprise-only together.\"\n- \"Ask: green-light the Central India resource and pilot on the existing VM.\"\n\nFull math and sources are in the comparison doc if your manager asks for detail.",
+          "state": {
+            "itemId": "msg_01a115b6529070e484f41e5e63949b38"
+          }
+        }
+      ],
+      "finish": "stop",
+      "providerState": {
+        "responseId": "resp_6ac61200a0e9bb7bc2584492"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 8538,
+        "output": 361,
+        "reasoning": 28,
+        "cache": {
+          "read": 10993,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b65c0d00103GusdFj65I9ZF",
+      "time": {
+        "created": 1791365635085
+      },
+      "type": "idle",
+      "outcome": "succeeded"
+    },
+    {
+      "id": "msg_115b8a613001aDpTDs9jOWC1jj",
+      "metadata": {
+        "displayText": "does the azure $6 cost include layout and everything else?",
+        "comments": [],
+        "attachments": [],
+        "agent": "build",
+        "model": {
+          "modelID": "muse-spark-1.3-contributor-free",
+          "providerID": "opencode",
+          "variant": "high"
+        }
+      },
+      "time": {
+        "created": 1791365785171
+      },
+      "text": "does the azure $6 cost include layout and everything else?",
+      "files": [],
+      "agents": [],
+      "type": "user"
+    },
+    {
+      "id": "msg_115b8a660001WZR8leHsXfXh3U",
+      "time": {
+        "created": 1791365785220,
+        "streamed": 1791365790141,
+        "completed": 1791365791968
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "Analyzing Azure pricing details from the comparison document to clarify what the $6 cost covers.",
+          "state": {
+            "itemId": "rs_6ac6129a2545b704494b41ce:rs_01a115b8ac9b7709a1b45fbbad9c4e43",
+            "reasoningEncryptedContent": "Q-PaDgFEvFeNdLsxTU0NiGQcPd1sAQ4qsFmE0xISr3SfKVdtsZ_3SSL26YXSsqGXavlfGLpAV22XgozYVvivUqrf5SVFQLDncw9xZ3hIIXC6N1-7u_Exi0SKJGqeZgCgcMsJ6Nol-Ylj5VepqNvsF6sQeTMs1_T9TK37bKqhucw8gCn_PhDluzO688TNXgJG5fhAFNLpQ7MBYMujw-2ZWAiXGOdJRqtb5BIw5uKxJ56Z66BxpzfYoWGCPO4DcRQ-723XAW9-TRWpLWYVg31WC4IMzPENhqF4FP6YGRtnJMHl0xYAhD91trESRed7SnRhC7ozFPa8WhtCupJCTrd2ktSCdKE8JvYlandHaQ2WNsjTu0bxScys21DxsYx-QhZNzk0GOjmwdb9uV0CN9vdTnX0W_M-zs0QgvLkSnqDqkFw10tZkqwCmWO6qg3lCoTWGYjGXCqODIamvS52q-eToUmSNROf4YTOEhaIFX5bK5JKybHhAjw7AU0C2483G_T8xv5gzow0p9JfuQNiGqj3JGFzXV1XLbXS2YULrbE2r_gedpHvcCz0S_z0_fO7LSVUVqN4ONjWXaO7zdCdkCy0iJ0Xewh8RtlZTx6aj5O0gTgOy1ZJg_9dJEmxHK6JTQwVgilfQsJFaK069vTKWI_j7dAyfCEq5FNoQqU_wQRCF4elPnqAqCGocLpsC0Ely1_E9vhJL9BpoRdXQGKrAaNosiEK4ikmA5MwOko53tYW-QAFJUUoD8jKsQRcXeHrxSOa296n2B_sQAV2ohNXL6n6zsGJmCplJe0W1jGtoKwElqVzhCMvuCtabKiOh4pZah4oRxOEGz1UC51Rm1EvH6sdfAtW7PDOR7o8mRaIwZaFR3M_eEDETlxvg1q6Tgnqly-5swxibmCLJIxIwcqwMWCl-UHgCIubmKI0ih7qXeIdabMXOHJPVb2CoWo1JY68lLL6HhRfk9H93OW-zkaLbkxbprm6uYySmaxt8RrY-Cok_zb_qF__-0yMisOTxy4JW22tjUaaNb9fBOY2RhgtFgcXVZsOACVTmjoT2NEcbcLbEPfoJBVSFQow3yj5tyZv8gHNrjxbQYvgTl59HVIssWuBLyAj2LV1iYu7qvf8dVWO3IL2NFd-Tci3skRMGVUxJmBmCwBq85LZ910kaSO4lrOOrUX7HUzI7ZaA9aY-Xwk7YOcUIXqDhAWMzs-nLVXKqIM1ZjHMgRdI-EXras4kn1quTa78N8JRlRlDxY7-IWWH5LRJIx_NzR8PhuPZnmMnVUrEaLuSKSRTF4W5HEspPidHm02KMsHGqVq7W3j0k14ADsbdohNqRoTfIM2QFqMx-RypxvxgGcSYRkOJFpxtqYa4kAX_grRxAhcFug5IOeRucrOCqsLKTlETGdaA6vbx0_ZrGozY0Dyhv0PFsjQ23WGS3tQPSOD56zLo5__RH0l_mGtYqxkppUKLJqGI6SbJSNedZdCWKOpHPvPacXO-iaAM8fNO7bSANZTzZLf5j0G0asoHgSmkKhTMtj6gZUjapquRHvF8kDcMwD3qIOzfbukXDwCjeMM3aziLiJA3-o9UrCHAotY93oK4B4qpJrKChhWYllwWWleKcrc0NpKBTBFV_R1R9MxAxSVIY35BSNhgzODZ60XJeE5qdOeFPcyJty6fCb7E482IUU0uQzghmo-XxUmxNF3hRDzGZMS5YLuuZgaLrRI06Up18cY8FJV7pmj67_rLw2caXTTuOalT4kh05TyLAPtQ7gcS-LPoNYwiPiPQ4TM9HOKmRSKSwECjlJgZQbBG12zABviD_QYXuFRZPWk3t_IHa5ktD9TIOtZPO9FDLUwqqJZ6vk2VbRq0Ug4c5fRy6GuUO7m5DlzDbm5SrQLwx73xSF3Bdhq2UWsCtQ0QUhXwEqMlahnmBUqPzBM-henE3E3ieHAPdSpP_yFLuWolRxdc1twHMOH7IJWUwEE0b4A69tzUCgXdeKHMJa3skAWtQASrMFCpM-_E6yV7Mc5bMc3DkoovbNj46lTjklmgKvvSYY3qtFgXfTHRUxoVjLS15cEb7kYtnMBnmwjn-x5cf3y_2vvzJsgjTDtxfEVqAAwuKcFwEyu5NKOX0y6Jjjsz4ETvVuvZe-WKebhNRQUdc9lq6GsZkOvB2LgVuZ873vKStN0PlJU2hkMg7VJHaG58feAGaWDEwopr_yc6CSq_f7F2dC7pn_tR81MBhcGblmvrpE_aOnIW9fkrwt3w4lpr7HEsx418pmE8hP-i9qOzfDOAojmzHdXHbWX6l_OqxeT7wffxOtSh9P5EHTElLbwAFGkykG7uf_aDvMlTNJGdhCRWdLVnKjg-e5vqbDcFWWOMGRZ_5dBTSZ880sCoCWNkYwCK4yUDR74GiVKh_UEG0TMyvTzpEWEtyG4G4560H1-kuiIUyCWUnsGFP3qTKfBg7MNFgko-2FGZIHzsC6v6cTfd4KqSQRZwqGo8q2lg9i2gKyFy1WXhMEfO4gG2p8vPyRCopAFTZoCTKqbAAjRCE66eVTMYL5wEK8SSk0KKwpYc0APcjjprYX1nYwGor_Z9pftXaNIBuJljV7LuVfPodHeYk1hRink7oHKe2JJGhEJjOmXUymrr-DZkVB9BMQl0PgTsWAB0CwZpmoZFOPwxHYd40lEl5uI0dnUukNB_8Plz5fg0hT1rf_phjVYivxecxfOjZyUd2l4q_eiIn-ei-JDo9xGE2bfas59LMrK5RZhiJOCOwyJLmcTS6XFGe-x6rAEY4BDdhcQJ8ESttG3GYY_uculiaIGq5pj1umypayrpKHjhToKdu2RwRhwTR9hfhGr3zefImCRvUBRiz9fQ_Fm6dWMMg9ZIUngcXkNYVZuvpIwyOU-SXQGenMnI0cY0yle3uf23q7yzQzusumr2Ch0UWFGbN8utWG4LYvE2pmV2L76Zl7S-ASyoj72EGlmwzVjQYSIDlrFGx3r7_k2zA8oYbavnRllNfc5-cQxw6B2d3_w5QiK94no05ZP8lGwNJlIQnye0Gww1XxbfWIRFz4BFl3J_doX5equI01W6rLL5YIejXzJbkqp2BBKSmWEn4LDIrp0sLg7DQOxngBoMJrp5HMaigsIXRhjtzeHCg5KLjA2suGGxbLJoaaB5vDU55zp0QFEDqP8rCzSDhyYb2AcVU_NW9Dr7Ppk6VtDvFMM34Ber2S5N-yvyrgQbMnFmpwc9jvsT3obmCtGGTe-RR8118Q96-052l0CPT7zerqBUTLLitmR9txiIFibCBYMA-8sf1w-InxDa8U4muT6_T0zNaxnBI1oRXx4Jaa99YavTyesqiSuTxVzkm8PkVmXCjCOioQ-ZjzdtSHpkqL62dA-6ccJZ8fSwfzno73ESjJx1tKWNM6oRDcDWuRHGWoveU8UobO8FQ9bS9DbaUInGDgRrudNJ9mOTZYbF4y8aC6vQzpO2sqprSGwcu3K6n7mFSEqFOzhZi6rgcP6IvTam300EHkqMFvZKg4ZvGAZ2YKyR0EniKSnQeotHSA_SXNfxXDRFcR5Ls58AfI3I6huwqu2XGWJHaofBiS795m-1hxahc25WqCnNDzLBZwT4hUW88xAXRpbamrzcM-_bIa2WG4OexydL35Orf6oQRhiPqdtecFOU1jVUj4VEUenpS70iiaw751W50vpKHHBywXqiYmUj2a-MfH4ExstTABCYCREKVfJ0VE21j5D7dWEp-1D_bA0b3wkXSlCWwmlK2mYsKGunyCI6vtlqY0XpxHxuj8D4ul1QN7adyLSQzeQOzCP0c7CD2jCfRUpUHIhW6qTxp9iOb-mbg2OCnZlypRA9SdEP6Y85i2_5dono231w77lqbEnT1QA4nj3ZNfJyKhd_5ShZXMgps5USEFrCExrafQB8tA3lYaeBMgHZ4RmpIGe69GJ7CTsfyJSg6PV9VjiJzihIYLPZ0gU-JnpAqnSQ7tDqhkhhC6vH15WU_gGgpgLjw3cbXciy7TmaUsBRWR1e4NzCcmjTUOB7J68IsZ093hgC8OuTiGVdIY7Jru1ef9XA-JJrCkwGoFZp-h7kq4_6lsLvTyrg0xrpc6ScIFj_1LfS_v7ygc0Jzvi7KqbDYpdwF7njRwpOSwI_egEBhoi6UTl0Pw-dsPlqJfeBf4nH5iOqrwwPlgbXPQepaKWstPSWDS7BKpyMflWTzn6qfyLmyvKMwww-AXZOrWE0m_L1vqwvLsBosRpPFEvjhlH4mfTBjMA7t3YX0fUiYxtj2rIsLEfvtKbUpruiqcNvGadPVJxOFztmEvkl63hnW-OV-BfH6kK_a3BK93xT0ZN50Vkac9Vqm14WDmRIOOG7MLP5ke3-TxZ5xHSYhcuzXRJ-KkiCwbA3ctyGSkozAaVikN6FMsq9qPhr2eDVW6FjFGo15C7vosFZX4I6ouqbU5Gze1guSb39fyffqLGs47ghJTUuclMdOrkZGIacFL3aMK9K9x_In96OhUJydlAEpuV0G900D4puYKvepl_fe1Q-RzvDXwHtnl2EMAFmUDMr0EuXThmaFZcISD7BfSxVqFYVXslgmSZNqr8CPFla1Le1hCXV1fQxjdLkJWj-w7e5LthjuHkmkxcUstdrOu3RY_qfzJx8OYt0WwgYR4XZiJBoAkjfPkjOyFINp1nfzhRhWB1hhVgmntBc7zQR2OOY8M9hgwPFNKhQhQYjUMVPNDDdfWADoo-73G0WXAbe3nT9KT44hrYlP7SLVzo0pWwHHKQQF_1HEDR3jSpL4Ja8nSdeb7fZkC6XIs6e1N3M7bvD7qrOaqH_a04mvQpRr46AKT_eMU2m_XjddQoI54QdaF8zKA1fAyW-JMvFsHnlH-56rsnDwc8nO898VlE7AremCDziVcTgclbyCW9QkLWjZb2uPds2V3UR1uO3fPYzti9ZZSSD1h6hPdy5R6KPSFtPRWwe4pMXh5r5JhuWBQ_UO6k4DJSao_rx3TMd7FCWvB8n3p0P5XpQheSs1PVIGuE8EVYr1wJ_lDptvA4O893GqKbdi3kDSWD1w7MIghgXJs_QGTrGXHItMeaFPPqnUpdAVgsPo9up44lSiBgbtVpJRIEC2Ku-EXFwFc186FgBK5PkH4japFHm9Eb2VI7wrrH0B91G2l81rhe3oxbI0TYZHdqbgK7haN99ttElGX-3uvp1LB0GArLcfPkHsAgUhAIFf-6zR0in8DpOEs-mb4XHU7xu24h6A0unqT9o4wiDUbuUzNRH3Useh9VcqChqtgFQcJgUlUuWTz8GQImrV-4inI0DiOV9Hh9IgsWiygQ5psWjDDaX37JMCl_9pdZ-UtEda2uSwxCrTgzNW3Ms-wcg_Psu0QVoLwMBX3kbtjtFSezE-EyNu7IIaJ8poxu5eZLjsi4jI_U0d2Oaj9UMHmG41ADO_wAVCqDIEgmvn2c5hfXrvWtuwy3xEslHN06vj1oFQqTSqFH5QTzhRn9n_eog7QGWNNe_ZIj1UgWUi_zacLSpRBCYUQq-u60tBHZDX6FlZMYANJ6vTl2l0r6S43QDPkA"
+          },
+          "time": {
+            "created": 1791365787069,
+            "completed": 1791365789755
+          }
+        },
+        {
+          "type": "text",
+          "text": "Good question — verifying exactly what that $6 covers.",
+          "state": {
+            "itemId": "rs_01a115b8b7877661a547452760f556b1",
+            "phase": "commentary"
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_01a115b8b7f974e6a7e4865da6f7f7bd",
+          "name": "websearch",
+          "executed": false,
+          "providerState": {
+            "itemId": "fc_01a115b8b7f974e6a7e4865da6f7f7bd"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "query": "Azure AI Document Intelligence pricing Read Layout Custom $30 per 1000 pages 2026"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "## [Azure Document Intelligence in Foundry Tools pricing](https://azure.microsoft.com/en-us/pricing/details/document-intelligence/)\n\n# Azure Document Intelligence in Foundry Tools pricing\n## Pay as You Go: pay only for what you use.\n| Instance | Document type | Price |\n|-|-|-|\n| Custom extraction | $30 per 1,000 pages |\n| Custom generative extraction | $30 per 1,000 pages |\n\n## Commitment Tiers: disconnected container\n| Category | Features | Price (per year) | Max usage (per year) | Projected usage (per month) |\n|-|-|-|-|-|\n| Read | $12,960<br>$45,360 | 24M pages <br>96M pages | 2M pages <br>8M pages |\n\n## [Azure Document Intelligence pricing - Microsoft Q&A](https://learn.microsoft.com/en-us/answers/questions/5927427/azure-document-intelligence-pricing)\n\nIt costs roughly $1.50 per 1,000 pages. Custom Extraction is generally billed at $30.00 per 1,000 pages. Layout Detects text and table ...\n\n## [Azure Document Intelligence Pricing 2026: Is It Worth It? - Parsli](https://parsli.co/compare/azure-document-intelligence)\n\n## What Azure Document Intelligence actually costs in 2026\n| Model / SKU | Price per 1,000 pages | What you get |\n|-|-|-|\n| Read (OCR) | $1.50 | Raw text. No fields, no structure. |\n| **Custom Extraction** | **$30** | Anything off that list — after you label training data. |\n\nA scanned invoice where you need line items and reliable reading of a low-quality scan is Prebuilt ($10) + Layout ($10) + the high-resolution add-on ($6) — $26 per 1,000 pages before a single line of your own code runs.\n\n### The most expensive tier runs on the oldest model\nCustom Extraction — the tier you're pushed to the moment your document isn't one of the prebuilt types — is **$30 per 1,000 pages, 20× the Read API**.\n\n## Frequently Asked Questions\n### How much does Azure Document Intelligence cost in 2026?\nThe 2026 API rates are **Read (OCR) $1.50** per 1,000 pages, **Layout $10**, **Prebuilt models $10**, and **Custom Extraction $30** per 1,000 pages.\n\n## [What is the cost of document intellegence service with form ...](https://learn.microsoft.com/en-us/answers/questions/5665475/what-is-the-cost-of-document-intellegence-service)\n\n# What is the cost of document intellegence service with form recognizer\n1. For Azure Document Intelligence, pricing is **per page processed**, and the cost depends on **which capability is being used**. The **~$1.50 per 1,000 pages** price applies **only to basic OCR (Read)** scenarios. This includes:\n   - Basic layout extraction\n   - No structured fields, key-value pairs, or semantic document understanding\n\n- **Custom extraction**: typically ~ $30 per 1,000 pages\n\n## [Service quotas and limits - Document Intelligence - Azure AI services](https://docs.azure.cn/en-us/ai-services/document-intelligence/service-limits?view=doc-intel-4.0.0)\n\nThis article contains both a quick reference and detailed description of Azure Document Intelligence Quotas and Limits for all pricing tiers.\n\n## [AI Document Extraction on Azure - Options, Comparison ... - Reddit](https://www.reddit.com/r/AZURE/comments/1pq490v/ai_document_extraction_on_azure_options/)\n\nPricing is around $10/1,000 pages for prebuilt models, $30/1,000 for custom extraction. expensive (~$0.05-0.07/page) and potentially less ...\n\n## [Pricing - Form Recognizer API - Microsoft Azure](https://azure.microsoft.com/en-in/pricing/details/document-intelligence/)\n\n# Azure Form Recogniser pricing\n## Pay as You Go\n| Instance | Document type | Price |\n|-|-|-|\n| Custom extraction | $30 per 1,000 pages |\n| Custom generative extraction | $30 per 1,000 pages |\n\n## Commitment Tiers: pay an upfront monthly fee for high-volume usage at a discount.\n| Instance | Features | Price (per month) | Overage |\n|-|-|-|-|\n| Read | $375 per 500,000 pages<br>$1,200 per 2,000,000 pages<br>$4,200 per 8,000,000 pages | $0.75 per 1,000 pages<br>$0.60 per 1,000 pages<br>$0.53 per 1,000 pages |\n| Read | $338 per 500,000 pages<br>$1,080 per 2,000,000 pages<br>$3,780 per 8,000,000 pages | $0.68 per 1,000 pages<br>$0.54 per 1,000 pages<br>$0.47 per 1,000 pages |\n\n## Commitment Tiers: disconnected container\n| Category | Features | Price (per year) | Max usage (per year) | Projected usage (per month) |\n|-|-|-|-|-|\n| Document Intelligence | Custom extraction | $24,480<br>$1,07,100 | 1.2M pages <br>6M pages | 100,000 pages <br>500,000 pages |\n| Read | $12,960<br>$45,360 | 24M pages <br>96M pages | 2M pages <br>8M pages |\n\n## [Azure Document Intelligence Pricing 2026: Invoice Cost](https://invoiceextractor.ai/azure-document-intelligence-pricing)\n\nCustom models at $30 per 1,000. Read OCR is $1.50 per 1,000 pages and custom extraction is $30 per 1,000."
+              }
+            ],
+            "metadata": {
+              "provider": "firecrawl",
+              "truncated": false
+            }
+          },
+          "time": {
+            "created": 1791365789891,
+            "ran": 1791365790091,
+            "completed": 1791365791962
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_6ac6129a2545b704494b41ce"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 497,
+        "output": 109,
+        "reasoning": 452,
+        "cache": {
+          "read": 19441,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b8c0fe001pS1IpS36V8s0Un",
+      "time": {
+        "created": 1791365792032,
+        "streamed": 1791365793649,
+        "completed": 1791365794431
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "itemId": "rs_6ac612a0511a3c94eccf42f7:rs_01a115b8c3ce71019d4f081afb0ccb8e",
+            "reasoningEncryptedContent": "Q-PaDgF5_iPm-XhjWMsYf07Wz6roddkjRjcPXW_3y-zgOzgZ20C6iNr3UgOL9z-D8jxqtqGyfjIYpoHQkOAL66trW6L3qw6wTjAG1oxx10spRRl3A4UYVcWY1mMiTisVGX9-sOxrlHOaJmw8yo-3DPB_rEtnf5hmVrp_0zGaWUihPuelo9CQ9vHfvZkRxRSC1AB3ck7pIkrj4vwZnfPYMi5oNPeZR4yEuABsp7opnMBgidw9M6wB0IP7uIXYfIA3SWM7Tl5DRGGaw00N0n60vvLdz1djcn0k9s5JX2AjzbWo1lkY1vLF2EETFxvtE4eJ3ylrJPdal1O9qS2qK1UBhC9V0WUsSOWBmEefgZ27W9WXL0AL1Z5EfkR3gtfNKN8WwabzZqM-G2PrYMwsKh_TS4Qn5kpKI7r4qko6XOgq1wm8YXn16L3qAihMP0kTuaou6k-w9PtNXypAwbmxxv0uWpDoW3oTFl_U-9Yf3L2mG1RjQTLMdLEfFLEQBRDENwSAa-xA8AeuzbJz-h-UjzjI8R_RXmZsYlXoTmFXbEJui-3vO0XBupk9o1E4ijRAhjMSIG1EClOyaks0ovel3i02sM8_J7753-wwUXHk9Zvx4-x4n1boZtnyD_XinSzdcQrISG_MCRJIOiNiAzo8miem27iaU_nyT7vyDOK6ZO0uMkPm6kVSdv-2K4MCfdQsQ-d6uF894XqVYsz0pmTm315QRb4v9gQWVP22pLfigjaCQwNoOCjCLj0p-n-fcwT8Ll9wIGOKvA7G504K58_Ap02Zkptt3EyFA3TOoEX_KYyCrxGdYvGDn4BvNIcMfmEujZCMAXUB3WyeXXJRlig3s-qwsO_1F_p4QUaisasyGTlejwVUNBNbXAnQYFXyUY7jfp6KqlG6e_OajyT-kDo35mwTcxlL8baYbLjya_3atM3t0MURGwYKeFml1Nzqa2ya3l--nfHqb_C7DSQKA1lKNBLWVEVU2N2hZ0VlcX76vQ-zqHDrq1SgFG1gAqUS3pvNbICN1NzF9x0sVoqxgIyIAdfWOFTfC1CqgzQr7rT2WEK_2Vi9CHpaY1zLVxuSsdRSiCHmGU8vgWlWqFYPB5bGmhD1PnmjtrgQk3VYrnYyRacl7oGvnLtSBsEpOZ60cpwgrHYY_oxMpGMOyb8qtGk0A6J46xYJcrEjPwikHVUo3df5o3pMG8tmTZqGRo9VyUmC-cFj48UfyFqfXK04nSS9-9h1fg50M3QfjcLOgMsbH173H2y1oTfLIJYT964KWeEDRsTtbJRUVk09z37joEaaVa_bixutkoJo-4MTuPGDHIzEuu7i7WPpV9NNJXxZlhFE84OBibho2gl5Cq5Up2Wf__7mllbMX2PBEgZGd56UsPpZPMcH14Leuy_bRrhOpH2i5jWFke97wKnq2TkY9SCGDQ"
+          },
+          "time": {
+            "created": 1791365793599,
+            "completed": 1791365793604
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_01a115b8c46070f6b16afcfa6addc15f",
+          "name": "webfetch",
+          "executed": false,
+          "providerState": {
+            "itemId": "fc_01a115b8c46070f6b16afcfa6addc15f"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "format": "markdown",
+              "url": "https://azure.microsoft.com/en-us/pricing/details/document-intelligence/"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[Skip to main content](#main)\n\n[Azure](https://azure.microsoft.com/en-us/)\n\n[](https://microsoft.com/)\n\n[Sign in](https://portal.azure.com/)\n\n[ Try Azure for free](https://azure.microsoft.com/en-us/free/) [Contact Sales](https://azure.microsoft.com/en-us/contact/)\n\n[](https://microsoft.com/) [Azure](https://azure.microsoft.com/en-us/)\n\n- Explore\n\n  Home Explore\n\n  ## Explore Azure\n\n  - [Get to know Azure](https://azure.microsoft.com/en-us/explore/)\n\n    Discover secure, future-ready cloud solutions—on-premises, hybrid, multicloud, or at the edge\n\n  - [Global infrastructure](https://azure.microsoft.com/en-us/explore/global-infrastructure/)\n\n    Learn about sustainable, trusted cloud infrastructure with more regions than any other provider\n\n  - [Cloud economics](https://azure.microsoft.com/en-us/solutions/finops/)\n\n    Build your business case for the cloud with key financial and technical guidance from Azure\n\n  - [Customer enablement](https://azure.microsoft.com/en-us/solutions/cloud-enablement/)\n\n    Plan a clear path forward for your cloud journey with proven tools, guidance, and resources\n\n  - [Customer stories](https://azure.microsoft.com/en-us/case-studies/)\n\n    See examples of innovation from successful companies of all sizes and from all industries\n\n  - [Azure innovation insights](https://azure.microsoft.com/en-us/explore/innovation-insights/)\n\n    Executive insights and guidance on AI innovation, intelligent data, cloud infrastructure, and optimization\n\n- Products\n\n  Home Products\n\n  - [ View all products (200+)](https://azure.microsoft.com/en-us/products/)\n\n  - Popular\n\n  - AI \\+ machine learning\n\n  - Analytics\n\n  - Compute\n\n  - Containers\n\n  - Databases\n\n  - DevOps\n\n  - Developer tools\n\n  - Hybrid \\+ multicloud\n\n  - Identity\n\n  - Integration\n\n  - Internet of Things\n\n  - Management and governance\n\n  - Media\n\n  - Migration\n\n  - Mixed reality\n\n  - Mobile\n\n  - Networking\n\n  - Security\n\n  - Storage\n\n  - Web\n\n  - Virtual desktop infrastructure\n\n  Products Popular\n\n  ## Popular\n\n  Explore some of the most popular Azure products\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/virtual-machines.svg) [ Virtual Machines](https://azure.microsoft.com/en-us/products/virtual-machines/)\n\n    Provision Windows and Linux VMs in seconds\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/virtual-desktop.svg) [ Azure Virtual Desktop](https://azure.microsoft.com/en-us/products/virtual-desktop/)\n\n    Enable a secure, remote desktop experience from anywhere\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-sql.svg) [ Azure SQL](https://azure.microsoft.com/en-us/products/azure-sql/)\n\n    Migrate, modernize, and innovate on the modern SQL family of cloud databases\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/cosmos-db.svg) [ Azure Cosmos DB](https://azure.microsoft.com/en-us/products/cosmos-db/)\n\n    Build or modernize scalable, high-performance apps\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/kubernetes-service.svg) [ Azure Kubernetes Service (AKS)](https://azure.microsoft.com/en-us/products/kubernetes-service/)\n\n    Deploy and scale containers on managed Kubernetes\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/cognitive-services.svg) [ Foundry Tools](https://azure.microsoft.com/en-us/products/ai-services/)\n\n    Add prebuilt AI tools to agents\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/app-service.svg) [ App Service](https://azure.microsoft.com/en-us/products/app-service/)\n\n    Quickly create powerful cloud apps for web and mobile\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/playfab.svg) [ Azure PlayFab](https://azure.microsoft.com/en-us/services/playfab/)\n\n    Everything you need to build and operate a live game on one platform\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/functions.svg) [ Azure Functions](https://azure.microsoft.com/en-us/products/functions/)\n\n    Execute event-driven serverless code functions with an end-to-end development experience\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/quantum.svg) [ Azure Quantum](https://azure.microsoft.com/en-us/products/quantum/)\n\n    Jump in and explore a diverse selection of today's quantum hardware, software, and solutions\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-arc.svg) [ Azure Arc](https://azure.microsoft.com/en-us/services/azure-arc/)\n\n    Secure, develop, and operate infrastructure, apps, and Azure services anywhere\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Extended Security Updates (ESU)](https://azure.microsoft.com/en-us/services/azure-arc/)\n\n    Subscribe to critical and important security patches for WS & SQL Server versions that have reached end of support (EOS).\n\n  Products AI \\+ machine learning\n\n  ## AI \\+ machine learning\n\n  Create the next generation of applications using artificial intelligence capabilities for any developer and any scenario\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/machine-learning-service.svg) [ Azure Machine Learning](https://azure.microsoft.com/en-us/products/machine-learning/)\n\n    Build, train, and deploy models from the cloud to the edge\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Microsoft Foundry](https://azure.microsoft.com/en-us/products/ai-studio/)\n\n    Your platform for developing generative AI solutions and custom copilots\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/search.svg) [ Foundry IQ](https://azure.microsoft.com/en-us/products/ai-services/ai-search/)\n\n    Enterprise scale search for app development\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Azure OpenAI](https://azure.microsoft.com/en-us/products/cognitive-services/openai-service/)\n\n    Apply advanced coding and language models to a variety of use cases\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/speech-api.svg) [ Azure Speech in Foundry Tools](https://azure.microsoft.com/en-us/services/cognitive-services/speech-services/)\n\n    Enterprise-grade voice intelligence you can trust at global scale\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Azure Language in Foundry Tools](https://azure.microsoft.com/en-us/products/cognitive-services/language-service/)\n\n    Add natural language capabilities with a single API call\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/translator-apis.svg) [ Azure Translator in Foundry Tools](https://azure.microsoft.com/en-us/services/cognitive-services/translator/)\n\n    Easily conduct machine translation with a simple REST API call\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Azure AI Vision](https://azure.microsoft.com/en-us/products/cognitive-services/vision-services/)\n\n    Unlock insights from image and video content with AI\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/form-recognizer.svg) [ Azure Document Intelligence in Foundry Tools](https://azure.microsoft.com/en-us/products/form-recognizer/)\n\n    Accelerate information extraction from documents\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/content-moderator.svg) [ Content Safety in Foundry Control Plane](https://azure.microsoft.com/en-us/products/ai-services/ai-content-safety/)\n\n    Use AI to monitor text and image content for safety\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/video-indexer02.svg) [ Azure AI Video Indexer](https://azure.microsoft.com/en-us/products/ai-video-indexer/)\n\n    Extract AI based insights from videos\n\n  - [ See all AI \\+ machine learning products](https://azure.microsoft.com/en-us/products/#ai-machine-learning)\n\n  Products Analytics\n\n  ## Analytics\n\n  Gather, store, process, analyze, and visualize data of any variety, volume, or velocity\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/synapse-analytics.svg) [ Azure Synapse Analytics](https://azure.microsoft.com/en-us/products/synapse-analytics/)\n\n    Limitless analytics with unmatched time to insight\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/databricks.svg) [ Azure Databricks](https://azure.microsoft.com/en-us/products/databricks/)\n\n    Enable data, analytics, and AI use cases on an open data lake\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/purview.svg) [ Microsoft Purview](https://www.microsoft.com/en-us/security/business/microsoft-purview)\n\n    Secure and govern your data estate\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/data-factory.svg) [ Azure Data Factory](https://azure.microsoft.com/en-us/products/data-factory/)\n\n    Hybrid data integration at enterprise scale, made easy\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/hdinsight.svg) [ HDInsight](https://azure.microsoft.com/en-us/products/hdinsight/)\n\n    Provision cloud Hadoop, Spark, R Server, HBase, and Storm clusters\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/stream-analytics.svg) [ Azure Stream Analytics](https://azure.microsoft.com/en-us/products/stream-analytics/)\n\n    Real-time analytics on fast-moving streaming data\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/machine-learning-service.svg) [ Azure Machine Learning](https://azure.microsoft.com/en-us/products/machine-learning/)\n\n    Build, train, and deploy models from the cloud to the edge\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/analysis-services.svg) [ Azure Analysis Services](https://azure.microsoft.com/en-us/products/analysis-services/)\n\n    Enterprise-grade analytics engine as a service\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/data-explorer.svg) [ Azure Data Explorer](https://azure.microsoft.com/en-us/products/data-explorer/)\n\n    Fast and highly scalable data exploration service\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/microsoft-fabric.svg) [ Microsoft Fabric](https://microsoft.com/microsoft-fabric)\n\n    Access, manage, and act on data and insights by connecting every data source and analytics service together on a single platform\n\n  Products Compute\n\n  ## Compute\n\n  Access cloud compute capacity and scale on demand—and only pay for the resources you use\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/virtual-machines.svg) [ Virtual Machines](https://azure.microsoft.com/en-us/products/virtual-machines/)\n\n    Provision Windows and Linux VMs in seconds\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/virtual-machine-scale-sets.svg) [ Virtual Machine Scale Sets](https://azure.microsoft.com/en-us/products/virtual-machine-scale-sets/)\n\n    Manage and scale up to thousands of Linux and Windows VMs\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/kubernetes-service.svg) [ Azure Kubernetes Service (AKS)](https://azure.microsoft.com/en-us/products/kubernetes-service/)\n\n    Deploy and scale containers on managed Kubernetes\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-spring-cloud.svg) [ Azure Spring Apps](https://azure.microsoft.com/en-us/services/spring-apps/)\n\n    Build and deploy Spring Boot applications with a fully managed service from Microsoft and VMware\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/app-service.svg) [ App Service](https://azure.microsoft.com/en-us/products/app-service/)\n\n    Quickly create powerful cloud apps for web and mobile\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/functions.svg) [ Azure Functions](https://azure.microsoft.com/en-us/products/functions/)\n\n    Execute event-driven serverless code functions with an end-to-end development experience\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/virtual-machines.svg) [ Azure Dedicated Host](https://azure.microsoft.com/en-us/products/virtual-machines/dedicated-host/)\n\n    A dedicated physical server to host your Azure VMs for Windows and Linux\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/batch.svg) [ Batch](https://azure.microsoft.com/en-us/services/batch/)\n\n    Cloud-scale job scheduling and compute management\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/virtual-machines.svg) [ SQL Server on Azure Virtual Machines](https://azure.microsoft.com/en-us/products/virtual-machines/sql-server/)\n\n    Migrate SQL Server workloads to the cloud at lower total cost of ownership (TCO)\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Azure Spot Virtual Machines](https://azure.microsoft.com/en-us/products/virtual-machines/spot/)\n\n    Provision unused compute capacity at deep discounts to run interruptible workloads\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/container-apps.svg) [ Azure Container Apps](https://azure.microsoft.com/en-us/products/container-apps/)\n\n    Build and deploy modern apps and microservices using serverless containers\n\n  Products Containers\n\n  ## Containers\n\n  Develop and manage your containerized applications faster with integrated tools\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/kubernetes-service.svg) [ Azure Kubernetes Service (AKS)](https://azure.microsoft.com/en-us/products/kubernetes-service/)\n\n    Deploy and scale containers on managed Kubernetes\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/openshift.svg) [ Azure Red Hat OpenShift](https://azure.microsoft.com/en-us/services/openshift/)\n\n    Deploy and scale containers on managed Red Hat OpenShift\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/container-apps.svg) [ Azure Container Apps](https://azure.microsoft.com/en-us/products/container-apps/)\n\n    Build and deploy modern apps and microservices using serverless containers\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/functions.svg) [ Azure Functions](https://azure.microsoft.com/en-us/products/functions/)\n\n    Execute event-driven serverless code functions with an end-to-end development experience\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/app-service-containers.svg) [ Web App for Containers](https://azure.microsoft.com/en-us/products/app-service/containers/)\n\n    Run containerized web apps on Windows and Linux\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/container-instances.svg) [ Azure Container Instances](https://azure.microsoft.com/en-us/products/container-instances/)\n\n    Launch containers with hypervisor isolation\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/service-fabric.svg) [ Azure Service Fabric](https://azure.microsoft.com/en-us/products/service-fabric/)\n\n    Deploy and operate always-on, scalable, distributed apps\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/container-registry.svg) [ Azure Container Registry](https://azure.microsoft.com/en-us/products/container-registry/)\n\n    Build, store, secure, and replicate container images and artifacts\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Azure Kubernetes Fleet Manager](https://azure.microsoft.com/en-us/products/kubernetes-fleet-manager/)\n\n    Seamlessly manage Kubernetes clusters at scale\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Azure Kubernetes Service Edge Essentials](https://azure.microsoft.com/en-us/products/kubernetes-service/#overview)\n\n    Azure Kubernetes Service Edge Essentials is an on-premises Kubernetes implementation of Azure Kubernetes Service (AKS) that automates running containerized applications at scale.\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Azure Container Storage](https://azure.microsoft.com/en-us/products/container-storage/)\n\n    Manage persistent volumes for stateful container applications\n\n  Products Databases\n\n  ## Databases\n\n  Support rapid growth and innovate faster with secure, enterprise-grade, and fully managed database services\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-sql.svg) [ Azure SQL](https://azure.microsoft.com/en-us/products/azure-sql/)\n\n    Migrate, modernize, and innovate on the modern SQL family of cloud databases\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/cosmos-db.svg) [ Azure Cosmos DB](https://azure.microsoft.com/en-us/products/cosmos-db/)\n\n    Build or modernize scalable, high-performance apps\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-sql-database.svg) [ Azure SQL Database](https://azure.microsoft.com/en-us/products/azure-sql/database/)\n\n    Build apps that scale with managed and intelligent SQL database in the cloud\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/postgresql.svg) [ Azure Database for PostgreSQL](https://azure.microsoft.com/en-us/products/postgresql/)\n\n    Fully managed, intelligent, and scalable PostgreSQL\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-sql-managed-instance.svg) [ Azure SQL Managed Instance](https://azure.microsoft.com/en-us/products/azure-sql/managed-instance/)\n\n    Modernize SQL Server applications with a managed, always-up-to-date SQL instance in the cloud\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/mysql.svg) [ Azure Database for MySQL](https://azure.microsoft.com/en-us/services/mysql/)\n\n    Fully managed, scalable MySQL Database\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/virtual-machines.svg) [ SQL Server on Azure Virtual Machines](https://azure.microsoft.com/en-us/products/virtual-machines/sql-server/)\n\n    Migrate SQL Server workloads to the cloud at lower total cost of ownership (TCO)\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/cache.svg) [ Azure Cache for Redis](https://azure.microsoft.com/en-us/products/cache/)\n\n    Accelerate apps with high-throughput, low-latency data caching\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/database-migration.svg) [ Azure Database Migration Service (classic)](https://azure.microsoft.com/en-us/products/database-migration/)\n\n    Accelerate your data migration to Azure\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/apache-cassandra.svg) [ Azure Managed Instance for Apache Cassandra](https://azure.microsoft.com/en-us/services/managed-instance-apache-cassandra/)\n\n    Modernize Cassandra data clusters with a managed instance in the cloud\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/mariadb.svg) [ Azure Database for MariaDB](https://azure.microsoft.com/en-us/services/mariadb/)\n\n    Deploy applications to the cloud with enterprise-ready, fully managed community MariaDB\n\n  - [ See all Databases products](https://azure.microsoft.com/en-us/products/#databases)\n\n  Products DevOps\n\n  ## DevOps\n\n  Deliver innovation faster with simple, reliable tools for continuous delivery\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-devops.svg) [ Azure DevOps](https://azure.microsoft.com/en-us/products/devops/)\n\n    Services for teams to share code, track work, and ship software\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-pipelines.svg) [ Azure Pipelines](https://azure.microsoft.com/en-us/services/devops/pipelines/)\n\n    Continuously build, test, and deploy to any platform and cloud\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-boards.svg) [ Azure Boards](https://azure.microsoft.com/en-us/products/devops/boards/)\n\n    Plan, track, and discuss work across your teams\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-repos.svg) [ Azure Repos](https://azure.microsoft.com/en-us/services/devops/repos/)\n\n    Get unlimited, cloud-hosted private Git repos for your project\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-artifacts.svg) [ Azure Artifacts](https://azure.microsoft.com/en-us/products/devops/artifacts/)\n\n    Create, host, and share packages with your team\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-test-plans.svg) [ Azure Test Plans](https://azure.microsoft.com/en-us/services/devops/test-plans/)\n\n    Test and ship confidently with an exploratory test toolkit\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/devtest-lab.svg) [ Azure DevTest Labs](https://azure.microsoft.com/en-us/products/devtest-lab/)\n\n    Quickly create environments using reusable templates and artifacts\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ DevOps tool integrations](https://azure.microsoft.com/en-us/products/devops-tool-integrations/)\n\n    Use your favorite DevOps tools with Azure\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/monitor.svg) [ Azure Monitor](https://azure.microsoft.com/en-us/products/monitor/)\n\n    Full observability into your applications, infrastructure, and network\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/load-testing.svg) [ Azure App Testing](https://azure.microsoft.com/en-us/products/app-testing/)\n\n    Optimize reliability and quality through scalable end-to-end testing​\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Azure Deployment Environments](https://azure.microsoft.com/en-us/services/deployment-environments/)\n\n    Quickly spin up app infrastructure environments with project-based templates\n\n  - [ See all DevOps products](https://azure.microsoft.com/en-us/products/#devops)\n\n  Products Developer tools\n\n  ## Developer tools\n\n  Build, manage, and continuously deliver cloud applications—using any platform or language\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/visual-studio.svg) [ Visual Studio](https://azure.microsoft.com/en-us/products/visual-studio/)\n\n    Powerful and flexible environment to develop apps in the cloud\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/visual-studio-code.svg) [ Visual Studio Code](https://azure.microsoft.com/en-us/products/visual-studio-code/)\n\n    A powerful, lightweight code editor for cloud development\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ GitHub](https://azure.microsoft.com/en-us/products/github/)\n\n    World’s leading developer platform, seamlessly integrated with Azure\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Visual Studio Subscriptions](https://azure.microsoft.com/en-us/services/developer-tools/visual-studio-subscriptions/)\n\n    Comprehensive set of resources to create, deploy, and manage apps\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/powerapps.svg) [ Power Apps](https://azure.microsoft.com/en-us/solutions/low-code-application-development/)\n\n    A powerful, low-code platform for building apps quickly\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/sdk.svg) [ SDKs](https://azure.microsoft.com/en-us/downloads/)\n\n    Get the SDKs and command-line tools you need\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/monitor.svg) [ Azure Monitor](https://azure.microsoft.com/en-us/products/monitor/)\n\n    Full observability into your applications, infrastructure, and network\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/load-testing.svg) [ Azure App Testing](https://azure.microsoft.com/en-us/products/app-testing/)\n\n    Optimize reliability and quality through scalable end-to-end testing​\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Azure Deployment Environments](https://azure.microsoft.com/en-us/services/deployment-environments/)\n\n    Quickly spin up app infrastructure environments with project-based templates\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ GitHub Enterprise](https://azure.microsoft.com/en-us/products/github/)\n\n    Build, scale, and deliver secure software.\n\n  Products Hybrid \\+ multicloud\n\n  ## Hybrid \\+ multicloud\n\n  Get Azure innovation everywhere—bring the agility and innovation of cloud computing to your on-premises workloads\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-arc.svg) [ Azure Arc](https://azure.microsoft.com/en-us/services/azure-arc/)\n\n    Secure, develop, and operate infrastructure, apps, and Azure services anywhere\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-sentinel.svg) [ Microsoft Sentinel](https://www.microsoft.com/security/business/siem-and-xdr/microsoft-sentinel)\n\n    Cloud-native SIEM and intelligent security analytics\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-stack.svg) [ Azure Stack](https://azure.microsoft.com/en-us/overview/azure-stack/)\n\n    Build and run innovative hybrid apps across cloud boundaries\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/expressroute.svg) [ Azure ExpressRoute](https://azure.microsoft.com/en-us/products/expressroute/)\n\n    Experience a fast, reliable, and private connection to Azure\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/active-directory.svg) [ Microsoft Entra ID (formerly Azure AD)](https://www.microsoft.com/security/business/identity-access/microsoft-entra-id)\n\n    Synchronize on-premises directories and enable single sign-on\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-sql.svg) [ Azure SQL](https://azure.microsoft.com/en-us/products/azure-sql/)\n\n    Migrate, modernize, and innovate on the modern SQL family of cloud databases\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-devops.svg) [ Azure DevOps](https://azure.microsoft.com/en-us/products/devops/)\n\n    Services for teams to share code, track work, and ship software\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/postgresql.svg) [ Azure Database for PostgreSQL](https://azure.microsoft.com/en-us/products/postgresql/)\n\n    Fully managed, intelligent, and scalable PostgreSQL\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/iot-edge.svg) [ Azure IoT Edge](https://azure.microsoft.com/en-us/products/iot-edge/)\n\n    Extend cloud intelligence and analytics to edge devices\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/monitor.svg) [ Azure Monitor](https://azure.microsoft.com/en-us/products/monitor/)\n\n    Full observability into your applications, infrastructure, and network\n\n  Products Identity\n\n  ## Identity\n\n  Manage user identities and access to protect against advanced threats across devices, data, apps, and infrastructure\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/active-directory-b2c.svg) [ Azure Active Directory B2C](https://azure.microsoft.com/en-us/products/active-directory-b2c/)\n\n    Consumer identity and access management in the cloud\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/active-directory-ds.svg) [ Microsoft Entra Domain Services](https://azure.microsoft.com/en-us/products/microsoft-entra-ds/)\n\n    Manage your domain controllers in the cloud\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/microsoft-entra-external-id.svg) [ Microsoft Entra External ID](https://www.microsoft.com/security/business/identity-access/microsoft-entra-external-id)\n\n    Personalize and help secure access to any application for customers and partners\n\n  Products Integration\n\n  ## Integration\n\n  Seamlessly integrate on-premises and cloud-based applications, data, and processes across your enterprise\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/app-service-logic.svg) [ Logic Apps](https://azure.microsoft.com/en-us/products/logic-apps/)\n\n    Automate and orchestrate systems and AI workloads across Azure and on-premises\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/service-bus.svg) [ Service Bus](https://azure.microsoft.com/en-us/products/service-bus/)\n\n    Connect across private and public cloud environments\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/api-management.svg) [ API Management](https://azure.microsoft.com/en-us/products/api-management/)\n\n    Publish APIs to developers, partners, and employees securely and at scale\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/event-grid.svg) [ Event Grid](https://azure.microsoft.com/en-us/products/event-grid/)\n\n    Reliable message delivery at massive scale\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/energy-data-services.svg) [ Azure Data Manager for Energy](https://azure.microsoft.com/en-us/products/data-manager-for-energy/)\n\n    Reduce time, risk, and cost of energy exploration and production\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Microsoft Azure Data Manager for Agriculture](https://azure.microsoft.com/en-us/products/data-manager-for-agriculture/)\n\n    Azure Data Manager for Agriculture extends the Microsoft Intelligent Data Platform with industry-specific data connectors and capabilities to bring together farm data from disparate sources, enabling organizations to leverage high quality datasets and accelerate the development of digital agriculture solutions\n\n  Products Internet of Things\n\n  ## Internet of Things\n\n  Connect assets or environments, discover insights, and drive informed actions to transform your business\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/iot-operations.svg) [ Azure IoT Operations](https://azure.microsoft.com/en-us/products/iot-operations/)\n\n    Unlock insights for intelligent local actions and global visibility. Enabled by Azure Arc\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/iot-hub.svg) [ Azure IoT Hub](https://azure.microsoft.com/en-us/products/iot-hub/)\n\n    Connect, monitor, and manage billions of IoT assets\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/digital-twins.svg) [ Azure Digital Twins](https://azure.microsoft.com/en-us/products/digital-twins/)\n\n    Use IoT spatial intelligence to create models of physical environments\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/iot-edge.svg) [ Azure IoT Edge](https://azure.microsoft.com/en-us/products/iot-edge/)\n\n    Extend cloud intelligence and analytics to edge devices\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/iot-central.svg) [ Azure IoT Central](https://azure.microsoft.com/en-us/products/iot-central/)\n\n    Go from proof of concept to proof of value\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-sphere.svg) [ Azure Sphere](https://azure.microsoft.com/en-us/services/azure-sphere/)\n\n    Create, connect, and maintain secured intelligent IoT devices from the edge to the cloud\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Windows for IoT](https://azure.microsoft.com/en-us/products/windows-iot/)\n\n    Build intelligent edge solutions with world-class developer tools, long-term support, and enterprise-grade security.\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/machine-learning-service.svg) [ Azure Machine Learning](https://azure.microsoft.com/en-us/products/machine-learning/)\n\n    Use an enterprise-grade service for the end-to-end machine learning lifecycle\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-maps.svg) [ Azure Maps](https://azure.microsoft.com/en-us/services/azure-maps/)\n\n    Add location data and mapping visuals to business applications and solutions\n\n  Products Management and governance\n\n  ## Management and governance\n\n  Simplify, automate, and optimize the management and compliance of your cloud resources\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Microsoft Azure portal](https://azure.microsoft.com/en-us/features/azure-portal/)\n\n    Build, manage, and monitor all Azure products in a single, unified console\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/purview.svg) [ Microsoft Purview](https://www.microsoft.com/en-us/security/business/microsoft-purview)\n\n    Secure and govern your data estate\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Azure mobile app](https://azure.microsoft.com/en-us/features/azure-portal/mobile-app/)\n\n    Stay connected to your Azure resources—anytime, anywhere\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/cloud-shell.svg) [ Cloud Shell](https://azure.microsoft.com/en-us/features/cloud-shell/)\n\n    Streamline Azure administration with a browser-based shell\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/advisor.svg) [ Azure Advisor](https://azure.microsoft.com/en-us/products/advisor/)\n\n    Your personalized Azure best practices recommendation engine\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/backup.svg) [ Azure Backup](https://azure.microsoft.com/en-us/services/backup/)\n\n    Simplify data protection with built-in backup management at scale\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/cost-management.svg) [ Microsoft Cost Management](https://azure.microsoft.com/en-us/products/cost-management/)\n\n    Monitor, allocate, and optimize cloud costs with transparency, accuracy, and efficiency\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-policy.svg) [ Azure Policy](https://azure.microsoft.com/en-us/services/azure-policy/)\n\n    Implement corporate governance and standards at scale\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/site-recovery.svg) [ Azure Site Recovery](https://azure.microsoft.com/en-us/products/site-recovery/)\n\n    Keep your business running with built-in disaster recovery service\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/chaos-studio.svg) [ Azure Chaos Studio](https://azure.microsoft.com/en-us/products/chaos-studio/)\n\n    Improve application resilience by introducing faults and simulating outages\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/monitor.svg) [ Azure Monitor](https://azure.microsoft.com/en-us/products/monitor/)\n\n    Full observability into your applications, infrastructure, and network\n\n  - [ See all Management and governance products](https://azure.microsoft.com/en-us/products/#management-tools)\n\n  Products Media\n\n  ## Media\n\n  Deliver high-quality video content anywhere, any time, and on any device\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/media-services.svg) [ Media Services](https://azure.microsoft.com/en-us/services/media-services/)\n\n    Encode, store, and stream video and audio at scale\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/media-encoding.svg) [ Encoding](https://azure.microsoft.com/en-us/services/media-services/encoding/)\n\n    Studio grade encoding at cloud scale\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/media-player.svg) [ Azure Media Player](https://azure.microsoft.com/en-us/services/media-services/media-player/)\n\n    A single player for all your playback needs\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/media-ondemand.svg) [ Live and On-Demand Streaming](https://azure.microsoft.com/en-us/services/media-services/live-on-demand/)\n\n    Deliver content to virtually all devices with ability to scale\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/media-protection.svg) [ Content Protection](https://azure.microsoft.com/en-us/services/media-services/content-protection/)\n\n    Securely deliver content using AES, PlayReady, Widevine, and Fairplay\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/cdn.svg) [ Content Delivery Network](https://azure.microsoft.com/en-us/products/cdn/)\n\n    Fast, reliable content delivery network with global reach\n\n  Products Migration\n\n  ## Migration\n\n  Simplify and accelerate your migration to the cloud with guidance, tools, and resources\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-migrate.svg) [ Azure Migrate](https://azure.microsoft.com/en-us/services/azure-migrate/)\n\n    Simplify migration and modernization with a unified platform\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/site-recovery.svg) [ Azure Site Recovery](https://azure.microsoft.com/en-us/products/site-recovery/)\n\n    Keep your business running with built-in disaster recovery service\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/database-migration.svg) [ Azure Database Migration Service (classic)](https://azure.microsoft.com/en-us/products/database-migration/)\n\n    Accelerate your data migration to Azure\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/databox.svg) [ Azure Data Box](https://azure.microsoft.com/en-us/products/databox/)\n\n    Appliances and solutions for data transfer to Azure and edge compute\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/cost-management.svg) [ Microsoft Cost Management](https://azure.microsoft.com/en-us/products/cost-management/)\n\n    Monitor, allocate, and optimize cloud costs with transparency, accuracy, and efficiency\n\n  Products Mixed reality\n\n  ## Mixed reality\n\n  Blend your physical and digital worlds to create immersive, collaborative experiences\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/remote-rendering.svg) [ Remote Rendering](https://azure.microsoft.com/en-us/products/remote-rendering/)\n\n    Render high-quality, interactive 3D content with real-time streaming\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/digital-twins.svg) [ Azure Digital Twins](https://azure.microsoft.com/en-us/products/digital-twins/)\n\n    Use IoT spatial intelligence to create models of physical environments\n\n  Products Mobile\n\n  ## Mobile\n\n  Build and deploy cross-platform and native apps for any mobile device\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/notification-hubs.svg) [ Notification Hubs](https://azure.microsoft.com/en-us/services/notification-hubs/)\n\n    Send push notifications to any platform from any back end\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/xamarin.svg) [ Xamarin](https://azure.microsoft.com/en-us/features/xamarin/)\n\n    Create cloud-powered mobile apps faster\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-maps.svg) [ Azure Maps](https://azure.microsoft.com/en-us/services/azure-maps/)\n\n    Add location data and mapping visuals to business applications and solutions\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/api-management.svg) [ API Management](https://azure.microsoft.com/en-us/products/api-management/)\n\n    Publish APIs to developers, partners, and employees securely and at scale\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/search.svg) [ Foundry IQ](https://azure.microsoft.com/en-us/products/ai-services/ai-search/)\n\n    Enterprise scale search for app development\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/cognitive-services.svg) [ Foundry Tools](https://azure.microsoft.com/en-us/products/ai-services/)\n\n    Add prebuilt AI tools to agents\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/app-service.svg) [ App Service](https://azure.microsoft.com/en-us/products/app-service/)\n\n    Quickly create powerful cloud apps for web and mobile\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-communication-services.svg) [ Azure Communication Services](https://azure.microsoft.com/en-us/products/communication-services/)\n\n    Build multichannel communication experiences\n\n  Products Networking\n\n  ## Networking\n\n  Connect cloud and on-premises infrastructure and services to provide your customers and users the best possible experience\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/virtual-network.svg) [ Virtual Network](https://azure.microsoft.com/en-us/products/virtual-network/)\n\n    Create your own private network infrastructure in the cloud\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/application-gateway.svg) [ Application Gateway](https://azure.microsoft.com/en-us/products/application-gateway/)\n\n    Build secure, scalable, highly available web front ends in Azure\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/expressroute.svg) [ Azure ExpressRoute](https://azure.microsoft.com/en-us/products/expressroute/)\n\n    Experience a fast, reliable, and private connection to Azure\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-firewall.svg) [ Azure Firewall](https://azure.microsoft.com/en-us/products/azure-firewall/)\n\n    Protect your Azure Virtual Network resources with cloud-native network security\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/private-link.svg) [ Azure Private Link](https://azure.microsoft.com/en-us/products/private-link/)\n\n    Private access to services hosted on the Azure platform, keeping your data on the Microsoft network\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/load-balancer.svg) [ Load Balancer](https://azure.microsoft.com/en-us/products/azure-load-balancing/)\n\n    Deliver high availability and network performance to your apps\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/vpn-gateway.svg) [ VPN Gateway](https://azure.microsoft.com/en-us/products/vpn-gateway/)\n\n    Establish secure, cross-premises connectivity\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/ddos-protection.svg) [ Azure DDoS Protection](https://azure.microsoft.com/en-us/products/ddos-protection/)\n\n    Protect your Azure resources from distributed denial-of-service (DDoS) attacks\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/dns.svg) [ Azure DNS](https://azure.microsoft.com/en-us/products/dns/)\n\n    Host your Domain Name System (DNS) domain in Azure\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/frontdoor.svg) [ Azure Front Door](https://azure.microsoft.com/en-us/products/frontdoor/)\n\n    Modern cloud CDN that delivers optimized experiences to your users anywhere\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/virtual-wan.svg) [ Virtual WAN](https://azure.microsoft.com/en-us/products/virtual-wan/)\n\n    Optimize and automate branch to branch connectivity through Azure\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/web-application-firewall.svg) [ Web Application Firewall](https://azure.microsoft.com/en-us/products/web-application-firewall/)\n\n    A cloud-native web application firewall (WAF) service that provides powerful protection for web apps\n\n  Products Security\n\n  ## Security\n\n  Protect your enterprise from advanced threats across hybrid cloud workloads\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-sentinel.svg) [ Microsoft Sentinel](https://www.microsoft.com/security/business/siem-and-xdr/microsoft-sentinel)\n\n    Cloud-native SIEM and intelligent security analytics\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/application-gateway.svg) [ Application Gateway](https://azure.microsoft.com/en-us/products/application-gateway/)\n\n    Build secure, scalable, highly available web front ends in Azure\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/key-vault.svg) [ Key Vault](https://azure.microsoft.com/en-us/products/key-vault/)\n\n    Safeguard and maintain control of keys and other secrets\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/vpn-gateway.svg) [ VPN Gateway](https://azure.microsoft.com/en-us/products/vpn-gateway/)\n\n    Establish secure, cross-premises connectivity\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/ddos-protection.svg) [ Azure DDoS Protection](https://azure.microsoft.com/en-us/products/ddos-protection/)\n\n    Protect your Azure resources from distributed denial-of-service (DDoS) attacks\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-bastion.svg) [ Azure Bastion](https://azure.microsoft.com/en-us/services/azure-bastion/)\n\n    Fully managed service that helps secure remote access to your virtual machines\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/web-application-firewall.svg) [ Web Application Firewall](https://azure.microsoft.com/en-us/products/web-application-firewall/)\n\n    A cloud-native web application firewall (WAF) service that provides powerful protection for web apps\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure-firewall.svg) [ Azure Firewall](https://azure.microsoft.com/en-us/products/azure-firewall/)\n\n    Protect your Azure Virtual Network resources with cloud-native network security\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Azure Firewall Manager](https://azure.microsoft.com/en-us/products/firewall-manager/)\n\n    Central network security policy and route management for globally distributed, software-defined perimeters\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/microsoft-security-copilot.svg) [ Microsoft Security Copilot](https://www.microsoft.com/security/business/ai-machine-learning/microsoft-copilot-security)\n\n    Protect at the speed and scale of AI with a generative AI-powered assistant\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ Artifact Signing](https://azure.microsoft.com/en-us/products/artifact-signing/)\n\n    Secure your applications through a fully managed end-to-end signing service for code, documents, applications, and more\n\n  - ![](/cdn-classic/cvt-b0f147f136ef71a87195ac51e08c0193669426a7e13ff132622d481f1dcb3902/svg/azure.svg) [ ISOC in Microsoft Defender](https://www.microsoft.com/en-us/security/business/solutions/integrated-security-operations-center)\n"
+              },
+              {
+                "type": "text",
+                "text": "[showing lines 1-896 of 1857; full output saved to C:\\Users\\akashshah.os\\.local\\share\\opencode\\tool-output\\tool_115b8ca6e001rdVylKjfwAv1J6]"
+              }
+            ],
+            "metadata": {
+              "contentType": "text/html; charset=utf-8",
+              "truncated": true,
+              "outputPath": "C:\\Users\\akashshah.os\\.local\\share\\opencode\\tool-output\\tool_115b8ca6e001rdVylKjfwAv1J6"
+            }
+          },
+          "time": {
+            "created": 1791365793609,
+            "ran": 1791365793622,
+            "completed": 1791365794423
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_6ac612a0511a3c94eccf42f7"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 1925,
+        "output": 77,
+        "reasoning": 14,
+        "cache": {
+          "read": 19825,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b8caa30013L7iPtGDSJbTMM",
+      "time": {
+        "created": 1791365794495,
+        "streamed": 1791365797671,
+        "completed": 1791365798824
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "",
+          "state": {
+            "itemId": "rs_6ac612a4ccd05fcd728c425f:rs_01a115b8d3fa777eb2f647e7ff3ee491",
+            "reasoningEncryptedContent": "Q-PaDgH22PrXOErWEiydrIXuRkSWMdDF3xS3yqW4uVCzbDg6BomH5Ixy1EBzpb-nfUVd9RpVtmwMYSlJcFvurb7pYmX-JTyN6jYRC0evcQRkxaJRQF5Dzg4mwHWOGTe7p36-dwE4zFZXS3pgZ1BnbExq7PchEesaXcrmVHT4qRuKeEO3WI_Ul-hwPoyqk3PON-RmqwU_qTyAIXYB9k0CBOugLcWtpzg2Emlr2uQ_wc3W_kdfSQUgbIJmCT2wwoz1XSiGX8P-t4FX5vyPeF4dPsaSIwVKJoaKst_he5tEfWRE7FpCvzmYLwtAeOfKe7qBXrcIh7tt_NK87X-6aHeWYtYwi_gnbngdQm7WpD2hqXc21Y6144AlAYkQtxjQYTan8iR0lqUBUb9rPSgh1G-TxSbo1U9BYe8PzWvlESyz90pIZSdIIiVkhjeyAeOB0J_Hz8cMTXKHwk_B5CokRUmCNSBGTH6Gf84tf-KVezSLSgMfb__Gu687kIkzIQ6edrEqFrZ40Qxh1ULfI1OaOtCEMIwNW8J8VV18qc-m6TyAifYP8R4GeQxCTljEgBEo2fnWAYSfx0M61qTzfGFBbUmVdchfDwb6046g3YdxPDRQlJ8oDd9KK-A9OwgEBIL84LQd2NXW469BfW8XvDd3d1qvFjqrnMY18APvMu6RLt7X4Jn2RGdO7lv3_9TDzIiVDmeEXw91cv2zPXrZohmqfBRK1c9m9XeK9aouJ8me2XuvqnOOlGjZZkcZQkJePvEr0sV1Cvw3aRVx-GVXq4U9iaeMIkKTwySUEXS7QKKGUemE9BEIIR5uvcIFbSMWbVJE_u2XvO2SFGjJKaa-kwfaf228aMiIYwIVOJGfiunBZ5aEyjwJ0-C-ei0-I-zY7Vyy8AbEtDmfCr4XIKJtzrsS3Jnz9rcUr7faew7e7W5hGvTilBOqcGbUCg7sJC0nxjLa6KL3JDmZVCUPvc3YzdH_5iU83mZqewnu6JHLFY-wwXpHx4BwpePJHw2yqSwNoivCGoABHZGXmotlWyx4C44z8OFQI6_VPpaA3Elmo7Wr_JQttpbjHA7qAXCFbnDo5SIhoBgcR6MAjP8pTCO2L3LwE8z8HYvO6HlvtGlXE4Sk24MogKva4Z8oS-KVkeqOPkubeegQF2ezOcj-l-3N-AEh3PDJgj2crPVNecpOWdu_6JCr0XgYhkv3U_nPixM1zOECXl-4_yoXOicoVKSkJ4ZNyFLZ0iVOwwQdkzRuJVScLepYqwCaDN8fxUnrUewapNUpk9dWtlC4OLSOL_-OwDJ7BTBkwMdMBAeR-0dajy-s8-sbXLRgPQSSNaAU9JTcttycVKIS1yYSJqPATd2sN6obG-75UftffCmZ30lLxCWDeGjV_VDphCFZZfBY2e3eUgAHfbxvkOIcZMwQxI7Bl2DKbQ"
+          },
+          "time": {
+            "created": 1791365797147,
+            "completed": 1791365797245
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_01a115b8d4e474bcb32f02857fb88c21",
+          "name": "websearch",
+          "executed": false,
+          "providerState": {
+            "itemId": "fc_01a115b8d4e474bcb32f02857fb88c21"
+          },
+          "state": {
+            "status": "completed",
+            "input": {
+              "query": "site:learn.microsoft.com Document Intelligence pricing custom model per page billed"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "## [What is the cost of document intellegence service with form ...](https://learn.microsoft.com/en-us/answers/questions/5665475/what-is-the-cost-of-document-intellegence-service)\n\n# What is the cost of document intellegence service with form recognizer\n- **Custom classification**: ~ $10 per 1,000 pages\n- **Custom extraction**: typically ~ $30 per 1,000 pages\n\n## [Service quotas and limits - Document Intelligence - Foundry Tools](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/service-limits?view=doc-intel-4.0.0)\n\n# Service quotas and limits\n## Billing\n- Training a custom model is always free with Document Intelligence. Charges are incurred only when the service uses a model to analyze a document.\n\n## Custom model usage\n| Quota | Free (F0) 1 | Standard (S0) |\n|-|-|-|\n| Adjustable | No | Yes 3 |\n\n## [How is Azure Document Intelligence priced - Microsoft Q&A](https://learn.microsoft.com/en-us/answers/questions/5592258/how-is-azure-document-intelligence-priced)\n\n# How is Azure Document Intelligence priced\n## 2 answers\nYou are charged per page.\n\nAt the S0 pricing tier, this model costs $1.25 per 100 pages.\n\n## [Azure Document Intelligence pricing - Microsoft Q&A](https://learn.microsoft.com/en-us/answers/questions/5927427/azure-document-intelligence-pricing)\n\nCustom Models: Used when you. Custom Extraction is generally billed at $30.00 per 1,000 pages. (Note: Training a custom model is completely ...\n\n## [Document Intelligence composed custom models - Microsoft Learn](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/train/composed-models?view=doc-intel-4.0.0)\n\n# Document Intelligence composed custom models\n## Billing and pricing\nThe pricing is based on the number of pages analyzed by the downstream analysis model. Billing is based on the extraction price for the pages routed to an extraction model.\n\n## Billing\nThe pricing is based on the number of pages analyzed. Billing is based on the extraction price for the pages routed to an extraction model.\n\n## [Azure AI Document Intelligence Custom Extraction Model Pricing?](https://learn.microsoft.com/en-us/answers/questions/1694517/azure-ai-document-intelligence-custom-extraction-m)\n\nThe cost of $50 per 1000 pages applies only when using the model to extract data. ... Document Intelligence is billed by pages analysed. When a ...\n\n## [Document Processing Models - Document Intelligence](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/model-overview?view=doc-intel-4.0.0)\n\nTo create a custom extraction model, label a dataset of documents with the values you want extracted and train the model on the labeled dataset.\n\n## [Our document intelligence bill seems too high after reviewing our total ...](https://learn.microsoft.com/en-us/answers/questions/5553690/our-document-intelligence-bill-seems-too-high-afte)\n\nGiven the published rate is ~$1.50 per 1,000 pages, for 950 pages you can expect ~$1.50, not $160. The $1.50 /1k pages is a US pricing. prices ..."
+              }
+            ],
+            "metadata": {
+              "provider": "firecrawl",
+              "truncated": false
+            }
+          },
+          "time": {
+            "created": 1791365797293,
+            "ran": 1791365797627,
+            "completed": 1791365798817
+          }
+        }
+      ],
+      "finish": "tool-calls",
+      "providerState": {
+        "responseId": "resp_6ac612a4ccd05fcd728c425f"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 24598,
+        "output": 63,
+        "reasoning": 16,
+        "cache": {
+          "read": 11889,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b8dbcc001Nl7NPJbBebtj7w",
+      "time": {
+        "created": 1791365798888,
+        "streamed": 1791365804790,
+        "completed": 1791365804795
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "variant": "high"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "Summarizing Azure Document Intelligence pricing by confirming $6 for 200 pages with custom extraction including OCR and layout, and clarifying no extra charges unless separate calls are made.",
+          "state": {
+            "itemId": "rs_6ac612a8a84c3e0c707d4a5e:rs_01a115b8e1737513b091a00b34e7cf73",
+            "reasoningEncryptedContent": "Q-PaDgFUAnJFt3vT92GVvpHAZLLMwEluZRHdjaOYte92gCYJSk5C7mnvdGrzc9oKq1-ootBLnPSXEYI1zcWXekbJuyj7VHjS7EkqwpPU8g_FhBmZIJhxor84_PhRsfc2oaI64jXV4GuiO1N_SDSEBBg1nAHfPe3fsPMxFr_lbjZmXQ6m61FRJ3uCSrjkJI4fYUVUc0QfbOGBqPfRinmMZXGMFIRuP2c_EHTTI10suPU3Dxks322YRg701zYZA_2Hjn0BMPPX-0XAlf-TSCpQzZ2aZE7MuK89eqCOUni8ly-2n_bVMGITMScppubrjNPZluuQVE-UBGdGkbxamBiZ7W2aNx-CJ25hC4CW4oSuhTw8eSddS1yvOV2ywXPJjUOBRJVltoHxATbm5jTXx5qToqT0CyVEv8nYOp64zUo3_8h-rnTMlIsBbh0tY9QnEDBpHzGMKuOF--72MmIWs35l9U4MHaK4AWSFBxdgTa4ybgJuyJyKwD9E06fNFibeF9IvgHaPOn3UKwf8zFTAi30dLat9U9JcykE6CQfiabHx9Kvp5WKWtsSOfXsuZJPAaiH3A25gTSNuf3mWSbFec5mkJkHlfNWAV1dTb4WUQGAg4vRznXKB08_g7W865V5S8PbKikLeJEGDn325Vv20NAbJht14tO_VF1avQwSXxyMo2co37Wqpg_IW9aUhgN3nVwQX583wz7XpU8KrcprO6ZatqRSc-VgMdk-VH7vYMRpCBmWVhKpscQUo-9TTGjw0wq24YB5j_Ui-J4G_ZDvx5UBXdvQaeUMG-mIkxtUVxedC9tLtelMvdj12Zxsm75r14tU0mI6S4_SMfYcBWyTUKJUwNOKCT3g4eZEnZiIzeHqaS11HauEG2V0kxSzh1SfuAAB6jb-oBguN6zuQ9CEYic6c-L26ZgDIqYuqAl9CyMiHchBeh02XYz9h6Jt5n4s5uHFwYnFP2jGH9qyM9Uo7Oo-LBB3BSQRsvanEQKmlXhwpCq_oQZ_isDuu-0mvNvVZ7hvRe3hxySn9GIOxPuW15IYe-nvLNN4YzuZQCmpDR-eLk_HEYt0kho_P-XnTBURzchj3GLHQ89fi0-L0LTr5xzZ3y0L-DbbskOM3B2J9F-tqdQp8V2fz_a6U-xA_6mzAZuZRxxywrnzluB4pNVGOVMaLuKfA31ouP3X44wM9Mxh_0Z8YYdqllEq9FGdWMzwsf-FLu4Z2E_creOugUYm9dg4yvlNZK14e4ALRO8OichvinZ2CIBBRoWvrc2N5Wspmf3W_cgUIDyV46SOdwQcS0iCj34E5L6qGB41nIhiKrXG_JCxrfkOEC0e0zx1Nsi6vbyQnGc3Sy7RkT-II1oHAALcVeLsYRzVFAbPdR0WnyWW2AsofQuGhxmrBknEjzAo3XAFLlSy9oyKNpSxrf0aEc9Lo6_okXWNr7Nv4rArfnjV5uT1fds5X0pUiMPIgMW5AadX4jtvohxafUUaFFnKArCW1Vd3z_qMRY-SOH9WDNHdv8I_EUqBC0hzmwl8OnSk2Sb7AF9Js44fFT7zCUP2OB1b2XZQvZwkoftYLP3HHsxLOme0I5e6eNRJJdDfefVlgryeZpiTbSaluwdtC-c8LZcF0Bq7ATtV4lIlY078p4kwIqRfmD0FXF0bJFpLyOj33MoaAZriqi91-D2cWX7mJhiZYtfBSbDWK7S68b2RKlMqT0P49wyUpjQGvMvGqA8Uqtv0Pm0Rgl2kuibVoiznT8dpV6JHdJE8MSEuGD6hGvmXPQwkuseR9Z8V6K3N3MzBtk5tz5Q_9igAPBMj9ugDzrwEObauu2LF0g9epORZhsdA6Kl1Dlyh46XyaFRF6zQAAD16ZfyY5pO3F3sQZxi2kcFh2iK2ZjTWKMylUwzQw3uKHshNKuUP22QA-PAS5gClWDn6lsCIm-7lZXlje1-VdpNOGbYc56-pjaMA-FWje5JQX8Vb4u7osEf0KjXcSLN6-FvQ_wJXEq3tY4kfLlPX6cV3FPDrqKk0-VYWJpasOy458oS2N_ljtxEbUpRvKbxrO31TAvWqHs-sIvHXYcckcyjGvufJr1qcmYn7A6qR3swUZLoHE0_Kao-rmi14fmI_D1LJWzgyOR1YRiJxdK0EIoLwZqU0EN_yPqg0HxA0UUeXT-DYcH3UP_L7LZQ7-wfyRA39X09cH0YLW0LEMuP-PlxXUqtgg4-LmgNkMJ-cv1Dfr69lqhTXKD1HnUF3vGHEl1ENyN5l3f4KRHsIkeM-eaWe1hFlUHZEaZGh18JzPPWVYI0BkV1w1-jo6Q87EBL6zWy6n0QyqkQ0c60CNX-YgUPaQflK8tvGFdVT75lnvy4zISVIcJfGIP4vxiv6gD6zbYkxl-vL9jSqsgDMpjCH_w4I2C91ubbFMycF3xmuGPxaIwzeZJVwMVCkczNWlLqrfgciaCks04ogpEJVMv1KvLzajcp-JVCPN_K_2mJjor9HncQzSOrFu0vVmT-ZhprwzSZLfpm32xyNh3AWVBYyXob1b25V_mPvnFeOu0Ed8dUDPaxf1cFsXeAjUz4HhGFDLngb6Naq7-_LABxY5mLfQhERQ4M_g0gE5JJpKvkyoCQG2AVXaHMPK5NV9p9jvjHHH2WpEStbPjZUgy0scnCOlZ_dw5j_0WIbtxbIKVKhPKbOgd4G-NJu3pTICSRHkwTVisn6pVbvrOZsCQlKwf-Sr-aP5LsYTT_DP5Eo1p6kjJehobFGbxWzSCPqnSesEdqDdIPE-ypGjUtCSlIi4CBEcyRifFjsWQczJqcidQOQ7Zx4"
+          },
+          "time": {
+            "created": 1791365800766,
+            "completed": 1791365803031
+          }
+        },
+        {
+          "type": "text",
+          "text": "Yes — $6/mo is all-in for the Document Intelligence service itself.\n\n- `BG_OCR_Options_Comparison.md:31,40`: Custom = `0.2 x $30.00 = $6.00/mo` for 200 pages.\n- Azure bills per page *analyzed by that model*, not additive. One Custom `analyze` call includes OCR + layout + your BG fields — you don't pay Read ($0.30) + Layout ($2.00) on top.\n- Training / labelling is free — you only pay when you analyze.\n- Layout ($2/mo) is shown as the cheaper fallback option if Custom isn't needed.\n\nWhat $6 does *not* include:\n\n- VM (zero extra — reuse existing) or App Service (~$13–15/mo) if you later migrate\n- Storage / bandwidth / logging — negligible at 25 PDFs/mo\n- M365 / SharePoint / Outlook — already licensed, via Graph\n- One-time labelling of 15–25 sample BGs\n\nSo for your manager: budget Rs 540/mo for extraction, not Rs 540 + something else.",
+          "state": {
+            "itemId": "msg_01a115b8eb5c7027baf6261f571f34e6"
+          }
+        }
+      ],
+      "finish": "stop",
+      "providerState": {
+        "responseId": "resp_6ac612a8a84c3e0c707d4a5e"
+      },
+      "cost": 0,
+      "tokens": {
+        "input": 810,
+        "output": 279,
+        "reasoning": 278,
+        "cache": {
+          "read": 36465,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_115b8f305001eBKQmF8D62ErTa",
+      "time": {
+        "created": 1791365804805
+      },
+      "type": "idle",
+      "outcome": "succeeded"
+    }
+  ]
+}

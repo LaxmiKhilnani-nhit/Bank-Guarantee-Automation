@@ -1,0 +1,17 @@
+# BG ingestion pipeline (OCR through the Datalab API)
+#
+# datalab-python-sdk needs Python 3.11+. Supply DATALAB_API_KEY in the
+# git-ignored .env file, or run `datalab login` once to store a key under
+# ~/.config/datalab/config.json.
+
+openpyxl>=3.1
+datalab-python-sdk>=0.8
+
+# Review UI (python -m bgauto.web)
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9
+
+# PostgreSQL access: the register, masters and audit log live in Postgres now.
+psycopg[binary]>=3.1
+psycopg_pool>=3.2

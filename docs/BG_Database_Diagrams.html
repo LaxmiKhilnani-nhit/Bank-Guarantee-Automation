@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<!-- BG Automation — ER + Schema diagrams viewer.
+     Sources of truth: BG_ER_Diagram.mmd / BG_Schema_Diagram.mmd (same folder).
+     Needs internet once for the Mermaid CDN; diagrams also render natively
+     from the .mmd sources in most Markdown viewers. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BG Automation — ER &amp; Schema Diagrams</title>
+<style>
+  body { font-family: Segoe UI, Arial, sans-serif; margin: 2rem; color: #1a1a1a; }
+  h1 { font-size: 1.6rem; } h2 { font-size: 1.25rem; margin-top: 2.5rem;
+       border-bottom: 2px solid #0b5cad; padding-bottom: .3rem; }
+  p.note { color: #444; max-width: 70rem; }
+  pre.mermaid { background: #fff; border: 1px solid #ddd; padding: 1rem;
+                overflow-x: auto; }
+  @media print { body { margin: .5rem; } }
+</style>
+</head>
+<body>
+<h1>BG Automation — Database Diagrams (PostgreSQL)</h1>
+<p class="note">Conceptual ER (key attributes, crow's foot) followed by the full
+logical schema. Table design matches <code>db/migrations/V1__schema.sql</code>
+plus <code>db/migrations/V3__schema.sql</code>; seed values match
+<code>db/migrations/V2__seed.sql</code> and <code>docs/master-data.md</code>.
+One BG row per guarantee, dedupe on <code>bg_no</code>; extensions chain via
+<code>supersedes_bg_id</code> under the same <code>loa_id</code>
+(1 LOA : M BGs). Dates are <code>DATE</code>; instants are
+<code>TIMESTAMPTZ</code> in UTC.</p>
+
+<h2>1. ER Diagram (conceptual)</h2>
+<pre class="mermaid">
+erDiagram
+    COMPANY ||--o{ PROJECT : company_id
+    PROJECT ||--o{ TOLL_PLAZA : project_id
+    LOA_RECORDS ||--o{ BG_RECORDS : loa_id
+    COMPANY ||--o{ BG_RECORDS : company_id
+    PROJECT ||--o{ BG_RECORDS : project_id
+    TOLL_PLAZA ||--o{ BG_RECORDS : toll_plaza_id
+    BANK ||--o{ BG_RECORDS : bank_id
+    CONTRACTOR ||--o{ BG_RECORDS : contractor_id
+    BG_TYPE ||--o{ BG_RECORDS : bg_type
+    NATURE_OF_SERVICE ||--o{ BG_RECORDS : nature_id
+    BG_STATUS ||--o{ BG_RECORDS : status
+    USERS ||--o{ BG_RECORDS : created_by
+    BG_RECORDS ||--o{ BG_RECORDS : supersedes_bg_id
+    BG_RECORDS ||--o{ OCR_RESULTS : bg_id
+    BG_RECORDS ||--o{ REMINDERS : bg_id
+    BG_RECORDS ||--o{ AUDIT_LOGS : bg_id
+    USERS ||--o{ LOA_RECORDS : created_by
+    USERS ||--o{ OCR_RESULTS : created_by
+    USERS ||--o{ AUDIT_LOGS : user_id
+    USERS ||--o{ USER_ROLES : user_id
+    USERS ||--o{ SESSIONS : user_id
+    ROLES ||--o{ USER_ROLES : role_id
+
+    COMPANY {
+        SMALLINT id PK
+        TEXT name UK
+    }
+    PROJECT {
+        SMALLINT id PK
+        SMALLINT company_id FK
+        TEXT code UK
+    }
+    TOLL_PLAZA {
+        INTEGER id PK
+        SMALLINT project_id FK
+        TEXT name
+    }
+    BANK {
+        SMALLINT id PK
+        TEXT name UK
+    }
+    CONTRACTOR {
+        INTEGER id PK
+        TEXT name UK
+    }
+    BG_TYPE {
+        TEXT code PK
+    }
+    NATURE_OF_SERVICE {
+        SMALLINT id PK
+        TEXT name UK
+    }
+    BG_STATUS {
+        TEXT code PK
+    }
+    ROLES {
+        SMALLINT id PK
+        TEXT name UK
+    }
+    USERS {
+        UUID id PK
+        CITEXT username UK
+        TEXT password_hash
+    }
+    USER_ROLES {
+        UUID user_id PK, FK
+        SMALLINT role_id PK, FK
+    }
+    SESSIONS {
+        TEXT token_hash PK
+        UUID user_id FK
+        TIMESTAMPTZ expires_at
+    }
+    LOA_RECORDS {
+        UUID id PK
+        TEXT loa_po_number UK
+        UUID created_by FK
+    }
+    BG_RECORDS {
+        UUID id PK
+        TEXT bg_no UK
+        UUID loa_id FK
+        NUMERIC bg_amount
+        DATE from_date
+        DATE to_date
+        TEXT status FK
+        TEXT source_pdf
+        UUID supersedes_bg_id FK
+    }
+    OCR_RESULTS {
+        UUID id PK
+        UUID bg_id FK
+        TEXT source_pdf
+        TEXT status
+    }
+    REMINDERS {
+        UUID id PK
+        UUID bg_id FK
+        DATE scheduled_for
+        TEXT status
+    }
+    AUDIT_LOGS {
+        BIGINT id PK
+        UUID user_id FK
+        TEXT action
+        UUID bg_id FK
+    }
+</pre>
+
+<h2>2. Schema Diagram (full columns)</h2>
+<pre class="mermaid">
+erDiagram
+    COMPANY ||--o{ PROJECT : company_id
+    PROJECT ||--o{ TOLL_PLAZA : project_id
+    LOA_RECORDS ||--o{ BG_RECORDS : loa_id
+    COMPANY ||--o{ BG_RECORDS : company_id
+    PROJECT ||--o{ BG_RECORDS : project_id
+    TOLL_PLAZA ||--o{ BG_RECORDS : toll_plaza_id
+    BANK ||--o{ BG_RECORDS : bank_id
+    CONTRACTOR ||--o{ BG_RECORDS : contractor_id
+    BG_TYPE ||--o{ BG_RECORDS : bg_type
+    NATURE_OF_SERVICE ||--o{ BG_RECORDS : nature_id
+    BG_STATUS ||--o{ BG_RECORDS : status
+    USERS ||--o{ BG_RECORDS : created_by
+    BG_RECORDS ||--o{ BG_RECORDS : supersedes_bg_id
+    BG_RECORDS ||--o{ OCR_RESULTS : bg_id
+    BG_RECORDS ||--o{ REMINDERS : bg_id
+    BG_RECORDS ||--o{ AUDIT_LOGS : bg_id
+    USERS ||--o{ LOA_RECORDS : created_by
+    USERS ||--o{ OCR_RESULTS : created_by
+    USERS ||--o{ AUDIT_LOGS : user_id
+    USERS ||--o{ USER_ROLES : user_id
+    USERS ||--o{ SESSIONS : user_id
+    ROLES ||--o{ USER_ROLES : role_id
+
+    COMPANY {
+        SMALLINT id PK
+        TEXT name UK "e.g. NSPPL"
+        TEXT source "NULL, imported, manual or migrated"
+        BOOLEAN is_active
+    }
+    PROJECT {
+        SMALLINT id PK
+        SMALLINT company_id FK
+        TEXT code UK "e.g. SB, MH"
+        TEXT name
+        TEXT state
+        INTEGER round
+        TEXT project_manager
+        TEXT source
+        BOOLEAN is_active
+    }
+    TOLL_PLAZA {
+        INTEGER id PK
+        SMALLINT project_id FK
+        TEXT name "UNIQUE per project"
+        TEXT chainage
+        TEXT toll_manager
+        TEXT maintenance_manager
+        TEXT corridor_manager
+        TEXT source
+        BOOLEAN is_active
+    }
+    BANK {
+        SMALLINT id PK
+        TEXT name UK "created by the first BG"
+        TEXT source
+    }
+    CONTRACTOR {
+        INTEGER id PK
+        TEXT name UK "created by the first BG"
+        TEXT source
+    }
+    BG_TYPE {
+        TEXT code PK "PBG, ABG"
+        INTEGER sort_order
+    }
+    NATURE_OF_SERVICE {
+        SMALLINT id PK
+        TEXT name UK "27 master values"
+    }
+    BG_STATUS {
+        TEXT code PK "Draft..Closed"
+        INTEGER sort_order
+    }
+    ROLES {
+        SMALLINT id PK
+        TEXT name UK "admin, uploader, viewer"
+    }
+    USERS {
+        UUID id PK
+        CITEXT username UK "case-insensitive"
+        CITEXT email UK "case-insensitive, nullable"
+        TEXT full_name
+        TEXT password_hash "scrypt"
+        BOOLEAN is_active
+        TIMESTAMPTZ last_login
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+        INTEGER failed_attempts "lockout after 5"
+        TIMESTAMPTZ locked_until
+    }
+    USER_ROLES {
+        UUID user_id PK, FK
+        SMALLINT role_id PK, FK
+    }
+    SESSIONS {
+        TEXT token_hash PK "hash of the cookie token"
+        UUID user_id FK "ON DELETE CASCADE"
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ expires_at
+        TIMESTAMPTZ last_seen
+        TEXT ip
+        TEXT user_agent
+    }
+    LOOKUP_CACHE {
+        TEXT field PK
+        TEXT query PK
+        JSONB payload
+        TIMESTAMPTZ created_at
+    }
+    LOA_RECORDS {
+        UUID id PK
+        TEXT loa_po_number UK "1 LOA : M BGs"
+        TEXT description
+        UUID created_by FK
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+    BG_RECORDS {
+        UUID id PK
+        TEXT bg_no UK "dedupe key UC003"
+        SMALLINT company_id FK
+        SMALLINT project_id FK
+        INTEGER toll_plaza_id FK
+        TEXT bg_type FK
+        SMALLINT nature_id FK
+        INTEGER contractor_id FK
+        SMALLINT bank_id FK
+        UUID loa_id FK
+        TEXT po_number
+        NUMERIC bg_amount "CHECK > 0"
+        DATE from_date
+        DATE to_date "T-7 anchor"
+        DATE claim_period "NULL or >= to_date"
+        DATE extended_date "NULL until extended"
+        TEXT status FK "default Draft"
+        TEXT remarks
+        TEXT source_pdf
+        UUID created_by FK
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+        TIMESTAMPTZ reminder_sent_at
+        UUID supersedes_bg_id FK "ST007 chain"
+    }
+    OCR_RESULTS {
+        UUID id PK
+        UUID bg_id FK "nullable pre-confirm"
+        TEXT source_pdf
+        TEXT di_model "Datalab mode"
+        JSONB raw_json
+        JSONB extracted_fields
+        NUMERIC avg_confidence "0..1"
+        TEXT status "queued/success/needs_review/failed"
+        TEXT error
+        UUID created_by FK
+        TIMESTAMPTZ created_at
+    }
+    REMINDERS {
+        UUID id PK
+        UUID bg_id FK "ON DELETE CASCADE"
+        DATE scheduled_for "to_date - 7"
+        TIMESTAMPTZ sent_at
+        TEXT recipients "Postgres TEXT[]"
+        TEXT subject
+        TEXT body
+        TEXT provider_msg_id
+        TEXT status "pending/sent/failed/skipped"
+        TEXT error
+        TIMESTAMPTZ created_at
+    }
+    AUDIT_LOGS {
+        BIGINT id PK "identity"
+        TIMESTAMPTZ ts
+        UUID user_id FK
+        TEXT action "upload/extract/confirm/..."
+        UUID bg_id FK
+        TEXT bg_no
+        JSONB old_data
+        JSONB new_data
+        TEXT ip "text, not INET"
+    }
+</pre>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, er: { fontSize: 13 } });</script>
+</body>
+</html>
